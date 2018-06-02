@@ -43,7 +43,7 @@ import org.xml.sax.InputSource;
  * whole slide imaging and microscopy
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.4
+ * @version 2.0.0.5
  */
 public class Core {
 	private Map<String, Object> pmaSessions = new HashMap<String, Object>();
@@ -613,7 +613,7 @@ public class Core {
 		if (startDir.startsWith("/")) {
 			startDir = startDir.substring(1);
 		}
-		String url = apiUrl(sessionID) + "GetFiles?sessionID=" + pmaQ(sessionID) + "&path=" + pmaQ(startDir);
+		String url = apiUrl(sessionID, false) + "GetFiles?sessionID=" + pmaQ(sessionID) + "&path=" + pmaQ(startDir);
 		try {
 			URL urlResource = new URL(url);
 			HttpURLConnection con = (HttpsURLConnection) urlResource.openConnection();
