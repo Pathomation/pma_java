@@ -273,7 +273,8 @@ public class Core {
 	 *            XML document
 	 * @param limit
 	 *            it's an optional argument (int), default value set to "0"
-	 * @return List<String> a list of the values of "String" tags of a XML document
+	 * @return List{@literal <}String{@literal >} a list of the values of "String"
+	 *         tags of a XML document
 	 */
 	private List<String> xmlToStringArray(Document root, Integer... varargs) {
 		// setting the default value when argument's value is omitted
@@ -300,7 +301,8 @@ public class Core {
 	 *            XML document
 	 * @param limit
 	 *            it's an optional argument (int), default value set to "0"
-	 * @return List<String> a list of the values of "String" tags of a XML document
+	 * @return List{@literal <}String{@literal >} a list of the values of "String"
+	 *         tags of a XML document
 	 */
 	private List<String> xmlToStringArray(Element root, Integer... varargs) {
 		// setting the default value when argument's value is omitted
@@ -383,8 +385,8 @@ public class Core {
 	}
 
 	/**
-	 * This method is used to authenticate & connect to a PMA.core instance using
-	 * credentials
+	 * This method is used to authenticate &amp; connect to a PMA.core instance
+	 * using credentials
 	 * 
 	 * @param pmacoreURL
 	 *            it's an optional argument (String), default value set to
@@ -477,7 +479,8 @@ public class Core {
 	 * 
 	 * @param sessionID
 	 *            it's an optional argument (String), default value set to "null"
-	 * @return List<String> Array of root-directories available to sessionID
+	 * @return List{@literal <}String{@literal >} Array of root-directories
+	 *         available to sessionID
 	 */
 	public List<String> getRootDirectories(String... varargs) {
 		// setting the default value when argument's value is omitted
@@ -499,8 +502,8 @@ public class Core {
 	 *            Start directory
 	 * @param sessionID
 	 *            it's an optional argument (String), default value set to "null"
-	 * @return List<String> sub-directories available to sessionID in the start
-	 *         directory
+	 * @return List{@literal <}String{@literal >} sub-directories available to
+	 *         sessionID in the start directory
 	 */
 	public List<String> getDirectories(String startDir, String... varargs) {
 		// setting the default value when argument's value is omitted
@@ -517,7 +520,12 @@ public class Core {
 				+ pmaQ(startDir);
 		try {
 			URL urlResource = new URL(url);
-			HttpURLConnection con = (HttpsURLConnection) urlResource.openConnection();
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
 			con.setRequestMethod("GET");
 			String jsonString = getJSONAsStringBuffer(con).toString();
 			if (isJSONObject(jsonString)) {
@@ -602,8 +610,8 @@ public class Core {
 	 *            Start directory
 	 * @param sessionID
 	 *            it's an optional argument (String), default value set to "null"
-	 * @return List<String> list of slides available to sessionID in the start
-	 *         directory
+	 * @return List{@literal <}String{@literal >} list of slides available to
+	 *         sessionID in the start directory
 	 */
 	public List<String> getSlides(String startDir, String... varargs) {
 		// setting the default value when arguments' value is omitted
@@ -616,7 +624,12 @@ public class Core {
 		String url = apiUrl(sessionID, false) + "GetFiles?sessionID=" + pmaQ(sessionID) + "&path=" + pmaQ(startDir);
 		try {
 			URL urlResource = new URL(url);
-			HttpURLConnection con = (HttpsURLConnection) urlResource.openConnection();
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
 			con.setRequestMethod("GET");
 			String jsonString = getJSONAsStringBuffer(con).toString();
 			if (isJSONObject(jsonString)) {
@@ -713,7 +726,8 @@ public class Core {
 	/**
 	 * This method is a getter for class member "pmaSessions"
 	 * 
-	 * @return Map<String, Object> value of class member "pmaSessions"
+	 * @return Map{@literal <}String, Object{@literal >} value of class member
+	 *         "pmaSessions"
 	 */
 	public Map<String, Object> sessions() {
 		return pmaSessions;
@@ -724,8 +738,8 @@ public class Core {
 	 * 
 	 * @param sessionID
 	 *            it's an optional argument (String), default value set to "null"
-	 * @return List<Integer> two items (duplicated) list of tile size information
-	 *         for sessionID
+	 * @return List{@literal <}Integer{@literal >} two items (duplicated) list of
+	 *         tile size information for sessionID
 	 */
 	@SuppressWarnings("unchecked")
 	public List<Integer> getTileSize(String... varargs) {
@@ -821,7 +835,8 @@ public class Core {
 	 *            slide's path
 	 * @param sessionID
 	 *            it's an optional argument (String), default value set to "null"
-	 * @return Map<String, Object> nested maps forming a raw image
+	 * @return Map{@literal <}String, Object{@literal >} nested maps forming a raw
+	 *         image
 	 */
 	@SuppressWarnings("unchecked")
 	public Map<String, Object> getSlideInfo(String slideRef, String... varargs) {
@@ -838,7 +853,12 @@ public class Core {
 						+ pmaQ(slideRef);
 				System.out.print(url);
 				URL urlResource = new URL(url);
-				HttpURLConnection con = (HttpsURLConnection) urlResource.openConnection();
+				HttpURLConnection con;
+				if (url.startsWith("https")) {
+					con = (HttpsURLConnection) urlResource.openConnection();
+				} else {
+					con = (HttpURLConnection) urlResource.openConnection();
+				}
 				con.setRequestMethod("GET");
 				String jsonString = getJSONAsStringBuffer(con).toString();
 				if (isJSONObject(jsonString)) {
@@ -917,7 +937,8 @@ public class Core {
 	 *            it's an optional argument (Integer), default value set to "0",
 	 *            used to specify that you're only interested in zoom levels that
 	 *            include at least a given number of tiles
-	 * @return List<Integer> list with all zoom levels, from 0 to max zoom level
+	 * @return List{@literal <}Integer{@literal >} list with all zoom levels, from 0
+	 *         to max zoom level
 	 */
 	public List<Integer> getZoomLevelsList(String slideRef, Object... varargs) {
 		// setting the default values when arguments' values are omitted
@@ -959,8 +980,9 @@ public class Core {
 	 *            it's an optional argument (Integer), default value set to "0",
 	 *            used to specify that you're only interested in zoom levels that
 	 *            include at least a given number of tiles
-	 * @return Map<Integer, List<Integer>> map with the number of tiles per zoom
-	 *         level
+	 * @return Map{@literal <}Integer,
+	 *         List{@literal <}Integer{@literal >}{@literal >} map with the number
+	 *         of tiles per zoom level
 	 */
 	public Map<Integer, List<Integer>> getZoomLevelsDict(String slideRef, Object... varargs) {
 		// setting the default values when arguments' values are omitted
@@ -1014,8 +1036,8 @@ public class Core {
 	 *            it's an optional argument (Integer), default value set to "null"
 	 * @param sessionID
 	 *            it's an optional argument (String), default value set to "null"
-	 * @return List<Float> two items list containing the physical dimension in terms
-	 *         of pixels per micrometer of a slide
+	 * @return List{@literal <}Float{@literal >} two items list containing the
+	 *         physical dimension in terms of pixels per micrometer of a slide
 	 */
 	public List<Float> getPixelsPerMicrometer(String slideRef, Object... varargs) {
 		// setting the default values when arguments' values are omitted
@@ -1065,8 +1087,8 @@ public class Core {
 	 *            it's an optional argument (Integer), default value set to "null"
 	 * @param sessionID
 	 *            it's an optional argument (String), default value set to "null"
-	 * @return List<Integer> two items list with the total dimensions of a slide
-	 *         image at a given zoom level
+	 * @return List{@literal <}Integer{@literal >} two items list with the total
+	 *         dimensions of a slide image at a given zoom level
 	 */
 	public List<Integer> getPixelDimensions(String slideRef, Object... varargs) {
 		// setting the default values when arguments' values are omitted
@@ -1110,8 +1132,8 @@ public class Core {
 	 *            it's an optional argument (Integer), default value set to "null"
 	 * @param sessionID
 	 *            it's an optional argument (String), default value set to "null"
-	 * @return List<Integer> three items list to determine the number of tiles
-	 *         needed to reconstitute a slide at a given zoom level
+	 * @return List{@literal <}Integer{@literal >} three items list to determine the
+	 *         number of tiles needed to reconstitute a slide at a given zoom level
 	 */
 	public List<Integer> getNumberOfTiles(String slideRef, Object... varargs) {
 		// setting the default values when arguments' values are omitted
@@ -1151,8 +1173,8 @@ public class Core {
 	 *            slide's path
 	 * @param sessionID
 	 *            it's an optional argument (String), default value set to "null"
-	 * @return List<Float> two items list to determine the physical dimensions of
-	 *         the sample represented by the slide
+	 * @return List{@literal <}Float{@literal >} two items list to determine the
+	 *         physical dimensions of the sample represented by the slide
 	 */
 	public List<Float> getPhysicalDimensions(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
@@ -1712,4 +1734,73 @@ public class Core {
 			System.out.print(e.getMessage());
 		}
 	}
+
+	/**
+	 * This method is used to get sub-directories available to sessionID in the
+	 * start directory
+	 * 
+	 * @param slideRef
+	 *            slide's path
+	 * @param sessionID
+	 *            it's an optional argument (String), default value set to "null"
+	 * @return List{@literal <}String{@literal >} List of all files related to
+	 *         selected slide
+	 */
+	public List<String> enumerateFilesForSlide(String slideRef, String... varargs) {
+		// setting the default value when argument's value is omitted
+		String sessionID = varargs.length > 0 ? varargs[0] : null;
+		// Obtain all files actually associated with a specific slide
+		// This is most relevant with slides that are defined by multiple files, like
+		// MRXS or VSI
+		sessionID = sessionId(sessionID);
+		if (slideRef.startsWith("/")) {
+			slideRef = slideRef.substring(1);
+		}
+		String url = apiUrl(sessionID, false) + "EnumerateAllFilesForSlide?sessionID=" + pmaQ(sessionID) + "&pathOrUid="
+				+ pmaQ(slideRef);
+		try {
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("GET");
+			String jsonString = getJSONAsStringBuffer(con).toString();
+			if (isJSONObject(jsonString)) {
+				JSONObject jsonResponse = getJSONResponse(jsonString);
+				pmaAmountOfDataDownloaded.put(sessionID,
+						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
+				if (jsonResponse.has("Code")) {
+
+					throw new Exception("get_slides from " + slideRef + " resulted in: " + jsonResponse.get("Message")
+							+ " (keep in mind that slideRef is case sensitive!)");
+				} else if (jsonResponse.has("d")) {
+					JSONArray array = jsonResponse.getJSONArray("d");
+					List<String> files = new ArrayList<>();
+					for (int i = 0; i < array.length(); i++) {
+						files.add(array.optString(i));
+					}
+					return files;
+				} else {
+					return null;
+				}
+			} else {
+				JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+				pmaAmountOfDataDownloaded.put(sessionID,
+						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
+				List<String> files = new ArrayList<>();
+				for (int i = 0; i < jsonResponse.length(); i++) {
+					files.add(jsonResponse.optString(i));
+				}
+				return files;
+			}
+
+		} catch (Exception e) {
+			System.out.print(e.getMessage());
+			return null;
+		}
+	}
+
 }
