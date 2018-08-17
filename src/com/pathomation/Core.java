@@ -43,7 +43,7 @@ import org.xml.sax.InputSource;
  * whole slide imaging and microscopy
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.8
+ * @version 2.0.0.9
  */
 public class Core {
 	private Map<String, Object> pmaSessions = new HashMap<String, Object>();
@@ -854,7 +854,6 @@ public class Core {
 			try {
 				String url = apiUrl(sessionID, false) + "GetImageInfo?SessionID=" + pmaQ(sessionID) + "&pathOrUid="
 						+ pmaQ(slideRef);
-				System.out.print(url);
 				URL urlResource = new URL(url);
 				HttpURLConnection con;
 				if (url.startsWith("https")) {
@@ -1232,6 +1231,20 @@ public class Core {
 	}
 
 	/**
+	 * 
+	 * @param slideRef
+	 * 			 slide's path
+	 * @param sessionID
+	 * 			 it's an optional argument (String), default value set to "null"
+	 * @return int number of Z-Stack layers for a slide
+	 */
+	public int getNumberOfZStackLayers(String slideRef, String... varargs) {
+		// setting the default value when arguments' value is omitted
+		String sessionID = varargs.length > 0 ? varargs[0] : null;
+		return getNumberOfLayers(slideRef, sessionID);
+	}
+	
+	/**
 	 * This method is used to determine whether a slide is a fluorescent image or
 	 * not
 	 * 
@@ -1366,6 +1379,7 @@ public class Core {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Get the barcode (alias for "label") image for a slide
+		sessionID = sessionId(sessionID);
 		try {
 			URL urlResource = new URL(getBarcodeUrl(slideRef, sessionID));
 			URLConnection con = urlResource.openConnection();
@@ -1409,6 +1423,7 @@ public class Core {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Get the label image for a slide
+		sessionID = sessionId(sessionID);
 		try {
 			URL urlResource = new URL(getLabelUrl(slideRef, sessionID));
 			URLConnection con = urlResource.openConnection();
@@ -1454,8 +1469,10 @@ public class Core {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Get the thumbnail image for a slide
+		sessionID = sessionId(sessionID);
 		try {
-			URL urlResource = new URL(getThumbnailUrl(slideRef, sessionID));
+			String url = getThumbnailUrl(slideRef, sessionID);
+			URL urlResource = new URL(url);
 			URLConnection con = urlResource.openConnection();
 			Image img = ImageIO.read(con.getInputStream());
 			pmaAmountOfDataDownloaded.put(sessionID,
@@ -1478,6 +1495,8 @@ public class Core {
 	 *            it's an optional argument (Integer), default value set to "0"
 	 * @param zoomLevel
 	 *            it's an optional argument (Integer), default value set to "null"
+	 * @param zStack
+	 *            it's an optional argument (Integer), default value set to "0"
 	 * @param sessionID
 	 *            it's an optional argument (String), default value set to "null"
 	 * @param format
@@ -1552,9 +1571,9 @@ public class Core {
 		if (url == null) {
 			throw new Exception("Unable to determine the PMA.core instance belonging to " + sessionID);
 		}
-		url = "tile" + "?SessionID=" + pmaQ(sessionID) + "&channels=" + pmaQ("0") + "&layer=" + pmaQ(zStack.toString()) + "&timeframe=" + pmaQ("0")
-				+ "&layer=" + pmaQ("0") + "&pathOrUid=" + pmaQ(slideRef) + "&x=" + pmaQ(x.toString()) + "&y="
-				+ pmaQ(y.toString()) + "&z=" + pmaQ(zoomLevel.toString()) + "&format=" + pmaQ(format) + "&quality="
+		url = "tile" + "?SessionID=" + pmaQ(sessionID) + "&channels=" + pmaQ("0") + "&layer=" + zStack.toString() + "&timeframe=" + pmaQ("0")
+				+ "&layer=" + pmaQ("0") + "&pathOrUid=" + pmaQ(slideRef) + "&x=" + x.toString() + "&y="
+				+ y.toString() + "&z=" + zoomLevel.toString() + "&format=" + pmaQ(format) + "&quality="
 				+ pmaQ(quality.toString()) + "&cache=" + pmaUseCacheWhenRetrievingTiles.toString().toLowerCase();
 		try {
 			URL urlResource = new URL(url);
@@ -1585,6 +1604,8 @@ public class Core {
 	 *            it's an optional argument (Integer), default value set to "null"
 	 * @param zoomLevel
 	 *            it's an optional argument (Integer), default value set to "null"
+	 * @param zStack
+	 *            it's an optional argument (Integer), default value set to "0"
 	 * @param sessionID
 	 *            it's an optional argument (String), default value set to "null"
 	 * @param format
