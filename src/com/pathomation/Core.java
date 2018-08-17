@@ -43,7 +43,7 @@ import org.xml.sax.InputSource;
  * whole slide imaging and microscopy
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.9
+ * @version 2.0.0.10
  */
 public class Core {
 	private Map<String, Object> pmaSessions = new HashMap<String, Object>();
@@ -385,6 +385,38 @@ public class Core {
 			return null;
 		}
 		return domParser(contents).getChildNodes().item(0).getChildNodes().item(0).getNodeValue().toString();
+	}
+
+	/**
+	 * This method is used to get version info from PMA.control instance running at
+	 * pmacontrolURL
+	 * 
+	 * @param pmaControlURL
+	 *            PMA Control's URL
+	 * @return JSONObject containing the version info
+	 */
+	public JSONObject getVersionInfoPmaControl(String pmaControlURL) {
+		// Get version info from PMA.control instance running at pmacontrolURL
+		// why? because GetVersionInfo can be invoked WITHOUT a valid SessionID;
+		// _pma_api_url() takes session information into account
+		String url = join(pmaControlURL, "api/version");
+		try {
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("GET");
+			con.setRequestProperty("Accept", "application/json");
+			String jsonString = getJSONAsStringBuffer(con).toString();
+			JSONObject jsonResponse = getJSONResponse(jsonString);
+			return jsonResponse;
+		} catch (Exception e) {
+			System.out.print(e.getMessage());
+			return null;
+		}
 	}
 
 	/**
@@ -1233,9 +1265,9 @@ public class Core {
 	/**
 	 * 
 	 * @param slideRef
-	 * 			 slide's path
+	 *            slide's path
 	 * @param sessionID
-	 * 			 it's an optional argument (String), default value set to "null"
+	 *            it's an optional argument (String), default value set to "null"
 	 * @return int number of Z-Stack layers for a slide
 	 */
 	public int getNumberOfZStackLayers(String slideRef, String... varargs) {
@@ -1243,7 +1275,7 @@ public class Core {
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		return getNumberOfLayers(slideRef, sessionID);
 	}
-	
+
 	/**
 	 * This method is used to determine whether a slide is a fluorescent image or
 	 * not
@@ -1571,10 +1603,11 @@ public class Core {
 		if (url == null) {
 			throw new Exception("Unable to determine the PMA.core instance belonging to " + sessionID);
 		}
-		url = "tile" + "?SessionID=" + pmaQ(sessionID) + "&channels=" + pmaQ("0") + "&layer=" + zStack.toString() + "&timeframe=" + pmaQ("0")
-				+ "&layer=" + pmaQ("0") + "&pathOrUid=" + pmaQ(slideRef) + "&x=" + x.toString() + "&y="
-				+ y.toString() + "&z=" + zoomLevel.toString() + "&format=" + pmaQ(format) + "&quality="
-				+ pmaQ(quality.toString()) + "&cache=" + pmaUseCacheWhenRetrievingTiles.toString().toLowerCase();
+		url = "tile" + "?SessionID=" + pmaQ(sessionID) + "&channels=" + pmaQ("0") + "&layer=" + zStack.toString()
+				+ "&timeframe=" + pmaQ("0") + "&layer=" + pmaQ("0") + "&pathOrUid=" + pmaQ(slideRef) + "&x="
+				+ x.toString() + "&y=" + y.toString() + "&z=" + zoomLevel.toString() + "&format=" + pmaQ(format)
+				+ "&quality=" + pmaQ(quality.toString()) + "&cache="
+				+ pmaUseCacheWhenRetrievingTiles.toString().toLowerCase();
 		try {
 			URL urlResource = new URL(url);
 			URLConnection con = urlResource.openConnection();
