@@ -43,7 +43,7 @@ import org.xml.sax.InputSource;
  * whole slide imaging and microscopy
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.7
+ * @version 2.0.0.8
  */
 public class Core {
 	private Map<String, Object> pmaSessions = new HashMap<String, Object>();
@@ -93,6 +93,9 @@ public class Core {
 			if (pmaIsLite()) {
 				if (!pmaSlideInfos.containsKey(pmaCoreLiteSessionID)) {
 					pmaSlideInfos.put(pmaCoreLiteSessionID, new HashMap<String, Object>());
+				}
+				if (!pmaAmountOfDataDownloaded.containsKey(pmaCoreLiteSessionID)) {
+					pmaAmountOfDataDownloaded.put(pmaCoreLiteSessionID, 0);
 				}
 				return pmaCoreLiteSessionID;
 			} else {
