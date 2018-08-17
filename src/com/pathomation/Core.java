@@ -43,7 +43,7 @@ import org.xml.sax.InputSource;
  * whole slide imaging and microscopy
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.10
+ * @version 2.0.0.11
  */
 public class Core {
 	private Map<String, Object> pmaSessions = new HashMap<String, Object>();
@@ -57,6 +57,7 @@ public class Core {
 		}
 	};
 
+	
 	/**
 	 * This method is used to get the session's ID
 	 * 
@@ -343,6 +344,114 @@ public class Core {
 			}
 		}
 	}
+	
+	/**
+	 * This method is used to get the list of sessions
+	 * @param pmaControlURL URL for PMA.Control
+	 * @param pmaCoreSessionID PMA.core session ID
+	 * @return JSONArray containing the list of sessions
+	 */
+	public JSONArray getSessions(String pmaControlURL, String pmaCoreSessionID) {
+		String url = join(pmaControlURL, "api/Sessions?sessionID=" + pmaQ(pmaCoreSessionID));
+		System.out.println(url);
+		try {
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("GET");
+			con.setRequestProperty("Accept", "application/json");
+			String jsonString = getJSONAsStringBuffer(con).toString();
+			JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+			return jsonResponse;
+		} catch (Exception e) {
+			System.out.print(e.getMessage());
+			return null;
+		}
+	}
+	
+	/**
+	 * 
+	 * This method is used to get the list of sessions' IDs
+	 * @param pmaControlURL URL for PMA.Control
+	 * @param pmaCoreSessionID PMA.core session ID
+	 * @return Map<String, Map<String, String>> containing the sessions' IDs
+	 */
+	public Map<String, Map<String, String>> getSessionIds(String pmaControlURL,String pmaCoreSessionID) {
+		JSONArray fullSessions = getSessions(pmaControlURL, pmaCoreSessionID);
+		Map<String, Map<String, String>> newSession = new HashMap<>();
+		for (int i = 0; i < fullSessions.length(); i++) {
+			Map<String, String> sessData = new HashMap<String, String>();
+			sessData.put("LogoPath", fullSessions.getJSONObject(i).getString("LogoPath"));
+			sessData.put("StartsOn", fullSessions.getJSONObject(i).getString("StartsOn"));
+			sessData.put("EndsOn", fullSessions.getJSONObject(i).getString("EndsOn"));
+			sessData.put("ModuleId", fullSessions.getJSONObject(i).getString("ModuleId"));
+			sessData.put("State", fullSessions.getJSONObject(i).getString("State"));
+			newSession.put(fullSessions.getJSONObject(i).getString("Id"), sessData);
+		}
+		return newSession;
+	}
+	
+	/**
+	 * This method is used to get case collections
+	 * @param pmaControlURL URL for PMA.Control
+	 * @param pmaCoreSessionID PMA.core session ID
+	 * @return JSONArray containing the list of case sessions
+	 */
+	public JSONArray getCaseCollections(String pmaControlURL, String pmaCoreSessionID) {
+		String url = join(pmaControlURL, "api/CaseCollections?sessionID=" + pmaQ(pmaCoreSessionID));
+		System.out.println(url);
+		try {
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("GET");
+			con.setRequestProperty("Accept", "application/json");
+			String jsonString = getJSONAsStringBuffer(con).toString();
+			JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+			return jsonResponse;
+		} catch (Exception e) {
+			System.out.print(e.getMessage());
+			return null;
+		}
+	}
+	
+	
+	/**
+	 * This method is used to get the list of projects
+	 * @param pmaControlURL URL for PMA.Control
+	 * @param pmaCoreSessionID PMA.core session ID
+	 * @return JSONArray containing the list of projects
+	 */
+	public JSONArray getProjects(String pmaControlURL, String pmaCoreSessionID) {
+		String url = join(pmaControlURL, "api/Projects?sessionID=" + pmaQ(pmaCoreSessionID));
+		System.out.println(url);
+		try {
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("GET");
+			con.setRequestProperty("Accept", "application/json");
+			String jsonString = getJSONAsStringBuffer(con).toString();
+			JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+			return jsonResponse;
+		} catch (Exception e) {
+			System.out.print(e.getMessage());
+			return null;
+		}
+	}
+	
 
 	/**
 	 * This method is used to check if there is a PMA.core.lite or PMA.core instance
@@ -747,6 +856,43 @@ public class Core {
 		return xmlToStringArray(dom).get(0);
 	}
 
+//	public void getFingerPrint(String slideRef, Object... varargs) {
+//		//Get the fingerprint for a specific slide
+//		Boolean strict = false;
+//		String sessionID = null;
+//		if (varargs.length > 0) {
+//			if (!(varargs[0] instanceof Boolean) && varargs[0] != null) {
+//				throw new IllegalArgumentException("...");
+//			}
+//			strict = (Boolean) varargs[0];
+//		}
+//		if (varargs.length > 1) {
+//			if (!(varargs[1] instanceof String) && varargs[1] != null) {
+//				throw new IllegalArgumentException("...");
+//			}
+//			sessionID = (String) varargs[1];
+//		}
+//		sessionID = sessionId(sessionID);
+//		try {
+//		String url = apiUrl(sessionID, false) + "GetFingerprint?sessionID=" + pmaQ(sessionID) + "&strict=" + pmaQ(strict.toString()) + "&pathOrUid=" + pmaQ(slideRef); 
+//			URL urlResource = new URL(url);
+//			HttpURLConnection con;
+//			if (url.startsWith("https")) {
+//				con = (HttpsURLConnection) urlResource.openConnection();
+//			} else {
+//				con = (HttpURLConnection) urlResource.openConnection();
+//			}
+//			con.setRequestMethod("GET");
+//			String jsonString = getJSONAsStringBuffer(con).toString();
+//		}
+//			
+//			
+//		 catch (Exception e) {
+//			System.out.print(e.getMessage());
+//			
+//		}	
+//	}
+	
 	/**
 	 * This method is under construction
 	 * 
