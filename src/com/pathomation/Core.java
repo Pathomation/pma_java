@@ -43,7 +43,7 @@ import org.xml.sax.InputSource;
  * whole slide imaging and microscopy
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.5
+ * @version 2.0.0.7
  */
 public class Core {
 	private Map<String, Object> pmaSessions = new HashMap<String, Object>();
@@ -1489,6 +1489,7 @@ public class Core {
 		Integer x = 0;
 		Integer y = 0;
 		Integer zoomLevel = null;
+		Integer zStack = 0;
 		String sessionID = null;
 		String format = "jpg";
 		Integer quality = 100;
@@ -1511,22 +1512,28 @@ public class Core {
 			zoomLevel = (Integer) varargs[2];
 		}
 		if (varargs.length > 3) {
-			if (!(varargs[3] instanceof String) && varargs[3] != null) {
+			if (!(varargs[3] instanceof Integer) && varargs[3] != null) {
 				throw new IllegalArgumentException("...");
 			}
-			sessionID = (String) varargs[3];
+			zStack = (Integer) varargs[3];
 		}
 		if (varargs.length > 4) {
 			if (!(varargs[4] instanceof String) && varargs[4] != null) {
 				throw new IllegalArgumentException("...");
 			}
-			format = (String) varargs[4];
+			sessionID = (String) varargs[4];
 		}
 		if (varargs.length > 5) {
-			if (!(varargs[5] instanceof Integer) && varargs[5] != null) {
+			if (!(varargs[5] instanceof String) && varargs[5] != null) {
 				throw new IllegalArgumentException("...");
 			}
-			quality = (Integer) varargs[5];
+			format = (String) varargs[5];
+		}
+		if (varargs.length > 6) {
+			if (!(varargs[6] instanceof Integer) && varargs[6] != null) {
+				throw new IllegalArgumentException("...");
+			}
+			quality = (Integer) varargs[6];
 		}
 		// Get a single tile at position (x, y)
 		// Format can be 'jpg' or 'png'
@@ -1542,7 +1549,7 @@ public class Core {
 		if (url == null) {
 			throw new Exception("Unable to determine the PMA.core instance belonging to " + sessionID);
 		}
-		url = "tile" + "?SessionID=" + pmaQ(sessionID) + "&channels=" + pmaQ("0") + "&timeframe=" + pmaQ("0")
+		url = "tile" + "?SessionID=" + pmaQ(sessionID) + "&channels=" + pmaQ("0") + "&layer=" + pmaQ(zStack.toString()) + "&timeframe=" + pmaQ("0")
 				+ "&layer=" + pmaQ("0") + "&pathOrUid=" + pmaQ(slideRef) + "&x=" + pmaQ(x.toString()) + "&y="
 				+ pmaQ(y.toString()) + "&z=" + pmaQ(zoomLevel.toString()) + "&format=" + pmaQ(format) + "&quality="
 				+ pmaQ(quality.toString()) + "&cache=" + pmaUseCacheWhenRetrievingTiles.toString().toLowerCase();
@@ -1591,6 +1598,7 @@ public class Core {
 		Integer toX = null;
 		Integer toY = null;
 		Integer zoomLevel = null;
+		Integer zStack = 0;
 		String sessionID = null;
 		String format = "jpg";
 		Integer quality = 100;
@@ -1625,22 +1633,28 @@ public class Core {
 			zoomLevel = (Integer) varargs[4];
 		}
 		if (varargs.length > 5) {
-			if (!(varargs[5] instanceof String) && varargs[5] != null) {
+			if (!(varargs[5] instanceof Integer) && varargs[5] != null) {
 				throw new IllegalArgumentException("...");
 			}
-			sessionID = (String) varargs[5];
+			zStack = (Integer) varargs[5];
 		}
 		if (varargs.length > 6) {
 			if (!(varargs[6] instanceof String) && varargs[6] != null) {
 				throw new IllegalArgumentException("...");
 			}
-			format = (String) varargs[6];
+			sessionID = (String) varargs[6];
 		}
 		if (varargs.length > 7) {
-			if (!(varargs[7] instanceof Integer) && varargs[7] != null) {
+			if (!(varargs[7] instanceof String) && varargs[7] != null) {
 				throw new IllegalArgumentException("...");
 			}
-			quality = (Integer) varargs[7];
+			format = (String) varargs[7];
+		}
+		if (varargs.length > 8) {
+			if (!(varargs[8] instanceof Integer) && varargs[8] != null) {
+				throw new IllegalArgumentException("...");
+			}
+			quality = (Integer) varargs[8];
 		}
 		// Get all tiles with a (fromX, fromY, toX, toY) rectangle. Navigate left to
 		// right, top to bottom
@@ -1665,6 +1679,7 @@ public class Core {
 		final int varFromY = fromY;
 		final int varToY = toY;
 		final int varZoomLevel = zoomLevel;
+		final int varZStack = zStack;
 		final String varSessionID = sessionID;
 		final String varFormat = format;
 		final Integer varQualty = quality;
@@ -1685,7 +1700,7 @@ public class Core {
 					}
 				}
 				try {
-					return getTile(slideRef, x, y, varZoomLevel, varSessionID, varFormat, varQualty);
+					return getTile(slideRef, x, y, varZoomLevel, varZStack, varSessionID, varFormat, varQualty);
 				} catch (Exception e) {
 					System.out.print(e.getMessage());
 					return null;
