@@ -43,21 +43,20 @@ import org.xml.sax.InputSource;
  * whole slide imaging and microscopy
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.11
+ * @version 2.0.0.12
  */
 public class Core {
-	private Map<String, Object> pmaSessions = new HashMap<String, Object>();
-	private Map<String, Object> pmaSlideInfos = new HashMap<String, Object>();
-	private String pmaCoreLiteURL = "http://localhost:54001/";
-	private String pmaCoreLiteSessionID = "SDK.Java";
-	private Boolean pmaUseCacheWhenRetrievingTiles = true;
-	private Map<String, Integer> pmaAmountOfDataDownloaded = new HashMap<String, Integer>() {
+	private static Map<String, Object> pmaSessions = new HashMap<String, Object>();
+	private static Map<String, Object> pmaSlideInfos = new HashMap<String, Object>();
+	private static String pmaCoreLiteURL = "http://localhost:54001/";
+	private static String pmaCoreLiteSessionID = "SDK.Java";
+	private static Boolean pmaUseCacheWhenRetrievingTiles = true;
+	private static Map<String, Integer> pmaAmountOfDataDownloaded = new HashMap<String, Integer>() {
 		{
 			put(pmaCoreLiteSessionID, 0);
 		}
 	};
 
-	
 	/**
 	 * This method is used to get the session's ID
 	 * 
@@ -65,7 +64,8 @@ public class Core {
 	 *            it's an optional argument (String), default value set to "null"
 	 * @return String returns the actual session's ID
 	 */
-	private String sessionId(String... varargs) {
+	private static String sessionId(String... varargs) {
+		// setting the default value when argument's value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		if (sessionID == null) {
 			// if the sessionID isn't specified, maybe we can still recover it somehow
@@ -82,7 +82,7 @@ public class Core {
 	 * 
 	 * @return String returns PMA.core active session
 	 */
-	private String firstSessionId() {
+	private static String firstSessionId() {
 		// do we have any stored sessions from earlier login events?
 		if (pmaSessions.size() > 0) {
 			// yes we do! This means that when there's a PMA.core active session AND
@@ -114,7 +114,7 @@ public class Core {
 	 * @return String url related to the session's ID
 	 * @throws Exception
 	 */
-	private String pmaUrl(String... varargs) throws Exception {
+	private static String pmaUrl(String... varargs) throws Exception {
 		// setting the default value when argument's value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		sessionID = sessionId(sessionID);
@@ -145,7 +145,7 @@ public class Core {
 	 *            to get HTML code from
 	 * @return String HTML code generated from the url argument
 	 */
-	public String urlReader(String url) {
+	public static String urlReader(String url) {
 		try {
 			URL urlResource = new URL(url);
 			URLConnection con = urlResource.openConnection();
@@ -165,7 +165,7 @@ public class Core {
 	 *            XML content to parse
 	 * @return Document parsed XML
 	 */
-	public Document domParser(String s) {
+	public static Document domParser(String s) {
 		try {
 			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder documentBuilder = factory.newDocumentBuilder();
@@ -186,19 +186,19 @@ public class Core {
 	 *            "pmaCoreLiteURL"
 	 * @return Boolean true if an instance of PMA.core is running, false otherwise
 	 */
-	private Boolean pmaIsLite(String... varargs) {
+	private static Boolean pmaIsLite(String... varargs) {
 		// setting the default value when argument's value is omitted
 		String pmaCoreURL = varargs.length > 0 ? varargs[0] : pmaCoreLiteURL;
 		String url = join(pmaCoreURL, "api/xml/IsLite");
 		String contents = "";
 		try {
 			contents = urlReader(url);
+			return domParser(contents).getChildNodes().item(0).getChildNodes().item(0).getNodeValue().toLowerCase()
+					.toString().equals("true");
 		} catch (Exception e) {
 			// this happens when NO instance of PMA.core is detected
 			return null;
 		}
-		return domParser(contents).getChildNodes().item(0).getChildNodes().item(0).getNodeValue().toLowerCase()
-				.toString().equals("true");
 	}
 
 	/**
@@ -211,7 +211,7 @@ public class Core {
 	 * @return String add sequence to the url to specify which content to be
 	 *         received (XML or Json)
 	 */
-	private String apiUrl(Object... varargs) {
+	private static String apiUrl(Object... varargs) {
 		// setting the default values when arguments' values are omitted
 		String sessionID = null;
 		Boolean xml = true;
@@ -256,7 +256,7 @@ public class Core {
 	 * @return String concatenation of a couple of String while making sure the
 	 *         first string always ends with "/"
 	 */
-	private String join(String... s) {
+	private static String join(String... s) {
 		String joinString = "";
 		for (String ss : s) {
 			if (!joinString.endsWith("/") && (!joinString.equals(""))) {
@@ -280,7 +280,7 @@ public class Core {
 	 * @return List{@literal <}String{@literal >} a list of the values of "String"
 	 *         tags of a XML document
 	 */
-	private List<String> xmlToStringArray(Document root, Integer... varargs) {
+	private static List<String> xmlToStringArray(Document root, Integer... varargs) {
 		// setting the default value when argument's value is omitted
 		int limit = varargs.length > 0 ? varargs[0] : 0;
 		NodeList eLs = root.getElementsByTagName("string");
@@ -308,7 +308,7 @@ public class Core {
 	 * @return List{@literal <}String{@literal >} a list of the values of "String"
 	 *         tags of a XML document
 	 */
-	private List<String> xmlToStringArray(Element root, Integer... varargs) {
+	private static List<String> xmlToStringArray(Element root, Integer... varargs) {
 		// setting the default value when argument's value is omitted
 		int limit = varargs.length > 0 ? varargs[0] : 0;
 		NodeList eLs = root.getElementsByTagName("string");
@@ -332,7 +332,7 @@ public class Core {
 	 *            string to be encoded
 	 * @return String encoded String to be compatible as a url
 	 */
-	private String pmaQ(String arg) {
+	private static String pmaQ(String arg) {
 		if (arg == null) {
 			return "";
 		} else {
@@ -344,14 +344,17 @@ public class Core {
 			}
 		}
 	}
-	
+
 	/**
 	 * This method is used to get the list of sessions
-	 * @param pmaControlURL URL for PMA.Control
-	 * @param pmaCoreSessionID PMA.core session ID
+	 * 
+	 * @param pmaControlURL
+	 *            URL for PMA.Control
+	 * @param pmaCoreSessionID
+	 *            PMA.core session ID
 	 * @return JSONArray containing the list of sessions
 	 */
-	public JSONArray getSessions(String pmaControlURL, String pmaCoreSessionID) {
+	public static JSONArray getSessions(String pmaControlURL, String pmaCoreSessionID) {
 		String url = join(pmaControlURL, "api/Sessions?sessionID=" + pmaQ(pmaCoreSessionID));
 		System.out.println(url);
 		try {
@@ -372,15 +375,18 @@ public class Core {
 			return null;
 		}
 	}
-	
+
 	/**
 	 * 
 	 * This method is used to get the list of sessions' IDs
-	 * @param pmaControlURL URL for PMA.Control
-	 * @param pmaCoreSessionID PMA.core session ID
+	 * 
+	 * @param pmaControlURL
+	 *            URL for PMA.Control
+	 * @param pmaCoreSessionID
+	 *            PMA.core session ID
 	 * @return Map<String, Map<String, String>> containing the sessions' IDs
 	 */
-	public Map<String, Map<String, String>> getSessionIds(String pmaControlURL,String pmaCoreSessionID) {
+	public static Map<String, Map<String, String>> getSessionIds(String pmaControlURL, String pmaCoreSessionID) {
 		JSONArray fullSessions = getSessions(pmaControlURL, pmaCoreSessionID);
 		Map<String, Map<String, String>> newSession = new HashMap<>();
 		for (int i = 0; i < fullSessions.length(); i++) {
@@ -394,14 +400,17 @@ public class Core {
 		}
 		return newSession;
 	}
-	
+
 	/**
 	 * This method is used to get case collections
-	 * @param pmaControlURL URL for PMA.Control
-	 * @param pmaCoreSessionID PMA.core session ID
+	 * 
+	 * @param pmaControlURL
+	 *            URL for PMA.Control
+	 * @param pmaCoreSessionID
+	 *            PMA.core session ID
 	 * @return JSONArray containing the list of case sessions
 	 */
-	public JSONArray getCaseCollections(String pmaControlURL, String pmaCoreSessionID) {
+	public static JSONArray getCaseCollections(String pmaControlURL, String pmaCoreSessionID) {
 		String url = join(pmaControlURL, "api/CaseCollections?sessionID=" + pmaQ(pmaCoreSessionID));
 		System.out.println(url);
 		try {
@@ -422,15 +431,17 @@ public class Core {
 			return null;
 		}
 	}
-	
-	
+
 	/**
 	 * This method is used to get the list of projects
-	 * @param pmaControlURL URL for PMA.Control
-	 * @param pmaCoreSessionID PMA.core session ID
+	 * 
+	 * @param pmaControlURL
+	 *            URL for PMA.Control
+	 * @param pmaCoreSessionID
+	 *            PMA.core session ID
 	 * @return JSONArray containing the list of projects
 	 */
-	public JSONArray getProjects(String pmaControlURL, String pmaCoreSessionID) {
+	public static JSONArray getProjects(String pmaControlURL, String pmaCoreSessionID) {
 		String url = join(pmaControlURL, "api/Projects?sessionID=" + pmaQ(pmaCoreSessionID));
 		System.out.println(url);
 		try {
@@ -451,7 +462,6 @@ public class Core {
 			return null;
 		}
 	}
-	
 
 	/**
 	 * This method is used to check if there is a PMA.core.lite or PMA.core instance
@@ -463,7 +473,7 @@ public class Core {
 	 * @return Boolean checking if there is a PMA.core.lite or PMA.core instance
 	 *         running
 	 */
-	public Boolean isLite(String... varargs) {
+	public static Boolean isLite(String... varargs) {
 		// setting the default value when argument's value is omitted
 		String pmaCoreURL = varargs.length > 0 ? varargs[0] : pmaCoreLiteURL;
 		// See if there's a PMA.core.lite or PMA.core instance running at pmacoreURL
@@ -478,7 +488,7 @@ public class Core {
 	 *            "pmaCoreLiteURL"
 	 * @return String version number
 	 */
-	public String getVersionInfo(String... varargs) {
+	public static String getVersionInfo(String... varargs) {
 		// setting the default value when argument's value is omitted
 		String pmaCoreURL = varargs.length > 0 ? varargs[0] : pmaCoreLiteURL;
 		// Get version info from PMA.core instance running at pmacoreURL
@@ -504,7 +514,7 @@ public class Core {
 	 *            PMA Control's URL
 	 * @return JSONObject containing the version info
 	 */
-	public JSONObject getVersionInfoPmaControl(String pmaControlURL) {
+	public static JSONObject getVersionInfoPmaControl(String pmaControlURL) {
 		// Get version info from PMA.control instance running at pmacontrolURL
 		// why? because GetVersionInfo can be invoked WITHOUT a valid SessionID;
 		// _pma_api_url() takes session information into account
@@ -541,7 +551,7 @@ public class Core {
 	 *            it's an optional argument (String), default value set to ""
 	 * @return String sessionID of the successfully created session
 	 */
-	public String connect(String... varargs) {
+	public static String connect(String... varargs) {
 		// setting the default values when arguments' values are omitted
 		String pmaCoreURL = varargs.length > 0 ? varargs[0] : pmaCoreLiteURL;
 		String pmaCoreUsername = varargs.length > 1 ? varargs[1] : "";
@@ -575,18 +585,23 @@ public class Core {
 			System.out.print(e.getMessage());
 			return null;
 		}
-		Element loginResult = (Element) dom.getChildNodes().item(0);
-		Node succ = loginResult.getElementsByTagName("Success").item(0);
-		String sessionID;
-		if (succ.getFirstChild().getNodeValue().toLowerCase().equals("false")) {
-			sessionID = null;
-		} else {
-			sessionID = loginResult.getElementsByTagName("SessionId").item(0).getFirstChild().getNodeValue().toString();
-			pmaSessions.put(sessionID, pmaCoreURL);
-			pmaSlideInfos.put(sessionID, new HashMap<String, Object>());
-			pmaAmountOfDataDownloaded.put(sessionID, contents.length());
+		try {
+			Element loginResult = (Element) dom.getChildNodes().item(0);
+			Node succ = loginResult.getElementsByTagName("Success").item(0);
+			String sessionID;
+			if (succ.getFirstChild().getNodeValue().toLowerCase().equals("false")) {
+				sessionID = null;
+			} else {
+				sessionID = loginResult.getElementsByTagName("SessionId").item(0).getFirstChild().getNodeValue()
+						.toString();
+				pmaSessions.put(sessionID, pmaCoreURL);
+				pmaSlideInfos.put(sessionID, new HashMap<String, Object>());
+				pmaAmountOfDataDownloaded.put(sessionID, contents.length());
+			}
+			return sessionID;
+		} catch (Exception e) {
+			return null;
 		}
-		return sessionID;
 	}
 
 	/**
@@ -597,7 +612,7 @@ public class Core {
 	 * @return true if there was a PMA.core instance running to disconnect from,
 	 *         false otherwise
 	 */
-	public Boolean disconnect(String... varargs) {
+	public static Boolean disconnect(String... varargs) {
 		// setting the default value when argument's value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Disconnect from a PMA.core instance; return True if session exists; return
@@ -626,7 +641,7 @@ public class Core {
 	 * @return List{@literal <}String{@literal >} Array of root-directories
 	 *         available to sessionID
 	 */
-	public List<String> getRootDirectories(String... varargs) {
+	public static List<String> getRootDirectories(String... varargs) {
 		// setting the default value when argument's value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Return a list of root-directories available to sessionID
@@ -649,7 +664,7 @@ public class Core {
 	 * @return List{@literal <}String{@literal >} sub-directories available to
 	 *         sessionID in the start directory
 	 */
-	public List<String> getDirectories(String startDir, String... varargs) {
+	public static List<String> getDirectories(String startDir, String... varargs) {
 		// setting the default value when argument's value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Return a list of sub-directories available to sessionID in the startDir
@@ -716,7 +731,7 @@ public class Core {
 	 *            it's an optional argument (String), default value set to "null"
 	 * @return String Path to the first non empty directory
 	 */
-	public String getFirstNonEmptyDirectory(String... varargs) {
+	public static String getFirstNonEmptyDirectory(String... varargs) {
 		// setting the default values when arguments' values are omitted
 		String startDir = varargs.length > 0 ? varargs[0] : null;
 		String sessionID = varargs.length > 1 ? varargs[1] : null;
@@ -757,7 +772,7 @@ public class Core {
 	 * @return List{@literal <}String{@literal >} list of slides available to
 	 *         sessionID in the start directory
 	 */
-	public List<String> getSlides(String startDir, String... varargs) {
+	public static List<String> getSlides(String startDir, String... varargs) {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Return a list of slides available to sessionID in the startDir directory
@@ -817,7 +832,7 @@ public class Core {
 	 *            slide's path
 	 * @return String file extension for a slide's path
 	 */
-	public String getSlideFileExtension(String slideRef) {
+	public static String getSlideFileExtension(String slideRef) {
 		// Determine the file extension for this slide
 		return FilenameUtils.getExtension(slideRef);
 	}
@@ -830,7 +845,7 @@ public class Core {
 	 *            slide's path
 	 * @return String file name for a slide's path
 	 */
-	public String getSlideFileName(String slideRef) {
+	public static String getSlideFileName(String slideRef) {
 		// Determine the file name (with extension) for this slide
 		return FilenameUtils.getName(slideRef);
 	}
@@ -844,7 +859,7 @@ public class Core {
 	 *            it's an optional argument (String), default value set to "null"
 	 * @return String UID for a specific slide's path
 	 */
-	public String getUid(String slideRef, String... varargs) {
+	public static String getUid(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Get the UID for a specific slide
@@ -856,49 +871,51 @@ public class Core {
 		return xmlToStringArray(dom).get(0);
 	}
 
-//	public void getFingerPrint(String slideRef, Object... varargs) {
-//		//Get the fingerprint for a specific slide
-//		Boolean strict = false;
-//		String sessionID = null;
-//		if (varargs.length > 0) {
-//			if (!(varargs[0] instanceof Boolean) && varargs[0] != null) {
-//				throw new IllegalArgumentException("...");
-//			}
-//			strict = (Boolean) varargs[0];
-//		}
-//		if (varargs.length > 1) {
-//			if (!(varargs[1] instanceof String) && varargs[1] != null) {
-//				throw new IllegalArgumentException("...");
-//			}
-//			sessionID = (String) varargs[1];
-//		}
-//		sessionID = sessionId(sessionID);
-//		try {
-//		String url = apiUrl(sessionID, false) + "GetFingerprint?sessionID=" + pmaQ(sessionID) + "&strict=" + pmaQ(strict.toString()) + "&pathOrUid=" + pmaQ(slideRef); 
-//			URL urlResource = new URL(url);
-//			HttpURLConnection con;
-//			if (url.startsWith("https")) {
-//				con = (HttpsURLConnection) urlResource.openConnection();
-//			} else {
-//				con = (HttpURLConnection) urlResource.openConnection();
-//			}
-//			con.setRequestMethod("GET");
-//			String jsonString = getJSONAsStringBuffer(con).toString();
-//		}
-//			
-//			
-//		 catch (Exception e) {
-//			System.out.print(e.getMessage());
-//			
-//		}	
-//	}
-	
+	// public void getFingerPrint(String slideRef, Object... varargs) {
+	// //Get the fingerprint for a specific slide
+	// Boolean strict = false;
+	// String sessionID = null;
+	// if (varargs.length > 0) {
+	// if (!(varargs[0] instanceof Boolean) && varargs[0] != null) {
+	// throw new IllegalArgumentException("...");
+	// }
+	// strict = (Boolean) varargs[0];
+	// }
+	// if (varargs.length > 1) {
+	// if (!(varargs[1] instanceof String) && varargs[1] != null) {
+	// throw new IllegalArgumentException("...");
+	// }
+	// sessionID = (String) varargs[1];
+	// }
+	// sessionID = sessionId(sessionID);
+	// try {
+	// String url = apiUrl(sessionID, false) + "GetFingerprint?sessionID=" +
+	// pmaQ(sessionID) + "&strict=" + pmaQ(strict.toString()) + "&pathOrUid=" +
+	// pmaQ(slideRef);
+	// URL urlResource = new URL(url);
+	// HttpURLConnection con;
+	// if (url.startsWith("https")) {
+	// con = (HttpsURLConnection) urlResource.openConnection();
+	// } else {
+	// con = (HttpURLConnection) urlResource.openConnection();
+	// }
+	// con.setRequestMethod("GET");
+	// String jsonString = getJSONAsStringBuffer(con).toString();
+	// }
+	//
+	//
+	// catch (Exception e) {
+	// System.out.print(e.getMessage());
+	//
+	// }
+	// }
+
 	/**
 	 * This method is under construction
 	 * 
 	 * @return String information about session (Under construction)
 	 */
-	public String whoAmI() {
+	public static String whoAmI() {
 		// Getting information about your Session (under construction)
 		System.out.println("Under construction");
 		return "Under construction";
@@ -910,7 +927,7 @@ public class Core {
 	 * @return Map{@literal <}String, Object{@literal >} value of class member
 	 *         "pmaSessions"
 	 */
-	public Map<String, Object> sessions() {
+	public static Map<String, Object> sessions() {
 		return pmaSessions;
 	}
 
@@ -923,7 +940,7 @@ public class Core {
 	 *         tile size information for sessionID
 	 */
 	@SuppressWarnings("unchecked")
-	public List<Integer> getTileSize(String... varargs) {
+	public static List<Integer> getTileSize(String... varargs) {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		sessionID = sessionId(sessionID);
@@ -950,7 +967,7 @@ public class Core {
 	 *            url to retrieve JSON from
 	 * @return StringBuffer Json result
 	 */
-	public StringBuffer getJSONAsStringBuffer(HttpURLConnection con) {
+	public static StringBuffer getJSONAsStringBuffer(HttpURLConnection con) {
 		try {
 			BufferedReader in;
 			if (Integer.toString(con.getResponseCode()).startsWith("2")) {
@@ -977,7 +994,7 @@ public class Core {
 	 *            json returned as String
 	 * @return Boolean true if it's a JSONObject, false if it's an Array
 	 */
-	public Boolean isJSONObject(String value) {
+	public static Boolean isJSONObject(String value) {
 		if (value.startsWith("{")) {
 			return true;
 		} else {
@@ -992,7 +1009,7 @@ public class Core {
 	 *            String argument
 	 * @return JSONObject converts String argument to JSONObject
 	 */
-	public JSONObject getJSONResponse(String value) {
+	public static JSONObject getJSONResponse(String value) {
 		JSONObject jsonResponse = new JSONObject(value.toString());
 		return jsonResponse;
 	}
@@ -1004,7 +1021,7 @@ public class Core {
 	 *            String argument
 	 * @return JSONArray converts String argument to JSONArray
 	 */
-	public JSONArray getJSONArrayResponse(String value) {
+	public static JSONArray getJSONArrayResponse(String value) {
 		JSONArray jsonResponse = new JSONArray(value);
 		return jsonResponse;
 	}
@@ -1020,7 +1037,7 @@ public class Core {
 	 *         image
 	 */
 	@SuppressWarnings("unchecked")
-	public Map<String, Object> getSlideInfo(String slideRef, String... varargs) {
+	public static Map<String, Object> getSlideInfo(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Return raw image information in the form of nested maps
@@ -1077,7 +1094,7 @@ public class Core {
 	 *            it's an optional argument (String), default value set to "null"
 	 * @return int max zoom level that still represents an optical magnification
 	 */
-	public int getMaxZoomLevel(String slideRef, String... varargs) {
+	public static int getMaxZoomLevel(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Determine the maximum zoomlevel that still represents an optical
@@ -1120,7 +1137,7 @@ public class Core {
 	 * @return List{@literal <}Integer{@literal >} list with all zoom levels, from 0
 	 *         to max zoom level
 	 */
-	public List<Integer> getZoomLevelsList(String slideRef, Object... varargs) {
+	public static List<Integer> getZoomLevelsList(String slideRef, Object... varargs) {
 		// setting the default values when arguments' values are omitted
 		String sessionID = null;
 		Integer minNumberOfTiles = 0;
@@ -1164,7 +1181,7 @@ public class Core {
 	 *         List{@literal <}Integer{@literal >}{@literal >} map with the number
 	 *         of tiles per zoom level
 	 */
-	public Map<Integer, List<Integer>> getZoomLevelsDict(String slideRef, Object... varargs) {
+	public static Map<Integer, List<Integer>> getZoomLevelsDict(String slideRef, Object... varargs) {
 		// setting the default values when arguments' values are omitted
 		String sessionID = null;
 		Integer minNumberOfTiles = 0;
@@ -1219,7 +1236,7 @@ public class Core {
 	 * @return List{@literal <}Float{@literal >} two items list containing the
 	 *         physical dimension in terms of pixels per micrometer of a slide
 	 */
-	public List<Float> getPixelsPerMicrometer(String slideRef, Object... varargs) {
+	public static List<Float> getPixelsPerMicrometer(String slideRef, Object... varargs) {
 		// setting the default values when arguments' values are omitted
 		Integer zoomLevel = null;
 		String sessionID = null;
@@ -1270,7 +1287,7 @@ public class Core {
 	 * @return List{@literal <}Integer{@literal >} two items list with the total
 	 *         dimensions of a slide image at a given zoom level
 	 */
-	public List<Integer> getPixelDimensions(String slideRef, Object... varargs) {
+	public static List<Integer> getPixelDimensions(String slideRef, Object... varargs) {
 		// setting the default values when arguments' values are omitted
 		Integer zoomLevel = null;
 		String sessionID = null;
@@ -1315,7 +1332,7 @@ public class Core {
 	 * @return List{@literal <}Integer{@literal >} three items list to determine the
 	 *         number of tiles needed to reconstitute a slide at a given zoom level
 	 */
-	public List<Integer> getNumberOfTiles(String slideRef, Object... varargs) {
+	public static List<Integer> getNumberOfTiles(String slideRef, Object... varargs) {
 		// setting the default values when arguments' values are omitted
 		Integer zoomLevel = null;
 		String sessionID = null;
@@ -1356,7 +1373,7 @@ public class Core {
 	 * @return List{@literal <}Float{@literal >} two items list to determine the
 	 *         physical dimensions of the sample represented by the slide
 	 */
-	public List<Float> getPhysicalDimensions(String slideRef, String... varargs) {
+	public static List<Float> getPhysicalDimensions(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Determine the physical dimensions of the sample represented by the slide.
@@ -1380,7 +1397,7 @@ public class Core {
 	 * @return int number of channels for a slide (1 when slide is brightfield)
 	 */
 	@SuppressWarnings("unchecked")
-	public int getNumberOfChannels(String slideRef, String... varargs) {
+	public static int getNumberOfChannels(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Number of fluorescent channels for a slide (when slide is brightfield, return
@@ -1400,7 +1417,7 @@ public class Core {
 	 * @return int number of layers for a slide
 	 */
 	@SuppressWarnings("unchecked")
-	public int getNumberOfLayers(String slideRef, String... varargs) {
+	public static int getNumberOfLayers(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Number of (z-stacked) layers for a slide
@@ -1416,7 +1433,7 @@ public class Core {
 	 *            it's an optional argument (String), default value set to "null"
 	 * @return int number of Z-Stack layers for a slide
 	 */
-	public int getNumberOfZStackLayers(String slideRef, String... varargs) {
+	public static int getNumberOfZStackLayers(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		return getNumberOfLayers(slideRef, sessionID);
@@ -1432,7 +1449,7 @@ public class Core {
 	 *            it's an optional argument (String), default value set to "null"
 	 * @return Boolean true if slide is a fluorescent image, false otherwise
 	 */
-	public Boolean isFluorescent(String slideRef, String... varargs) {
+	public static Boolean isFluorescent(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Determine whether a slide is a fluorescent image or not
@@ -1450,7 +1467,7 @@ public class Core {
 	 * @return Boolean true if slide contains multiple (stacked) layers, false
 	 *         otherwise
 	 */
-	public Boolean isMultiLayer(String slideRef, String... varargs) {
+	public static Boolean isMultiLayer(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Determine whether a slide contains multiple (stacked) layers or not
@@ -1466,7 +1483,7 @@ public class Core {
 	 *            it's an optional argument (String), default value set to "null"
 	 * @return Boolean true if slide is a z-stack, false otherwise
 	 */
-	public Boolean isZStack(String slideRef, String... varargs) {
+	public static Boolean isZStack(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Determine whether a slide is a z-stack or not
@@ -1487,7 +1504,7 @@ public class Core {
 	 *            it's an optional argument (String), default value set to "null"
 	 * @return int magnification represented at a certain zoom level
 	 */
-	public int getMagnification(String slideRef, Object... varargs) {
+	public static int getMagnification(String slideRef, Object... varargs) {
 		// setting the default values when arguments' values are omitted
 		Integer zoomLevel = null;
 		Boolean exact = false;
@@ -1535,7 +1552,7 @@ public class Core {
 	 * @return String URL that points to the barcode (alias for "label") for a slide
 	 * @throws Exception
 	 */
-	public String getBarcodeUrl(String slideRef, String... varargs) throws Exception {
+	public static String getBarcodeUrl(String slideRef, String... varargs) throws Exception {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Get the URL that points to the barcode (alias for "label") for a slide
@@ -1553,7 +1570,7 @@ public class Core {
 	 *            it's an optional argument (String), default value set to "null"
 	 * @return Image barcode (alias for "label") image for a slide
 	 */
-	public Image getBarcodeImage(String slideRef, String... varargs) {
+	public static Image getBarcodeImage(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Get the barcode (alias for "label") image for a slide
@@ -1581,7 +1598,7 @@ public class Core {
 	 * @return String url that points to the label for a slide
 	 * @throws Exception
 	 */
-	public String getLabelUrl(String slideRef, String... varargs) throws Exception {
+	public static String getLabelUrl(String slideRef, String... varargs) throws Exception {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Get the URL that points to the label for a slide
@@ -1597,7 +1614,7 @@ public class Core {
 	 *            it's an optional argument (String), default value set to "null"
 	 * @return Image label Image for a slide
 	 */
-	public Image getLabelImage(String slideRef, String... varargs) {
+	public static Image getLabelImage(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Get the label image for a slide
@@ -1625,7 +1642,7 @@ public class Core {
 	 * @return String URL that points to the thumbnail for a slide
 	 * @throws Exception
 	 */
-	public String getThumbnailUrl(String slideRef, String... varargs) throws Exception {
+	public static String getThumbnailUrl(String slideRef, String... varargs) throws Exception {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Get the URL that points to the thumbnail for a slide
@@ -1643,7 +1660,7 @@ public class Core {
 	 *            it's an optional argument (String), default value set to "null"
 	 * @return Image thumbnail image for a slide
 	 */
-	public Image getThumbnailImage(String slideRef, String... varargs) {
+	public static Image getThumbnailImage(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Get the thumbnail image for a slide
@@ -1684,7 +1701,7 @@ public class Core {
 	 * @return Image single tile at position (x, y)
 	 * @throws Exception
 	 */
-	public Image getTile(String slideRef, Object... varargs) throws Exception {
+	public static Image getTile(String slideRef, Object... varargs) throws Exception {
 		// setting the default values when arguments' values are omitted
 		Integer x = 0;
 		Integer y = 0;
@@ -1794,7 +1811,7 @@ public class Core {
 	 * @return Stream all tiles with a (fromX, fromY, toX, toY) rectangle
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public Stream getTiles(String slideRef, Object... varargs) {
+	public static Stream getTiles(String slideRef, Object... varargs) {
 		// setting the default values when arguments' values are omitted
 		Integer fromX = 0;
 		Integer fromY = 0;
@@ -1922,7 +1939,7 @@ public class Core {
 	 *            it's an optional argument (String), default value set to "null"
 	 * @throws Exception
 	 */
-	public void showSlide(String slideRef, String... varargs) throws Exception {
+	public static void showSlide(String slideRef, String... varargs) throws Exception {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Launch the default web browser and load a web-based viewer for the slide
@@ -1964,7 +1981,7 @@ public class Core {
 	 * @return List{@literal <}String{@literal >} List of all files related to
 	 *         selected slide
 	 */
-	public List<String> enumerateFilesForSlide(String slideRef, String... varargs) {
+	public static List<String> enumerateFilesForSlide(String slideRef, String... varargs) {
 		// setting the default value when argument's value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Obtain all files actually associated with a specific slide
