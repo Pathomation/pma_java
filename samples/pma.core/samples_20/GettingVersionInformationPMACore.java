@@ -9,6 +9,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.pathomation.Core;
+import Configuration.Config;
 
 public class GettingVersionInformationPMACore extends HttpServlet {
 
@@ -18,8 +19,7 @@ public class GettingVersionInformationPMACore extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 			
-		// modify the following three lines for your specific circumstances:
-		String pmaCoreServer = "http://my_server/pma.core";
+		String pmaCoreServer = Config.pmaCoreServer;
 		
 		ServletOutputStream out = response.getOutputStream();
 		out.println("<html>");

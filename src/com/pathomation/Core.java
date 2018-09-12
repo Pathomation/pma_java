@@ -43,7 +43,7 @@ import org.xml.sax.InputSource;
  * whole slide imaging and microscopy
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.13
+ * @version 2.0.0.14
  */
 public class Core {
 	private static Map<String, Object> pmaSessions = new HashMap<String, Object>();

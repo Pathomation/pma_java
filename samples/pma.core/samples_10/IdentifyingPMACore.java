@@ -9,6 +9,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.pathomation.*;
+import Configuration.Config;
 
 public class IdentifyingPMACore extends HttpServlet {
 
@@ -18,8 +19,7 @@ public class IdentifyingPMACore extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 
-		// modify the following line for your specific circumstances:
-		String pmaCoreServer = "http://my_server/pma.core";
+		String pmaCoreServer = Config.pmaCoreServer;
 
 		ServletOutputStream out = response.getOutputStream();
 		out.println("<html>");

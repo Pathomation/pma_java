@@ -11,6 +11,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.pathomation.Core;
 
+import Configuration.Config;
+
 public class GettingDirectoriesPMACore extends HttpServlet {
 
 	private static final long serialVersionUID = 1L;
@@ -19,10 +21,9 @@ public class GettingDirectoriesPMACore extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 
-		// modify the following three lines for your specific circumstances:
-		String pmaCoreServer = "http://my_server/pma.core";
-		String pmaCoreUser = "user";
-		String pmaCorePass = "secret";
+		String pmaCoreServer = Config.pmaCoreServer;
+		String pmaCoreUser = Config.pmaCoreUser;
+		String pmaCorePass = Config.pmaCorePass;
 
 		ServletOutputStream out = response.getOutputStream();
 		String sessionID = Core.connect(pmaCoreServer, pmaCoreUser, pmaCorePass);
