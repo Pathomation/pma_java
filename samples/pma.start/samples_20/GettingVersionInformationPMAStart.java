@@ -1,4 +1,4 @@
-package samples;
+package samples_20;
 
 import java.io.IOException;
 
@@ -10,30 +10,25 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.pathomation.Core;
 
-public class GetUIDSlidePMAStart extends HttpServlet {
+public class GettingVersionInformationPMAStart extends HttpServlet {
 
 	private static final long serialVersionUID = 1L;
 
 	@Override
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
-
+			
 		ServletOutputStream out = response.getOutputStream();
 		out.println("<html>");
-		String sessionID = Core.connect();
-		if (sessionID == null) {
-			out.println("Unable to connect to PMA.start");
+		// test for PMA.core.lite (PMA.start)
+		if (!Core.isLite()) {
+			// don't bother running this script if PMA.start isn't active
+			out.println("PMA.start is not running. Please start PMA.start first");
 		} else {
-			out.println("Successfully connected to PMA.start" + "<br/>");
-			String dir = Core.getFirstNonEmptyDirectory("/", sessionID);
-			out.println("Looking for slides in " + dir + "<br/>");
-			for (String slide : Core.getSlides(dir, sessionID)) {
-				out.println(slide + " - " + Core.getUid(slide, sessionID) + "<br/>");
-			}
-			// not always needed; depends on whether the client (e.g. browser) still needs to SessionID as well
-			Core.disconnect(sessionID);
+			// assuming we have PMA.start running; what's the version number?			
+			out.println("You are running PMA.start version " + Core.getVersionInfo());
 		}
-		out.println("</html>");		
+		out.println("</html>");
 	}
 
 	@Override
@@ -43,5 +38,3 @@ public class GetUIDSlidePMAStart extends HttpServlet {
 	}
 
 }
-
-

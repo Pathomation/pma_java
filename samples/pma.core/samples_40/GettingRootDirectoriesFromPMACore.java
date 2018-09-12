@@ -1,4 +1,4 @@
-package samples;
+package samples_40;
 
 import java.io.IOException;
 
@@ -10,30 +10,33 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.pathomation.Core;
 
-public class GettingVersionInformationPMACore extends HttpServlet {
+public class GettingRootDirectoriesFromPMACore extends HttpServlet {
 
 	private static final long serialVersionUID = 1L;
 
 	@Override
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
-			
+
 		// modify the following three lines for your specific circumstances:
 		String pmaCoreServer = "http://my_server/pma.core";
+		String pmaCoreUser = "user";
+		String pmaCorePass = "secret";
 		
 		ServletOutputStream out = response.getOutputStream();
+		String sessionID = Core.connect(pmaCoreServer, pmaCoreUser, pmaCorePass);
 		out.println("<html>");
-		out.println("You are running PMA.core version " + Core.getVersionInfo(pmaCoreServer) + " at " + pmaCoreServer + "<br/>");
-		
-		// what happens when we run it against a bogus URL?
-		String version = Core.getVersionInfo("http://nowhere/");
-		
-		if (version == null) {
-			out.println("Unable to detect PMA.core at specified location (http://nowhere/)");
+		if (sessionID == null) {
+			out.println("Unable to connect to PMA.core at specified location (" + pmaCoreServer + ")");
 		} else {
-			out.println("You are running PMA.core version " + version);
+			out.println("Successfully connected to " + pmaCoreServer + "<br/>");
+			out.println("You have the following root-directories at your disposal:" + "<br/>");
+			for (String rd : Core.getRootDirectories(sessionID)) {
+				out.println(rd + "<br/>");
+			}
+			Core.disconnect(sessionID);
 		}
-		out.println("</html>");
+		out.println("</html>");			
 	}
 
 	@Override
@@ -43,3 +46,4 @@ public class GettingVersionInformationPMACore extends HttpServlet {
 	}
 
 }
+

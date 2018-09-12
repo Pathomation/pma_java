@@ -1,4 +1,4 @@
-package samples;
+package samples_90;
 
 import java.io.IOException;
 
@@ -10,7 +10,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.pathomation.Core;
 
-public class GettingRootDirectoriesFromPMACore extends HttpServlet {
+public class GetUIDSlidePMACore extends HttpServlet {
 
 	private static final long serialVersionUID = 1L;
 
@@ -27,16 +27,18 @@ public class GettingRootDirectoriesFromPMACore extends HttpServlet {
 		String sessionID = Core.connect(pmaCoreServer, pmaCoreUser, pmaCorePass);
 		out.println("<html>");
 		if (sessionID == null) {
-			out.println("Unable to connect to PMA.core at specified location (" + pmaCoreServer + ")");
+			out.println("Unable to connect to PMA.core at specified location (" + pmaCoreServer + ")" + "<br/>");
 		} else {
-			out.println("Successfully connected to " + pmaCoreServer + "<br/>");
-			out.println("You have the following root-directories at your disposal:" + "<br/>");
-			for (String rd : Core.getRootDirectories(sessionID)) {
-				out.println(rd + "<br/>");
+			out.println("Successfully connected to PMA.core; sessionID = " + sessionID + "<br/>");
+			String dir = Core.getFirstNonEmptyDirectory("/", sessionID);
+			out.println("Looking for slides in " + dir + "<br/>");
+			for (String slide : Core.getSlides(dir, sessionID)) {
+				out.println(slide + " - " + Core.getUid(slide, sessionID) + "<br/>");
 			}
+			// not always needed; depends on whether the client (e.g. browser) still needs to SessionID as well
 			Core.disconnect(sessionID);
 		}
-		out.println("</html>");			
+		out.println("</html>");		
 	}
 
 	@Override
@@ -46,4 +48,5 @@ public class GettingRootDirectoriesFromPMACore extends HttpServlet {
 	}
 
 }
+
 

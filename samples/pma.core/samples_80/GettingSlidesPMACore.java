@@ -1,4 +1,4 @@
-package samples;
+package samples_80;
 
 import java.io.IOException;
 import java.util.List;
@@ -11,7 +11,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.pathomation.Core;
 
-public class GettingSlidesPMAStart extends HttpServlet {
+public class GettingSlidesPMACore extends HttpServlet {
 
 	private static final long serialVersionUID = 1L;
 
@@ -19,13 +19,18 @@ public class GettingSlidesPMAStart extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 
+		// modify the following three lines for your specific circumstances:
+		String pmaCoreServer = "http://my_server/pma.core";
+		String pmaCoreUser = "user";
+		String pmaCorePass = "secret";
+		
 		ServletOutputStream out = response.getOutputStream();
+		String sessionID = Core.connect(pmaCoreServer, pmaCoreUser, pmaCorePass);
 		out.println("<html>");
-		String sessionID = Core.connect();
 		if (sessionID == null) {
-			out.println("Unable to connect to PMA.start");
+			out.println("Unable to connect to PMA.core at specified location (" + pmaCoreServer + ")" + "<br/>");
 		} else {
-			out.println("Successfully connected to PMA.start" + "<br/>");
+			out.println("Successfully connected to PMA.core; sessionID = " + sessionID + "<br/>");
 			// for this demo, we don't know where we can expect to find actual slides
 			// the getFirstNonEmptyDirectory() method wraps around recursive calls to getDirectories() and is useful to "just" find a bunch of slides in "just" any folder
 			String dir = Core.getFirstNonEmptyDirectory("/", sessionID);

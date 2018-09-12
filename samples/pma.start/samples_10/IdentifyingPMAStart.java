@@ -1,4 +1,4 @@
-package samples;
+package samples_10;
 
 import java.io.IOException;
 
@@ -10,7 +10,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.pathomation.*;
 
-public class IdentifyingPMACore extends HttpServlet {
+public class IdentifyingPMAStart extends HttpServlet {
 
 	private static final long serialVersionUID = 1L;
 
@@ -18,17 +18,13 @@ public class IdentifyingPMACore extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 
-		// modify the following line for your specific circumstances:
-		String pmaCoreServer = "http://my_server/pma.core";
-
 		ServletOutputStream out = response.getOutputStream();
 		out.println("<html>");
-		// testing actual "full" PMA.core instance that may or may not be out there
-		out.println("Are you running PMA.start(PMA.core.lite) at " + pmaCoreServer + " ? " + ((Core.isLite(pmaCoreServer) != null && 
-				(Core.isLite(pmaCoreServer) == true))  ? "Yes!" : "no :-(") + "<br />");
+		// test for PMA.core.lite (PMA.start)
+		out.println("Are you running PMA.core.lite? " + (Core.isLite() ? "Yes!" : "no :-(") + "<br />");
 		out.println(
-				"Are you running PMA.start(PMA.core.lite) at http://nowhere ? "
-						+ ((Core.isLite("http://nowhere") != null && (Core.isLite("http://nowhere") == true)) ? "Yes!" : "no :-("));
+				"Seeing 'no' and want to see 'yes'? Make sure PMA.start is running on your system or download it from "
+						+ "<a href = \"http://free.pathomation.com\">http://free.pathomation.com</a>");
 		out.println("</html>");
 
 	}
