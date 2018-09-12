@@ -1,4 +1,4 @@
-package samples;
+package samples_80;
 
 import java.io.IOException;
 import java.util.List;
@@ -11,7 +11,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.pathomation.Core;
 
-public class GettingDirectoriesPMAStart extends HttpServlet {
+public class GettingSlidesPMAStart extends HttpServlet {
 
 	private static final long serialVersionUID = 1L;
 
@@ -26,16 +26,19 @@ public class GettingDirectoriesPMAStart extends HttpServlet {
 			out.println("Unable to connect to PMA.start");
 		} else {
 			out.println("Successfully connected to PMA.start" + "<br/>");
-			List<String> rootDirs = Core.getRootDirectories();
-			out.println("Directories found in " + rootDirs.get(0) + ":" + "<br/>");
-			List<String> dirs = Core.getDirectories(rootDirs.get(0), sessionID);
-			for (String d : dirs) {
-				out.println(d + "<br/>");
+			// for this demo, we don't know where we can expect to find actual slides
+			// the getFirstNonEmptyDirectory() method wraps around recursive calls to getDirectories() and is useful to "just" find a bunch of slides in "just" any folder
+			String dir = Core.getFirstNonEmptyDirectory("/", sessionID);
+			out.println("Looking for slides in " + dir + ":" + "<br/>");
+			List<String> slides = Core.getSlides(dir, sessionID);
+			for (String slide : slides) {
+				out.println(slide + "<br/>");
 			}
 			// not always needed; depends on whether the client (e.g. browser) still needs to SessionID as well
 			Core.disconnect(sessionID);
 		}
-		out.println("</html>");			
+		out.println("</html>");		
+		
 	}
 
 	@Override
@@ -45,3 +48,4 @@ public class GettingDirectoriesPMAStart extends HttpServlet {
 	}
 
 }
+

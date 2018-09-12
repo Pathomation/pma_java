@@ -1,4 +1,4 @@
-package samples;
+package samples_90;
 
 import java.io.IOException;
 
@@ -10,7 +10,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.pathomation.Core;
 
-public class GettingDriveLettersFromPMAStart extends HttpServlet {
+public class GetUIDSlidePMAStart extends HttpServlet {
 
 	private static final long serialVersionUID = 1L;
 
@@ -20,17 +20,20 @@ public class GettingDriveLettersFromPMAStart extends HttpServlet {
 
 		ServletOutputStream out = response.getOutputStream();
 		out.println("<html>");
-		// establish a default connection to PMA.start
-		if (Core.connect() != null) {
-			out.println("The following drives were found on your system:" + "<br/>");
-			for (String rootDirectory : Core.getRootDirectories()) {
-				out.println(rootDirectory + "<br/>");
-			}
-			out.println("Can't find all the drives you're expecting? For network-connectivity (e.g. mapped drive access) you need PMA.core instead of PMA.start");
+		String sessionID = Core.connect();
+		if (sessionID == null) {
+			out.println("Unable to connect to PMA.start");
 		} else {
-			out.println("Unable to find PMA.start");
+			out.println("Successfully connected to PMA.start" + "<br/>");
+			String dir = Core.getFirstNonEmptyDirectory("/", sessionID);
+			out.println("Looking for slides in " + dir + "<br/>");
+			for (String slide : Core.getSlides(dir, sessionID)) {
+				out.println(slide + " - " + Core.getUid(slide, sessionID) + "<br/>");
+			}
+			// not always needed; depends on whether the client (e.g. browser) still needs to SessionID as well
+			Core.disconnect(sessionID);
 		}
-		out.println("</html>");			
+		out.println("</html>");		
 	}
 
 	@Override
@@ -40,4 +43,5 @@ public class GettingDriveLettersFromPMAStart extends HttpServlet {
 	}
 
 }
+
 

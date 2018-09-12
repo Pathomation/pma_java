@@ -1,4 +1,4 @@
-package samples;
+package samples_30;
 
 import java.io.IOException;
 
@@ -10,7 +10,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.pathomation.Core;
 
-public class ConnectingToPMACore extends HttpServlet {
+public class ConnectingToPMAStart extends HttpServlet {
 
 	private static final long serialVersionUID = 1L;
 
@@ -18,18 +18,13 @@ public class ConnectingToPMACore extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 			
-		// modify the following three lines for your specific circumstances:
-		String pmaCoreServer = "http://my_server/pma.core";
-		String pmaCoreUser = "user";
-		String pmaCorePass = "secret";
-		
 		ServletOutputStream out = response.getOutputStream();
-		String sessionID = Core.connect(pmaCoreServer, pmaCoreUser, pmaCorePass);
+		String sessionID = Core.connect();
 		out.println("<html>");
 		if (sessionID == null) {
-			out.println("Unable to connect to PMA.core at specified location (" + pmaCoreServer + ")");
+			out.println("Unable to connect to PMA.start");
 		} else {
-			out.println("Successfully connected to PMA.core; sessionID = " + sessionID);
+			out.println("Successfully connected to PMA.start; sessionID = " + sessionID);
 			// not always needed; depends on whether the client (e.g. browser) still needs to SessionID as well
 			Core.disconnect();
 		}

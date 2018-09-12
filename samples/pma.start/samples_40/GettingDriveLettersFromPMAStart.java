@@ -1,4 +1,4 @@
-package samples;
+package samples_40;
 
 import java.io.IOException;
 
@@ -8,9 +8,9 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.pathomation.*;
+import com.pathomation.Core;
 
-public class IdentifyingPMAStart extends HttpServlet {
+public class GettingDriveLettersFromPMAStart extends HttpServlet {
 
 	private static final long serialVersionUID = 1L;
 
@@ -20,13 +20,17 @@ public class IdentifyingPMAStart extends HttpServlet {
 
 		ServletOutputStream out = response.getOutputStream();
 		out.println("<html>");
-		// test for PMA.core.lite (PMA.start)
-		out.println("Are you running PMA.core.lite? " + (Core.isLite() ? "Yes!" : "no :-(") + "<br />");
-		out.println(
-				"Seeing 'no' and want to see 'yes'? Make sure PMA.start is running on your system or download it from "
-						+ "<a href = \"http://free.pathomation.com\">http://free.pathomation.com</a>");
-		out.println("</html>");
-
+		// establish a default connection to PMA.start
+		if (Core.connect() != null) {
+			out.println("The following drives were found on your system:" + "<br/>");
+			for (String rootDirectory : Core.getRootDirectories()) {
+				out.println(rootDirectory + "<br/>");
+			}
+			out.println("Can't find all the drives you're expecting? For network-connectivity (e.g. mapped drive access) you need PMA.core instead of PMA.start");
+		} else {
+			out.println("Unable to find PMA.start");
+		}
+		out.println("</html>");			
 	}
 
 	@Override
@@ -36,3 +40,4 @@ public class IdentifyingPMAStart extends HttpServlet {
 	}
 
 }
+

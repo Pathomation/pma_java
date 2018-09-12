@@ -1,4 +1,4 @@
-package samples;
+package samples_10;
 
 import java.io.IOException;
 
@@ -8,27 +8,29 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.pathomation.Core;
+import com.pathomation.*;
 
-public class GettingVersionInformationPMAStart extends HttpServlet {
+public class IdentifyingPMACore extends HttpServlet {
 
 	private static final long serialVersionUID = 1L;
 
 	@Override
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
-			
+
+		// modify the following line for your specific circumstances:
+		String pmaCoreServer = "http://my_server/pma.core";
+
 		ServletOutputStream out = response.getOutputStream();
 		out.println("<html>");
-		// test for PMA.core.lite (PMA.start)
-		if (!Core.isLite()) {
-			// don't bother running this script if PMA.start isn't active
-			out.println("PMA.start is not running. Please start PMA.start first");
-		} else {
-			// assuming we have PMA.start running; what's the version number?			
-			out.println("You are running PMA.start version " + Core.getVersionInfo());
-		}
+		// testing actual "full" PMA.core instance that may or may not be out there
+		out.println("Are you running PMA.start(PMA.core.lite) at " + pmaCoreServer + " ? " + ((Core.isLite(pmaCoreServer) != null && 
+				(Core.isLite(pmaCoreServer) == true))  ? "Yes!" : "no :-(") + "<br />");
+		out.println(
+				"Are you running PMA.start(PMA.core.lite) at http://nowhere ? "
+						+ ((Core.isLite("http://nowhere") != null && (Core.isLite("http://nowhere") == true)) ? "Yes!" : "no :-("));
 		out.println("</html>");
+
 	}
 
 	@Override

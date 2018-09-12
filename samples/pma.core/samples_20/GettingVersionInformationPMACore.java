@@ -1,4 +1,4 @@
-package samples;
+package samples_20;
 
 import java.io.IOException;
 
@@ -10,7 +10,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.pathomation.Core;
 
-public class ConnectingToPMAStart extends HttpServlet {
+public class GettingVersionInformationPMACore extends HttpServlet {
 
 	private static final long serialVersionUID = 1L;
 
@@ -18,17 +18,22 @@ public class ConnectingToPMAStart extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 			
+		// modify the following three lines for your specific circumstances:
+		String pmaCoreServer = "http://my_server/pma.core";
+		
 		ServletOutputStream out = response.getOutputStream();
-		String sessionID = Core.connect();
 		out.println("<html>");
-		if (sessionID == null) {
-			out.println("Unable to connect to PMA.start");
+		out.println("You are running PMA.core version " + Core.getVersionInfo(pmaCoreServer) + " at " + pmaCoreServer + "<br/>");
+		
+		// what happens when we run it against a bogus URL?
+		String version = Core.getVersionInfo("http://nowhere/");
+		
+		if (version == null) {
+			out.println("Unable to detect PMA.core at specified location (http://nowhere/)");
 		} else {
-			out.println("Successfully connected to PMA.start; sessionID = " + sessionID);
-			// not always needed; depends on whether the client (e.g. browser) still needs to SessionID as well
-			Core.disconnect();
+			out.println("You are running PMA.core version " + version);
 		}
-		out.println("</html>");	
+		out.println("</html>");
 	}
 
 	@Override
@@ -38,4 +43,3 @@ public class ConnectingToPMAStart extends HttpServlet {
 	}
 
 }
-
