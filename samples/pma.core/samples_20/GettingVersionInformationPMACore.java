@@ -9,7 +9,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.pathomation.Core;
-import Configuration.Config;
+
+import configuration.Config;
 
 public class GettingVersionInformationPMACore extends HttpServlet {
 

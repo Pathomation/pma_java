@@ -17,7 +17,7 @@ public class GettingVersionInformationPMAStart extends HttpServlet {
 	@Override
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
-			
+
 		ServletOutputStream out = response.getOutputStream();
 		out.println("<html>");
 		// test for PMA.core.lite (PMA.start)
@@ -25,7 +25,7 @@ public class GettingVersionInformationPMAStart extends HttpServlet {
 			// don't bother running this script if PMA.start isn't active
 			out.println("PMA.start is not running. Please start PMA.start first");
 		} else {
-			// assuming we have PMA.start running; what's the version number?			
+			// assuming we have PMA.start running; what's the version number?
 			out.println("You are running PMA.start version " + Core.getVersionInfo());
 		}
 		out.println("</html>");

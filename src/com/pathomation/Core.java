@@ -38,12 +38,15 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 /**
  * <h1>Java SDK</h1> Java wrapper library for PMA.start, a universal viewer for
  * whole slide imaging and microscopy
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.14
+ * @version 2.0.0.15-SNAPSHOT
  */
 public class Core {
 	private static Map<String, Object> pmaSessions = new HashMap<String, Object>();
@@ -499,11 +502,11 @@ public class Core {
 		String contents = "";
 		try {
 			contents = urlReader(url);
+			return domParser(contents).getChildNodes().item(0).getChildNodes().item(0).getNodeValue().toString();
 		} catch (Exception e) {
 			// this happens when NO instance of PMA.core is detected
 			return null;
 		}
-		return domParser(contents).getChildNodes().item(0).getChildNodes().item(0).getNodeValue().toString();
 	}
 
 	/**
@@ -1066,21 +1069,32 @@ public class Core {
 						throw new Exception("ImageInfo to " + slideRef + " resulted in: " + jsonResponse.get("Message")
 								+ " (keep in mind that slideRef is case sensitive!)");
 					} else if (jsonResponse.has("d")) {
-						((Map<String, Object>) pmaSlideInfos.get(sessionID)).put(slideRef, jsonResponse.get("d"));
+						// we convert the Json object to a Map<String, Object>
+						Map<String, Object> jsonMap = new ObjectMapper().readValue(jsonResponse.get("d").toString(),
+								new TypeReference<Map<String, Object>>() {
+								});
+						((Map<String, Object>) pmaSlideInfos.get(sessionID)).put(slideRef, jsonMap);
 					} else {
-						return null;
+						// we convert the Json object to a Map<String, Object>
+						Map<String, Object> jsonMap = new ObjectMapper().readValue(jsonResponse.toString(),
+								new TypeReference<Map<String, Object>>() {
+								});
+						((Map<String, Object>) pmaSlideInfos.get(sessionID)).put(slideRef, jsonMap);
 					}
 				} else {
-					JSONArray jsonResponse = getJSONArrayResponse(jsonString);
-					pmaAmountOfDataDownloaded.put(sessionID,
-							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
-					((Map<String, Object>) pmaSlideInfos.get(sessionID)).put(slideRef, jsonResponse);
+					// JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+					// pmaAmountOfDataDownloaded.put(sessionID,
+					// pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
+					// ((Map<String, Object>) pmaSlideInfos.get(sessionID)).put(slideRef,
+					// jsonResponse);
+					return null;
 				}
 			} catch (Exception e) {
 				System.out.print(e.getMessage());
 				return null;
 			}
 		}
+
 		return (Map<String, Object>) ((Map<String, Object>) pmaSlideInfos.get(sessionID)).get(slideRef);
 	}
 

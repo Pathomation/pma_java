@@ -10,7 +10,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.pathomation.Core;
 
-import Configuration.Config;
+import configuration.Config;
 
 public class GetUIDSlidePMACore extends HttpServlet {
 
