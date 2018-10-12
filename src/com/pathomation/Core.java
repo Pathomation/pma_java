@@ -46,7 +46,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * whole slide imaging and microscopy
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.15-SNAPSHOT
+ * @version 2.0.0.16-SNAPSHOT
  */
 public class Core {
 	private static Map<String, Object> pmaSessions = new HashMap<String, Object>();
@@ -495,9 +495,9 @@ public class Core {
 		// setting the default value when argument's value is omitted
 		String pmaCoreURL = varargs.length > 0 ? varargs[0] : pmaCoreLiteURL;
 		// Get version info from PMA.core instance running at pmacoreURL
-		// purposefully DON'T use helper function pma_api_url() here:
+		// purposefully DON'T use helper function apiUrl() here:
 		// why? because GetVersionInfo can be invoked WITHOUT a valid SessionID;
-		// _pma_api_url() takes session information into account
+		// apiUrl() takes session information into account
 		String url = join(pmaCoreURL, "api/xml/GetVersionInfo");
 		String contents = "";
 		try {
@@ -520,7 +520,7 @@ public class Core {
 	public static JSONObject getVersionInfoPmaControl(String pmaControlURL) {
 		// Get version info from PMA.control instance running at pmacontrolURL
 		// why? because GetVersionInfo can be invoked WITHOUT a valid SessionID;
-		// _pma_api_url() takes session information into account
+		// apiUrl() takes session information into account
 		String url = join(pmaControlURL, "api/version");
 		try {
 			URL urlResource = new URL(url);
@@ -568,8 +568,8 @@ public class Core {
 				return null;
 			}
 		}
-		// purposefully DON'T use helper function _pma_api_url() here:
-		// why? Because_pma_api_url() takes session information into account (which we
+		// purposefully DON'T use helper function apiUrl() here:
+		// why? Because apiUrl() takes session information into account (which we
 		// don't have yet)
 		String url = join(pmaCoreURL, "api/xml/authenticate?caller=SDK.Java");
 		if (!pmaCoreUsername.equals("")) {
