@@ -46,13 +46,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * whole slide imaging and microscopy
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.16-SNAPSHOT
+ * @version 2.0.0.17
  */
 public class Core {
 	private static Map<String, Object> pmaSessions = new HashMap<String, Object>();
 	private static Map<String, Object> pmaSlideInfos = new HashMap<String, Object>();
-	private static String pmaCoreLiteURL = "http://localhost:54001/";
-	private static String pmaCoreLiteSessionID = "SDK.Java";
+	private static final String pmaCoreLiteURL = "http://localhost:54001/";
+	private static final String pmaCoreLiteSessionID = "SDK.Java";
 	private static Boolean pmaUseCacheWhenRetrievingTiles = true;
 	private static Map<String, Integer> pmaAmountOfDataDownloaded = new HashMap<String, Integer>() {
 		{
@@ -387,7 +387,8 @@ public class Core {
 	 *            URL for PMA.Control
 	 * @param pmaCoreSessionID
 	 *            PMA.core session ID
-	 * @return Map<String, Map<String, String>> containing the sessions' IDs
+	 * @return Mapt{@literal <}String, Mapt{@literal <}String,
+	 *         Stringt{@literal >}t{@literal >} containing the sessions' IDs
 	 */
 	public static Map<String, Map<String, String>> getSessionIds(String pmaControlURL, String pmaCoreSessionID) {
 		JSONArray fullSessions = getSessions(pmaControlURL, pmaCoreSessionID);
@@ -637,6 +638,48 @@ public class Core {
 	}
 
 	/**
+	 * Getter for member pmaCoreLiteSessionID
+	 * 
+	 * @return pmaCoreLiteSessionID
+	 */
+
+	public static String getPmaCoreLiteSessionID() {
+		return pmaCoreLiteSessionID;
+	}
+
+	/**
+	 * This method is used to test if sessionID is valid and the server is online
+	 * and reachable This method works only for PMA.core, don't use for PMA.start
+	 * for it will return always false
+	 * 
+	 * @param sessionID
+	 *            it's an optional argument (String), default value set to "null"
+	 * @return boolean true if sessionID is valid and the server is online and
+	 *         reachable, false otherwise
+	 */
+	public static boolean ping(String... varargs) {
+		// setting the default value when argument's value is omitted
+		String sessionID = varargs.length > 0 ? varargs[0] : null;
+		sessionID = sessionId(sessionID);
+		String url = apiUrl(sessionID, false) + "Ping?sessionID=" + pmaQ(sessionID);
+		try {
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("GET");
+			con.setRequestProperty("Accept", "application/json");
+			String jsonString = Core.getJSONAsStringBuffer(con).toString();
+			return jsonString.equals("true") ? true : false;
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
+	/**
 	 * This method is used to get root-directories available for a sessionID
 	 * 
 	 * @param sessionID
@@ -673,11 +716,6 @@ public class Core {
 		// Return a list of sub-directories available to sessionID in the startDir
 		// directory
 		sessionID = sessionId(sessionID);
-		// String url = apiUrl(sessionID) + "GetDirectories?sessionID=" +
-		// pmaQ(sessionID) + "&path=" + pmaQ(startDir);
-		// String contents = urlReader(url);
-		// Document dom = domParser(contents);
-		// return xmlToStringArray((Element) dom.getFirstChild());
 		String url = apiUrl(sessionID, false) + "GetDirectories?sessionID=" + pmaQ(sessionID) + "&path="
 				+ pmaQ(startDir);
 		try {
@@ -964,7 +1002,6 @@ public class Core {
 	}
 
 	/**
-	 * 
 	 * 
 	 * @param con
 	 *            url to retrieve JSON from
@@ -1924,7 +1961,6 @@ public class Core {
 
 			@Override
 			public Image get() {
-				// TODO Auto-generated method stub
 				if (x <= varToX) {
 					if (y < varToY) {
 						y++;
