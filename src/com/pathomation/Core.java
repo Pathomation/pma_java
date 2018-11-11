@@ -46,7 +46,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * whole slide imaging and microscopy
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.17
+ * @version 2.0.0.19
  */
 public class Core {
 	private static Map<String, Object> pmaSessions = new HashMap<String, Object>();
@@ -1070,7 +1070,7 @@ public class Core {
 	 * This method is used to get a raw image in the form of nested maps
 	 * 
 	 * @param slideRef
-	 *            slide's path
+	 *            slide's path or UID
 	 * @param sessionID
 	 *            it's an optional argument (String), default value set to "null"
 	 * @return Map{@literal <}String, Object{@literal >} nested maps forming a raw
@@ -1640,6 +1640,60 @@ public class Core {
 	}
 
 	/**
+	 * This method is used to get the text encoded by the barcode
+	 * @param slideRef
+	 *            slide's path or UID
+	 * @param sessionID
+	 *            it's an optional argument (String), default value set to "null"
+	 * @return Map{@literal <}String, Object{@literal >} Map containing the barcode text
+	 */
+	public static Map<String, Object> getBarcodeText(String slideRef, String... varargs) {
+		// setting the default value when arguments' value is omitted
+		String sessionID = varargs.length > 0 ? varargs[0] : null;
+		// Get the text encoded by the barcode (if there IS a barcode on the slide to
+		// begin with)
+		sessionID = sessionId(sessionID);
+		String url = apiUrl(sessionID, false) + "GetBarcode?sessionID=" + pmaQ(sessionID) + "&pathOrUid="
+				+ pmaQ(slideRef);
+		try {
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("GET");
+			String jsonString = getJSONAsStringBuffer(con).toString();
+			if (isJSONObject(jsonString)) {
+				JSONObject jsonResponse = getJSONResponse(jsonString);
+				pmaAmountOfDataDownloaded.put(sessionID,
+						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
+				if (jsonResponse.has("Code")) {
+					throw new Exception("get_barcode_text on " + slideRef + " resulted in: "
+							+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
+				} else if (jsonResponse.has("d")) {
+					// we convert the Json object to a Map<String, Object>
+					Map<String, Object> jsonMap = new ObjectMapper().readValue(jsonResponse.get("d").toString(),
+							new TypeReference<Map<String, Object>>() {
+							});
+					return jsonMap;
+				} else {
+					// we convert the Json object to a Map<String, Object>
+					Map<String, Object> jsonMap = new ObjectMapper().readValue(jsonResponse.toString(),
+							new TypeReference<Map<String, Object>>() {
+							});
+					return jsonMap;
+				}
+			} else {
+				return null;
+			}
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
+	/**
 	 * This method is used to get the URL that points to the label for a slide
 	 * 
 	 * @param slideRef
@@ -1687,7 +1741,7 @@ public class Core {
 	 * This method is used to get the URL that points to the thumbnail for a slide
 	 * 
 	 * @param slideRef
-	 *            slide's path
+	 *            slide's path or UID
 	 * @param sessionID
 	 *            it's an optional argument (String), default value set to "null"
 	 * @return String URL that points to the thumbnail for a slide
@@ -1734,7 +1788,7 @@ public class Core {
 	 * This method is used to get a single tile at position (x, y)
 	 * 
 	 * @param slideRef
-	 *            slide's path
+	 *            slide's path or UID
 	 * @param x
 	 *            it's an optional argument (Integer), default value set to "0"
 	 * @param y
@@ -1840,7 +1894,7 @@ public class Core {
 	 * rectangle
 	 * 
 	 * @param slideRef
-	 *            slide's path
+	 *            slide's path or UID
 	 * @param fromX
 	 *            it's an optional argument (Integer), default value set to "0"
 	 * @param fromY
@@ -1984,7 +2038,7 @@ public class Core {
 	 * viewer for the slide
 	 * 
 	 * @param slideRef
-	 *            slide's path
+	 *            slide's path or UID
 	 * @param sessionID
 	 *            it's an optional argument (String), default value set to "null"
 	 * @throws Exception
@@ -2025,7 +2079,7 @@ public class Core {
 	 * start directory
 	 * 
 	 * @param slideRef
-	 *            slide's path
+	 *            slide's path or UID
 	 * @param sessionID
 	 *            it's an optional argument (String), default value set to "null"
 	 * @return List{@literal <}String{@literal >} List of all files related to
