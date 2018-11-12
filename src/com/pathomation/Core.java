@@ -707,12 +707,45 @@ public class Core {
 	 *            Start directory
 	 * @param sessionID
 	 *            it's an optional argument (String), default value set to "null"
+	 * @param recursive
+	 *            it's an optional argument (can be Boolean or Integer), it defines
+	 *            if recursion applies and if yes its depth
+	 * 
 	 * @return List{@literal <}String{@literal >} sub-directories available to
 	 *         sessionID in the start directory
 	 */
-	public static List<String> getDirectories(String startDir, String... varargs) {
-		// setting the default value when argument's value is omitted
-		String sessionID = varargs.length > 0 ? varargs[0] : null;
+	public static List<String> getDirectories(String startDir, Object... varargs) {
+		// setting the default values when arguments' values are omitted
+		String sessionID = null;
+		// we can either choose to have a non recursive call, a complete recursive call
+		// or a recursive call to a certain depth, in the last case we use an integer to
+		// define
+		// depth
+		// the following three variables intend to implement this
+		Boolean recursive = false;
+		Integer integerRecursive = 0;
+		String booleanOrInteger = "";
+		if (varargs.length > 0) {
+			if (!(varargs[0] instanceof String) && varargs[0] != null) {
+				throw new IllegalArgumentException("...");
+			}
+			sessionID = (String) varargs[0];
+		}
+		if (varargs.length > 1) {
+			if ((!(varargs[1] instanceof Integer) && !(varargs[1] instanceof Boolean)) && (varargs[1] != null)) {
+				throw new IllegalArgumentException("...");
+			}
+			if (varargs[1] instanceof Boolean) {
+				recursive = (Boolean) varargs[1];
+				booleanOrInteger = "boolean";
+			}
+			if (varargs[1] instanceof Integer) {
+				integerRecursive = (Integer) varargs[1];
+				recursive = ((Integer) varargs[1]) > 0 ? true : false;
+				booleanOrInteger = "integer";
+			}
+		}
+
 		// Return a list of sub-directories available to sessionID in the startDir
 		// directory
 		sessionID = sessionId(sessionID);
@@ -728,6 +761,7 @@ public class Core {
 			}
 			con.setRequestMethod("GET");
 			String jsonString = getJSONAsStringBuffer(con).toString();
+			List<String> dirs;
 			if (isJSONObject(jsonString)) {
 				JSONObject jsonResponse = getJSONResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
@@ -738,11 +772,11 @@ public class Core {
 							+ jsonResponse.get("Message") + " (keep in mind that startDir is case sensitive!)");
 				} else if (jsonResponse.has("d")) {
 					JSONArray array = jsonResponse.getJSONArray("d");
-					List<String> dirs = new ArrayList<>();
+					dirs = new ArrayList<>();
 					for (int i = 0; i < array.length(); i++) {
 						dirs.add(array.optString(i));
 					}
-					return dirs;
+					// return dirs;
 				} else {
 					return null;
 				}
@@ -750,12 +784,25 @@ public class Core {
 				JSONArray jsonResponse = getJSONArrayResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
-				List<String> dirs = new ArrayList<>();
+				dirs = new ArrayList<>();
 				for (int i = 0; i < jsonResponse.length(); i++) {
 					dirs.add(jsonResponse.optString(i));
 				}
-				return dirs;
+				// return dirs;
 			}
+
+			// we test if call is recursive, and if yes to which depth
+			if (recursive) {
+				for (String dir : getDirectories(startDir, sessionID)) {
+					if (booleanOrInteger.equals("boolean")) {
+						dirs.addAll(getDirectories(dir, sessionID, recursive));
+					}
+					if (booleanOrInteger.equals("integer")) {
+						dirs.addAll(getDirectories(dir, sessionID, integerRecursive - 1));
+					}
+				}
+			}
+			return dirs;
 
 		} catch (Exception e) {
 			System.out.print(e.getMessage());
@@ -810,12 +857,44 @@ public class Core {
 	 *            Start directory
 	 * @param sessionID
 	 *            it's an optional argument (String), default value set to "null"
+	 * @param recursive
+	 *            it's an optional argument (can be Boolean or Integer), it defines
+	 *            if recursion applies and if yes its depth
 	 * @return List{@literal <}String{@literal >} list of slides available to
 	 *         sessionID in the start directory
 	 */
-	public static List<String> getSlides(String startDir, String... varargs) {
-		// setting the default value when arguments' value is omitted
-		String sessionID = varargs.length > 0 ? varargs[0] : null;
+	public static List<String> getSlides(String startDir, Object... varargs) {
+		// setting the default values when arguments' values are omitted
+		String sessionID = null;
+		// we can either choose to have a non recursive call, a complete recursive call
+		// or a recursive call to a certain depth, in the last case we use an integer to
+		// define
+		// depth
+		// the following three variables intend to implement this
+		String booleanOrInteger = "";
+		Boolean recursive = false;
+		Integer integerRecursive = 0;
+		if (varargs.length > 0) {
+			if (!(varargs[0] instanceof String) && varargs[0] != null) {
+				throw new IllegalArgumentException("...");
+			}
+			sessionID = (String) varargs[0];
+		}
+		if (varargs.length > 1) {
+			if ((!(varargs[1] instanceof Integer) && !(varargs[1] instanceof Boolean)) && (varargs[1] != null)) {
+				throw new IllegalArgumentException("...");
+			}
+			if (varargs[1] instanceof Boolean) {
+				recursive = (Boolean) varargs[1];
+				booleanOrInteger = "boolean";
+			}
+			if (varargs[1] instanceof Integer) {
+				integerRecursive = (Integer) varargs[1];
+				recursive = ((Integer) varargs[1]) > 0 ? true : false;
+				booleanOrInteger = "integer";
+			}
+		}
+
 		// Return a list of slides available to sessionID in the startDir directory
 		sessionID = sessionId(sessionID);
 		if (startDir.startsWith("/")) {
@@ -832,6 +911,7 @@ public class Core {
 			}
 			con.setRequestMethod("GET");
 			String jsonString = getJSONAsStringBuffer(con).toString();
+			List<String> slides;
 			if (isJSONObject(jsonString)) {
 				JSONObject jsonResponse = getJSONResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
@@ -842,11 +922,11 @@ public class Core {
 							+ " (keep in mind that startDir is case sensitive!)");
 				} else if (jsonResponse.has("d")) {
 					JSONArray array = jsonResponse.getJSONArray("d");
-					List<String> slides = new ArrayList<>();
+					slides = new ArrayList<>();
 					for (int i = 0; i < array.length(); i++) {
 						slides.add(array.optString(i));
 					}
-					return slides;
+					// return slides;
 				} else {
 					return null;
 				}
@@ -854,12 +934,25 @@ public class Core {
 				JSONArray jsonResponse = getJSONArrayResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
-				List<String> slides = new ArrayList<>();
+				slides = new ArrayList<>();
 				for (int i = 0; i < jsonResponse.length(); i++) {
 					slides.add(jsonResponse.optString(i));
 				}
-				return slides;
+				// return slides;
 			}
+
+			// we test if call is recursive, and if yes to which depth
+			if (recursive) {
+				for (String dir : getDirectories(startDir, sessionID)) {
+					if (booleanOrInteger.equals("boolean")) {
+						slides.addAll(getSlides(dir, sessionID, recursive));
+					}
+					if (booleanOrInteger.equals("integer")) {
+						slides.addAll(getSlides(dir, sessionID, integerRecursive - 1));
+					}
+				}
+			}
+			return slides;
 		} catch (Exception e) {
 			System.out.print(e.getMessage());
 			return null;
@@ -1477,7 +1570,6 @@ public class Core {
 	}
 
 	/**
-	 * 
 	 * @param slideRef
 	 *            slide's path
 	 * @param sessionID
@@ -1641,11 +1733,13 @@ public class Core {
 
 	/**
 	 * This method is used to get the text encoded by the barcode
+	 * 
 	 * @param slideRef
 	 *            slide's path or UID
 	 * @param sessionID
 	 *            it's an optional argument (String), default value set to "null"
-	 * @return Map{@literal <}String, Object{@literal >} Map containing the barcode text
+	 * @return Map{@literal <}String, Object{@literal >} Map containing the barcode
+	 *         text
 	 */
 	public static Map<String, Object> getBarcodeText(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
@@ -1672,15 +1766,9 @@ public class Core {
 				if (jsonResponse.has("Code")) {
 					throw new Exception("get_barcode_text on " + slideRef + " resulted in: "
 							+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
-				} else if (jsonResponse.has("d")) {
-					// we convert the Json object to a Map<String, Object>
-					Map<String, Object> jsonMap = new ObjectMapper().readValue(jsonResponse.get("d").toString(),
-							new TypeReference<Map<String, Object>>() {
-							});
-					return jsonMap;
 				} else {
 					// we convert the Json object to a Map<String, Object>
-					Map<String, Object> jsonMap = new ObjectMapper().readValue(jsonResponse.toString(),
+					Map<String, Object> jsonMap = new ObjectMapper().readValue(jsonResponse.get("d").toString(),
 							new TypeReference<Map<String, Object>>() {
 							});
 					return jsonMap;
