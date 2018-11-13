@@ -46,7 +46,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * whole slide imaging and microscopy
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.19
+ * @version 2.0.0.20
  */
 public class Core {
 	private static Map<String, Object> pmaSessions = new HashMap<String, Object>();
@@ -1700,6 +1700,9 @@ public class Core {
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Get the URL that points to the barcode (alias for "label") for a slide
 		sessionID = sessionId(sessionID);
+		if (slideRef.startsWith("/")) {
+			slideRef = slideRef.substring(1);
+		}
 		String url = pmaUrl(sessionID) + "barcode" + "?SessionID=" + pmaQ(sessionID) + "&pathOrUid=" + pmaQ(slideRef);
 		return url;
 	}
@@ -1718,6 +1721,9 @@ public class Core {
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Get the barcode (alias for "label") image for a slide
 		sessionID = sessionId(sessionID);
+		if (slideRef.startsWith("/")) {
+			slideRef = slideRef.substring(1);
+		}
 		try {
 			URL urlResource = new URL(getBarcodeUrl(slideRef, sessionID));
 			URLConnection con = urlResource.openConnection();
@@ -1747,6 +1753,9 @@ public class Core {
 		// Get the text encoded by the barcode (if there IS a barcode on the slide to
 		// begin with)
 		sessionID = sessionId(sessionID);
+		if (slideRef.startsWith("/")) {
+			slideRef = slideRef.substring(1);
+		}
 		String url = apiUrl(sessionID, false) + "GetBarcode?sessionID=" + pmaQ(sessionID) + "&pathOrUid="
 				+ pmaQ(slideRef);
 		try {
@@ -1812,6 +1821,9 @@ public class Core {
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Get the label image for a slide
 		sessionID = sessionId(sessionID);
+		if (slideRef.startsWith("/")) {
+			slideRef = slideRef.substring(1);
+		}
 		try {
 			URL urlResource = new URL(getLabelUrl(slideRef, sessionID));
 			URLConnection con = urlResource.openConnection();
@@ -1840,6 +1852,9 @@ public class Core {
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Get the URL that points to the thumbnail for a slide
 		sessionID = sessionId(sessionID);
+		if (slideRef.startsWith("/")) {
+			slideRef = slideRef.substring(1);
+		}
 		String url = pmaUrl(sessionID) + "thumbnail" + "?SessionID=" + pmaQ(sessionID) + "&pathOrUid=" + pmaQ(slideRef);
 		return url;
 	}
@@ -1858,6 +1873,9 @@ public class Core {
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Get the thumbnail image for a slide
 		sessionID = sessionId(sessionID);
+		if (slideRef.startsWith("/")) {
+			slideRef = slideRef.substring(1);
+		}
 		try {
 			String url = getThumbnailUrl(slideRef, sessionID);
 			URL urlResource = new URL(url);
@@ -1951,6 +1969,9 @@ public class Core {
 		// (as much compression as possible; not recommended) to 100 (100%, no
 		// compression)
 		sessionID = sessionId(sessionID);
+		if (slideRef.startsWith("/")) {
+			slideRef = slideRef.substring(1);
+		}
 		if (zoomLevel == null) {
 			zoomLevel = 0;
 		}
@@ -2076,6 +2097,9 @@ public class Core {
 		// (as much compression as possible; not recommended) to 100 (100%, no
 		// compression)
 		sessionID = sessionId(sessionID);
+		if (slideRef.startsWith("/")) {
+			slideRef = slideRef.substring(1);
+		}
 		if (zoomLevel == null) {
 			zoomLevel = 0;
 		}
@@ -2094,6 +2118,7 @@ public class Core {
 		final int varZoomLevel = zoomLevel;
 		final int varZStack = zStack;
 		final String varSessionID = sessionID;
+		final String varSlideRef = slideRef;
 		final String varFormat = format;
 		final Integer varQualty = quality;
 		// we use Stream to simulate the behavior of "yield" in Python
@@ -2112,7 +2137,7 @@ public class Core {
 					}
 				}
 				try {
-					return getTile(slideRef, x, y, varZoomLevel, varZStack, varSessionID, varFormat, varQualty);
+					return getTile(varSlideRef, x, y, varZoomLevel, varZStack, varSessionID, varFormat, varQualty);
 				} catch (Exception e) {
 					System.out.print(e.getMessage());
 					return null;
@@ -2136,6 +2161,10 @@ public class Core {
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Launch the default web browser and load a web-based viewer for the slide
 		sessionID = sessionId(sessionID);
+		sessionID = sessionId(sessionID);
+		if (slideRef.startsWith("/")) {
+			slideRef = slideRef.substring(1);
+		}
 		String osCmd;
 		if (System.getProperty("os.name").toLowerCase().equals("posix")) {
 			osCmd = "open ";
