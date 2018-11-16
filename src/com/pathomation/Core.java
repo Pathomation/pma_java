@@ -46,7 +46,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * whole slide imaging and microscopy
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.20
+ * @version 2.0.0.21
  */
 public class Core {
 	private static Map<String, Object> pmaSessions = new HashMap<String, Object>();
@@ -1005,44 +1005,65 @@ public class Core {
 		return xmlToStringArray(dom).get(0);
 	}
 
-	// public void getFingerPrint(String slideRef, Object... varargs) {
-	// //Get the fingerprint for a specific slide
-	// Boolean strict = false;
-	// String sessionID = null;
-	// if (varargs.length > 0) {
-	// if (!(varargs[0] instanceof Boolean) && varargs[0] != null) {
-	// throw new IllegalArgumentException("...");
-	// }
-	// strict = (Boolean) varargs[0];
-	// }
-	// if (varargs.length > 1) {
-	// if (!(varargs[1] instanceof String) && varargs[1] != null) {
-	// throw new IllegalArgumentException("...");
-	// }
-	// sessionID = (String) varargs[1];
-	// }
-	// sessionID = sessionId(sessionID);
-	// try {
-	// String url = apiUrl(sessionID, false) + "GetFingerprint?sessionID=" +
-	// pmaQ(sessionID) + "&strict=" + pmaQ(strict.toString()) + "&pathOrUid=" +
-	// pmaQ(slideRef);
-	// URL urlResource = new URL(url);
-	// HttpURLConnection con;
-	// if (url.startsWith("https")) {
-	// con = (HttpsURLConnection) urlResource.openConnection();
-	// } else {
-	// con = (HttpURLConnection) urlResource.openConnection();
-	// }
-	// con.setRequestMethod("GET");
-	// String jsonString = getJSONAsStringBuffer(con).toString();
-	// }
-	//
-	//
-	// catch (Exception e) {
-	// System.out.print(e.getMessage());
-	//
-	// }
-	// }
+	/**
+	 * This method is used to get the fingerprint for a specific slide
+	 * @param slideRef
+	 * @param strict it's an optional argument (String), default value set to "false"
+	 * @param sessionID
+	 *            it's an optional argument (String), default value set to "null"
+	 * @return String containing the fingerprint
+	 */
+	public static String getFingerPrint(String slideRef, Object... varargs) {
+		// Get the fingerprint for a specific slide
+		Boolean strict = false;
+		String sessionID = null;
+		if (varargs.length > 0) {
+			if (!(varargs[0] instanceof Boolean) && varargs[0] != null) {
+				throw new IllegalArgumentException("...");
+			}
+			strict = (Boolean) varargs[0];
+		}
+		if (varargs.length > 1) {
+			if (!(varargs[1] instanceof String) && varargs[1] != null) {
+				throw new IllegalArgumentException("...");
+			}
+			sessionID = (String) varargs[1];
+		}
+		// Get the fingerprint for a specific slide
+		sessionID = sessionId(sessionID);
+		String fingerprint;
+		String url = apiUrl(sessionID, false) + "GetFingerprint?sessionID=" + pmaQ(sessionID) + "&strict="
+				+ pmaQ(strict.toString()) + "&pathOrUid=" + pmaQ(slideRef);
+		try {	
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("GET");
+			String jsonString = getJSONAsStringBuffer(con).toString();
+			if (isJSONObject(jsonString)) {
+				JSONObject jsonResponse = getJSONResponse(jsonString);
+				pmaAmountOfDataDownloaded.put(sessionID,
+						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
+				if (jsonResponse.has("Code")) {
+					throw new Exception("get_fingerprint on " + slideRef + " resulted in: "
+							+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
+				} else {
+					return null;
+				}
+			} else {
+				pmaAmountOfDataDownloaded.put(sessionID,
+						pmaAmountOfDataDownloaded.get(sessionID) + jsonString.length());
+				fingerprint = jsonString;
+			}
+		} catch (Exception e) {
+			return null;
+		}
+		return fingerprint;
+	}
 
 	/**
 	 * This method is under construction
@@ -1744,10 +1765,9 @@ public class Core {
 	 *            slide's path or UID
 	 * @param sessionID
 	 *            it's an optional argument (String), default value set to "null"
-	 * @return Map{@literal <}String, Object{@literal >} Map containing the barcode
-	 *         text
+	 * @return String containing the barcode text
 	 */
-	public static Map<String, Object> getBarcodeText(String slideRef, String... varargs) {
+	public static String getBarcodeText(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Get the text encoded by the barcode (if there IS a barcode on the slide to
@@ -1756,7 +1776,8 @@ public class Core {
 		if (slideRef.startsWith("/")) {
 			slideRef = slideRef.substring(1);
 		}
-		String url = apiUrl(sessionID, false) + "GetBarcode?sessionID=" + pmaQ(sessionID) + "&pathOrUid="
+		String barcode;
+		String url = apiUrl(sessionID, false) + "GetBarcodeText?sessionID=" + pmaQ(sessionID) + "&pathOrUid="
 				+ pmaQ(slideRef);
 		try {
 			URL urlResource = new URL(url);
@@ -1776,18 +1797,17 @@ public class Core {
 					throw new Exception("get_barcode_text on " + slideRef + " resulted in: "
 							+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
 				} else {
-					// we convert the Json object to a Map<String, Object>
-					Map<String, Object> jsonMap = new ObjectMapper().readValue(jsonResponse.get("d").toString(),
-							new TypeReference<Map<String, Object>>() {
-							});
-					return jsonMap;
+					return null;
 				}
 			} else {
-				return null;
+				pmaAmountOfDataDownloaded.put(sessionID,
+						pmaAmountOfDataDownloaded.get(sessionID) + jsonString.length());
+				barcode = jsonString;
 			}
 		} catch (Exception e) {
 			return null;
 		}
+		return barcode;
 	}
 
 	/**
@@ -2144,6 +2164,330 @@ public class Core {
 				}
 			}
 		}).limit((varToX - varFromX + 1) * (varToY - varFromY + 1));
+	}
+
+	/**
+	 * This method is used to find out what forms where submitted for a specific
+	 * slide
+	 * 
+	 * @param slideRef
+	 *            slide's path or UID
+	 * @param sessionID
+	 *            it's an optional argument (String), default value set to "null"
+	 * @return Map{@literal <}String, String{@literal >} of forms submitted for a
+	 *         specific slide
+	 */
+	public static Map<String, String> getSubmittedForms(String slideRef, String... varargs) {
+		// setting the default value when arguments' value is omitted
+		String sessionID = varargs.length > 0 ? varargs[0] : null;
+		// Find out what forms where submitted for a specific slide
+		sessionID = sessionId(sessionID);
+		if (slideRef.startsWith("/")) {
+			slideRef = slideRef.substring(1);
+		}
+		String url = apiUrl(sessionID, false) + "GetFormSubmissions?sessionID=" + pmaQ(sessionID) + "&pathOrUids="
+				+ pmaQ(slideRef);
+		Map<String, String> forms = new HashMap<>();
+		Map<String, String> allForms = getAvailableForms(slideRef, sessionID);
+		try {
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("GET");
+			String jsonString = getJSONAsStringBuffer(con).toString();
+			if (jsonString != null && jsonString.length() > 0) {
+				if (isJSONObject(jsonString)) {
+					JSONObject jsonResponse = getJSONResponse(jsonString);
+					pmaAmountOfDataDownloaded.put(sessionID,
+							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
+					if (jsonResponse.has("Code")) {
+						throw new Exception("getSubmittedForms on  " + slideRef + " resulted in: "
+								+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
+					} else {
+						forms = null;
+					}
+				} else {
+					JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+					pmaAmountOfDataDownloaded.put(sessionID,
+							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
+					for (int i = 0; i < jsonResponse.length(); i++) {
+						if (!forms.containsKey(jsonResponse.optJSONObject(i).get("FormID").toString())
+								&& allForms != null) {
+							forms.put(jsonResponse.optJSONObject(i).get("FormID").toString(),
+									allForms.get(jsonResponse.optJSONObject(i).get("FormID").toString()));
+						}
+					}
+					// should probably do some post-processing here, but unsure what that would
+					// actually be??
+
+				}
+			} else {
+				forms = null;
+			}
+		} catch (Exception e) {
+			return null;
+		}
+		return forms;
+	}
+
+	public static JSONArray getSubmittedFormData(String slideRef, String... varargs) {
+		// setting the default values when arguments' values are omitted
+		String sessionID = varargs.length > 0 ? varargs[0] : null;
+		// Get all submitted form data associated with a specific slide
+		sessionID = sessionId(sessionID);
+		if (slideRef.startsWith("/")) {
+			slideRef = slideRef.substring(1);
+		}
+		JSONArray data; // new HashMap<>();
+		String url = apiUrl(sessionID, false) + "GetFormSubmissions?sessionID=" + pmaQ(sessionID) + "&pathOrUids="
+				+ pmaQ(slideRef);
+		try {
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("GET");
+			String jsonString = getJSONAsStringBuffer(con).toString();
+			if (jsonString != null && jsonString.length() > 0) {
+				if (isJSONObject(jsonString)) {
+					JSONObject jsonResponse = getJSONResponse(jsonString);
+					pmaAmountOfDataDownloaded.put(sessionID,
+							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
+					if (jsonResponse.has("Code")) {
+						throw new Exception("getSubmittedFormData on  " + slideRef + " resulted in: "
+								+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
+					} else {
+						data = null;
+					}
+				} else {
+					JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+					pmaAmountOfDataDownloaded.put(sessionID,
+							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
+					data = jsonResponse;
+				}
+				// should probably do some post-processing here, but unsure what that would
+				// actually be??
+			} else {
+				data = null;
+			}
+		} catch (Exception e) {
+			return null;
+		}
+		return data;
+	}
+
+	/**
+	 * This method is used to prepare a form-dictionary that can be used later on to
+	 * submit new form data for a slide
+	 * 
+	 * @param formID
+	 *            Form's ID
+	 * @param sessionID
+	 *            it's an optional argument (String), default value set to "null"
+	 * @return Map{@literal <}String, String{@literal >} form-map that can be used
+	 *         later on to submit new form data for a slide
+	 */
+	public static Map<String, String> prepareFormMap(String formID, String... varargs) {
+		// setting the default values when arguments' values are omitted
+		String sessionID = varargs.length > 0 ? varargs[0] : null;
+		// Prepare a form-dictionary that can be used later on to submit new form data
+		// for a slide
+		if (formID == null) {
+			return null;
+		}
+		sessionID = sessionId(sessionID);
+		Map<String, String> formDef = new HashMap<>();
+		String url = apiUrl(sessionID, false) + "GetFormDefinitions?sessionID=" + pmaQ(sessionID);
+		try {
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("GET");
+			String jsonString = getJSONAsStringBuffer(con).toString();
+			if (jsonString != null && jsonString.length() > 0) {
+				if (isJSONObject(jsonString)) {
+					JSONObject jsonResponse = getJSONResponse(jsonString);
+					pmaAmountOfDataDownloaded.put(sessionID,
+							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
+					if (jsonResponse.has("Code")) {
+						throw new Exception("" + jsonResponse.get("Message") + "");
+					} else {
+						formDef = null;
+					}
+				} else {
+					JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+					pmaAmountOfDataDownloaded.put(sessionID,
+							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
+					for (int i = 0; i < jsonResponse.length(); i++) {
+						if ((jsonResponse.optJSONObject(i).get("FormID").toString().equals(formID))
+								|| (jsonResponse.optJSONObject(i).get("FormName").toString().equals(formID))) {
+							for (int j = 0; j < jsonResponse.optJSONObject(i).getJSONArray("FormFields")
+									.length(); j++) {
+								formDef.put(jsonResponse.optJSONObject(i).getJSONArray("FormFields").getJSONObject(j)
+										.getString("Label"), null);
+							}
+						}
+
+					}
+				}
+			} else {
+				formDef = null;
+			}
+		} catch (Exception e) {
+			return null;
+		}
+		return formDef;
+	}
+
+	/**
+	 * This method is used to get a Map of the forms available to fill out, either
+	 * system-wide (leave slideref to "null"), or for a particular slide
+	 * 
+	 * @param slideRef
+	 *            it's an optional argument (String) for slide's path, default value
+	 *            set to "null"
+	 * @param sessionID
+	 *            it's an optional argument (String) for session's ID, default value
+	 *            set to "null"
+	 * @return Map{@literal <}String, String{@literal} of the forms available to
+	 *         fill out, either system-wide (leave slideref to "null"), or for a
+	 *         particular slide
+	 */
+	public static Map<String, String> getAvailableForms(String... varargs) {
+		// setting the default values when arguments' values are omitted
+		String slideRef = varargs.length > 0 ? varargs[0] : null;
+		String sessionID = varargs.length > 0 ? varargs[1] : null;
+		// See what forms are available to fill out, either system-wide (leave slideref
+		// to None), or for a particular slide
+		sessionID = sessionId(sessionID);
+		String url;
+		Map<String, String> forms = new HashMap<>();
+		if (slideRef != null) {
+			if (slideRef.startsWith("/")) {
+				slideRef = slideRef.substring(1);
+			}
+			String dir = FilenameUtils.getFullPath(slideRef).substring(0,
+					FilenameUtils.getFullPath(slideRef).length() - 1);
+			url = apiUrl(sessionID, false) + "GetForms?sessionID=" + pmaQ(sessionID) + "&path=" + pmaQ(dir);
+		} else {
+			url = apiUrl(sessionID, false) + "GetForms?sessionID=" + pmaQ(sessionID);
+		}
+		try {
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("GET");
+			String jsonString = getJSONAsStringBuffer(con).toString();
+			if (jsonString != null && jsonString.length() > 0) {
+				if (isJSONObject(jsonString)) {
+					JSONObject jsonResponse = getJSONResponse(jsonString);
+					pmaAmountOfDataDownloaded.put(sessionID,
+							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
+					if (jsonResponse.has("Code")) {
+						throw new Exception("getAvailableForms on  " + slideRef + " resulted in: "
+								+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
+					} else {
+						forms = null;
+					}
+				} else {
+					JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+					pmaAmountOfDataDownloaded.put(sessionID,
+							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
+					for (int i = 0; i < jsonResponse.length(); i++) {
+						forms.put(jsonResponse.optJSONObject(i).get("Key").toString(),
+								jsonResponse.optJSONObject(i).getString("Value"));
+					}
+				}
+			} else {
+				forms = null;
+			}
+		} catch (Exception e) {
+			return null;
+		}
+		return forms;
+	}
+
+	public static String submitFormData(String slideRef, String formID, String formMap, String... varargs) {
+		// setting the default value when argument' value is omitted
+		String sessionID = varargs.length > 0 ? varargs[0] : null;
+		// Not implemented yet
+		sessionID = sessionId(sessionID);
+		if (slideRef.startsWith("/")) {
+			slideRef = slideRef.substring(1);
+		}
+		return null;
+	}
+
+	/**
+	 * This method is used to retrieve the annotations for slide slideRef
+	 * 
+	 * @param slideRef
+	 * @param sessionID
+	 *            it's an optional argument (String) for session's ID, default value
+	 *            set to "null"
+	 * @return
+	 */
+	public static JSONArray getAnnotations(String slideRef, String... varargs) {
+		// setting the default value when argument' value is omitted
+		String sessionID = varargs.length > 0 ? varargs[0] : null;
+		// Retrieve the annotations for slide slideRef
+		sessionID = sessionId(sessionID);
+		if (slideRef.startsWith("/")) {
+			slideRef = slideRef.substring(1);
+		}
+		String dir = FilenameUtils.getFullPath(slideRef).substring(0, FilenameUtils.getFullPath(slideRef).length() - 1);
+		JSONArray data;
+		String url = apiUrl(sessionID, false) + "GetAnnotations?sessionID=" + pmaQ(sessionID) + "&pathOrUid="
+				+ pmaQ(slideRef);
+		try {
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("GET");
+			String jsonString = getJSONAsStringBuffer(con).toString();
+			if (jsonString != null && jsonString.length() > 0) {
+				if (isJSONObject(jsonString)) {
+					JSONObject jsonResponse = getJSONResponse(jsonString);
+					pmaAmountOfDataDownloaded.put(sessionID,
+							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
+					if (jsonResponse.has("Code")) {
+						throw new Exception("getAnnotations() on  " + slideRef + " resulted in: "
+								+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
+					} else {
+						data = null;
+					}
+				} else {
+					JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+					pmaAmountOfDataDownloaded.put(sessionID,
+							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
+					data = jsonResponse;
+				}
+			} else {
+				data = null;
+			}
+		} catch (Exception e) {
+			return null;
+		}
+		return data;
 	}
 
 	/**
