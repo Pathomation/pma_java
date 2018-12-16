@@ -5,6 +5,7 @@ package com.pathomation;
 
 import java.awt.Image;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
@@ -12,6 +13,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,6 +28,7 @@ import java.util.stream.Stream;
 
 import javax.imageio.ImageIO;
 import javax.net.ssl.HttpsURLConnection;
+import javax.swing.filechooser.FileSystemView;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -46,7 +50,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * whole slide imaging and microscopy
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.21
+ * @version 2.0.0.22
  */
 public class Core {
 	private static Map<String, Object> pmaSessions = new HashMap<String, Object>();
@@ -642,14 +646,13 @@ public class Core {
 	 * 
 	 * @return pmaCoreLiteSessionID
 	 */
-
 	public static String getPmaCoreLiteSessionID() {
 		return pmaCoreLiteSessionID;
 	}
 
 	/**
 	 * This method is used to test if sessionID is valid and the server is online
-	 * and reachable This method works only for PMA.core, don't use for PMA.start
+	 * and reachable This method works only for PMA.core, don't use it for PMA.start
 	 * for it will return always false
 	 * 
 	 * @param sessionID
@@ -1007,8 +1010,10 @@ public class Core {
 
 	/**
 	 * This method is used to get the fingerprint for a specific slide
+	 * 
 	 * @param slideRef
-	 * @param strict it's an optional argument (String), default value set to "false"
+	 * @param strict
+	 *            it's an optional argument (String), default value set to "false"
 	 * @param sessionID
 	 *            it's an optional argument (String), default value set to "null"
 	 * @return String containing the fingerprint
@@ -1034,7 +1039,7 @@ public class Core {
 		String fingerprint;
 		String url = apiUrl(sessionID, false) + "GetFingerprint?sessionID=" + pmaQ(sessionID) + "&strict="
 				+ pmaQ(strict.toString()) + "&pathOrUid=" + pmaQ(slideRef);
-		try {	
+		try {
 			URL urlResource = new URL(url);
 			HttpURLConnection con;
 			if (url.startsWith("https")) {
@@ -1591,6 +1596,8 @@ public class Core {
 	}
 
 	/**
+	 * This method is used to get the number of (z-stacked) layers for a slide
+	 * 
 	 * @param slideRef
 	 *            slide's path
 	 * @param sessionID
@@ -1864,18 +1871,43 @@ public class Core {
 	 *            slide's path or UID
 	 * @param sessionID
 	 *            it's an optional argument (String), default value set to "null"
+	 * @param height
+	 *            desired height of the thumbnail, to omit it use value "0"
+	 * @param width
+	 *            desired width of the thumbnail, to omit it use value "0"
 	 * @return String URL that points to the thumbnail for a slide
 	 * @throws Exception
 	 */
-	public static String getThumbnailUrl(String slideRef, String... varargs) throws Exception {
-		// setting the default value when arguments' value is omitted
-		String sessionID = varargs.length > 0 ? varargs[0] : null;
+	public static String getThumbnailUrl(String slideRef, Object... varargs) throws Exception {
+		// setting the default values when arguments' values are omitted
+		String sessionID = null;
+		Integer height = 0;
+		Integer width = 0;
+		if (varargs.length > 0) {
+			if (!(varargs[0] instanceof String) && varargs[0] != null) {
+				throw new IllegalArgumentException("...");
+			}
+			sessionID = (String) varargs[0];
+		}
+		if (varargs.length > 1) {
+			if (!(varargs[1] instanceof Integer) && varargs[1] != null) {
+				throw new IllegalArgumentException("...");
+			}
+			height = (Integer) varargs[1];
+		}
+		if (varargs.length > 2) {
+			if (!(varargs[2] instanceof Integer) && varargs[2] != null) {
+				throw new IllegalArgumentException("...");
+			}
+			width = (Integer) varargs[2];
+		}
 		// Get the URL that points to the thumbnail for a slide
 		sessionID = sessionId(sessionID);
 		if (slideRef.startsWith("/")) {
 			slideRef = slideRef.substring(1);
 		}
-		String url = pmaUrl(sessionID) + "thumbnail" + "?SessionID=" + pmaQ(sessionID) + "&pathOrUid=" + pmaQ(slideRef);
+		String url = pmaUrl(sessionID) + "thumbnail" + "?SessionID=" + pmaQ(sessionID) + "&pathOrUid=" + pmaQ(slideRef)
+				+ ((height > 0) ? "&h=" + height.toString() : "") + ((width > 0) ? "&w=" + width.toString() : "");
 		return url;
 	}
 
@@ -1886,18 +1918,42 @@ public class Core {
 	 *            slide's path
 	 * @param sessionID
 	 *            it's an optional argument (String), default value set to "null"
+	 * @param height
+	 *            desired height of the thumbnail, to omit it use value "0"
+	 * @param width
+	 *            desired width of the thumbnail, to omit it use value "0"
 	 * @return Image thumbnail image for a slide
 	 */
-	public static Image getThumbnailImage(String slideRef, String... varargs) {
-		// setting the default value when arguments' value is omitted
-		String sessionID = varargs.length > 0 ? varargs[0] : null;
+	public static Image getThumbnailImage(String slideRef, Object... varargs) {
+		// setting the default values when arguments' values are omitted
+		String sessionID = null;
+		Integer height = 0;
+		Integer width = 0;
+		if (varargs.length > 0) {
+			if (!(varargs[0] instanceof String) && varargs[0] != null) {
+				throw new IllegalArgumentException("...");
+			}
+			sessionID = (String) varargs[0];
+		}
+		if (varargs.length > 1) {
+			if (!(varargs[1] instanceof Integer) && varargs[1] != null) {
+				throw new IllegalArgumentException("...");
+			}
+			height = (Integer) varargs[1];
+		}
+		if (varargs.length > 2) {
+			if (!(varargs[2] instanceof Integer) && varargs[2] != null) {
+				throw new IllegalArgumentException("...");
+			}
+			width = (Integer) varargs[2];
+		}
 		// Get the thumbnail image for a slide
 		sessionID = sessionId(sessionID);
 		if (slideRef.startsWith("/")) {
 			slideRef = slideRef.substring(1);
 		}
 		try {
-			String url = getThumbnailUrl(slideRef, sessionID);
+			String url = getThumbnailUrl(slideRef, sessionID, height, width);
 			URL urlResource = new URL(url);
 			URLConnection con = urlResource.openConnection();
 			Image img = ImageIO.read(con.getInputStream());
@@ -2601,6 +2657,53 @@ public class Core {
 			System.out.print(e.getMessage());
 			return null;
 		}
+	}
+
+	/**
+	 * This method is used to remove the drive name from a path returned by pma_java
+	 * SDK why is this needed : for PMA.core(.lite) the path sent should include the
+	 * drive name (if not blank) and the paths returned also include the drive name
+	 * e.g. "Primary Disk (C:)/samples" it's necessary to remove drive name from the
+	 * path's root to be able to use these paths in file system
+	 * 
+	 * @param lst
+	 *            List of strings (directories, root directories, slides...)
+	 * @return
+	 */
+	public static List<String> removeDriveName(List<String> lst) {
+		for (int i = 0; i < lst.size(); i++) {
+			String ss = lst.get(i);
+			String root = ss.split("/")[0];
+			if (root.matches(".*\\s\\(..\\)")) {
+				ss = root.substring(root.length() - 3, root.length() - 1) + "/" + ss.substring(root.length());
+				lst.set(i, ss);
+			}
+		}
+		return lst;
+	}
+
+	/**
+	 * This method is used to add the drive name to a path before sending it to
+	 * pma_java SDK why is this needed? : for PMA.core(.lite) the path sent should
+	 * include the drive name (if not blank) and the paths returned also include the
+	 * drive name e.g. "Primary Disk (C:)/samples" it's necessary to add drive name
+	 * to the path's root to be able to make a valid request to PMA.core(.lite)
+	 * 
+	 * @param value
+	 * @return
+	 */
+	public static String createPathWithLabel(String value) {
+		Path path = Paths.get(value);
+		String root = path.getRoot().toString();
+		String displayName = FileSystemView.getFileSystemView().getSystemDisplayName(new File(root));
+		// "Local Disk (x:)" refers to a blank disk name but Windows add the default
+		// label "Local Disk"
+		// we need to omit this case since for it PMA.core(.lite) would require a drive
+		// letter instead of a drive name + letter
+		if (displayName.matches(".*\\s\\(..\\)") && !displayName.matches("Local\\sDisk\\s\\(..\\)")) {
+			value = displayName + "/" + value.substring(root.length());
+		}
+		return value;
 	}
 
 }

@@ -24,7 +24,6 @@ public class UI {
 	public static List<String> pmaUIGalleries = new ArrayList<>();
 	public static int pmaUILoaderCount = 0;
 	public static List<String> pmaUILoaders = new ArrayList<>();
-	public static Core core;
 
 	/**
 	 * internal helper function to prevent PMA.UI framework from being loaded more
