@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.logging.Logger;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -50,7 +51,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * whole slide imaging and microscopy
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.22
+ * @version 2.0.0.23
  */
 public class Core {
 	private static Map<String, Object> pmaSessions = new HashMap<String, Object>();
@@ -63,6 +64,8 @@ public class Core {
 			put(pmaCoreLiteSessionID, 0);
 		}
 	};
+	// for logging purposes
+	public static Logger logger = null;
 
 	/**
 	 * This method is used to get the session's ID
@@ -140,6 +143,9 @@ public class Core {
 				}
 				return url;
 			} else {
+				if (logger != null) {
+					logger.severe("Invalid sessionID:" + sessionID);
+				}
 				throw new Exception("Invalid sessionID:" + sessionID);
 			}
 		}
@@ -161,6 +167,9 @@ public class Core {
 			encoding = encoding == null ? "UTF-8" : encoding;
 			return IOUtils.toString(in, encoding);
 		} catch (Exception e) {
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
 			return null;
 		}
 	}
@@ -180,6 +189,9 @@ public class Core {
 			inputStream.setCharacterStream(new StringReader(s));
 			return documentBuilder.parse(inputStream);
 		} catch (Exception e) {
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
 			return null;
 		}
 	}
@@ -204,6 +216,9 @@ public class Core {
 					.toString().equals("true");
 		} catch (Exception e) {
 			// this happens when NO instance of PMA.core is detected
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
 			return null;
 		}
 	}
@@ -239,7 +254,10 @@ public class Core {
 		try {
 			url = pmaUrl(sessionID);
 		} catch (Exception e) {
-			System.out.print(e.getMessage());
+			// System.out.print(e.getMessage());
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
 			url = null;
 		}
 		if (url == null) {
@@ -346,7 +364,10 @@ public class Core {
 			try {
 				return URLEncoder.encode(arg, "UTF-8").replace("+", "%20");
 			} catch (Exception e) {
-				System.out.print(e.getMessage());
+				// System.out.print(e.getMessage());
+				if (logger != null) {
+					logger.severe(e.getMessage());
+				}
 				return "";
 			}
 		}
@@ -378,7 +399,10 @@ public class Core {
 			JSONArray jsonResponse = getJSONArrayResponse(jsonString);
 			return jsonResponse;
 		} catch (Exception e) {
-			System.out.print(e.getMessage());
+			// System.out.print(e.getMessage());
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
 			return null;
 		}
 	}
@@ -435,7 +459,10 @@ public class Core {
 			JSONArray jsonResponse = getJSONArrayResponse(jsonString);
 			return jsonResponse;
 		} catch (Exception e) {
-			System.out.print(e.getMessage());
+			// System.out.print(e.getMessage());
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
 			return null;
 		}
 	}
@@ -466,7 +493,10 @@ public class Core {
 			JSONArray jsonResponse = getJSONArrayResponse(jsonString);
 			return jsonResponse;
 		} catch (Exception e) {
-			System.out.print(e.getMessage());
+			// System.out.print(e.getMessage());
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
 			return null;
 		}
 	}
@@ -510,6 +540,9 @@ public class Core {
 			return domParser(contents).getChildNodes().item(0).getChildNodes().item(0).getNodeValue().toString();
 		} catch (Exception e) {
 			// this happens when NO instance of PMA.core is detected
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
 			return null;
 		}
 	}
@@ -541,7 +574,10 @@ public class Core {
 			JSONObject jsonResponse = getJSONResponse(jsonString);
 			return jsonResponse;
 		} catch (Exception e) {
-			System.out.print(e.getMessage());
+			// System.out.print(e.getMessage());
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
 			return null;
 		}
 	}
@@ -590,7 +626,10 @@ public class Core {
 			dom = domParser(contents);
 		} catch (Exception e) {
 			// Something went wrong; unable to communicate with specified endpoint
-			System.out.print(e.getMessage());
+			// System.out.print(e.getMessage());
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
 			return null;
 		}
 		try {
@@ -608,6 +647,9 @@ public class Core {
 			}
 			return sessionID;
 		} catch (Exception e) {
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
 			return null;
 		}
 	}
@@ -650,6 +692,10 @@ public class Core {
 		return pmaCoreLiteSessionID;
 	}
 
+	public static String getPmacoreliteurl() {
+		return pmaCoreLiteURL;
+	}
+
 	/**
 	 * This method is used to test if sessionID is valid and the server is online
 	 * and reachable This method works only for PMA.core, don't use it for PMA.start
@@ -678,6 +724,9 @@ public class Core {
 			String jsonString = Core.getJSONAsStringBuffer(con).toString();
 			return jsonString.equals("true") ? true : false;
 		} catch (Exception e) {
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
 			return false;
 		}
 	}
@@ -770,7 +819,10 @@ public class Core {
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				if (jsonResponse.has("Code")) {
-
+					if (logger != null) {
+						logger.severe("get_directories to " + startDir + " resulted in: " + jsonResponse.get("Message")
+								+ " (keep in mind that startDir is case sensitive!)");
+					}
 					throw new Exception("get_directories to " + startDir + " resulted in: "
 							+ jsonResponse.get("Message") + " (keep in mind that startDir is case sensitive!)");
 				} else if (jsonResponse.has("d")) {
@@ -808,7 +860,10 @@ public class Core {
 			return dirs;
 
 		} catch (Exception e) {
-			System.out.print(e.getMessage());
+			// System.out.print(e.getMessage());
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
 			return null;
 		}
 	}
@@ -920,7 +975,10 @@ public class Core {
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				if (jsonResponse.has("Code")) {
-
+					if (logger != null) {
+						logger.severe("get_slides from " + startDir + " resulted in: " + jsonResponse.get("Message")
+								+ " (keep in mind that startDir is case sensitive!)");
+					}
 					throw new Exception("get_slides from " + startDir + " resulted in: " + jsonResponse.get("Message")
 							+ " (keep in mind that startDir is case sensitive!)");
 				} else if (jsonResponse.has("d")) {
@@ -957,7 +1015,10 @@ public class Core {
 			}
 			return slides;
 		} catch (Exception e) {
-			System.out.print(e.getMessage());
+			// System.out.print(e.getMessage());
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
 			return null;
 		}
 	}
@@ -1054,6 +1115,10 @@ public class Core {
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				if (jsonResponse.has("Code")) {
+					if (logger != null) {
+						logger.severe("get_fingerprint on " + slideRef + " resulted in: " + jsonResponse.get("Message")
+								+ " (keep in mind that slideRef is case sensitive!)");
+					}
 					throw new Exception("get_fingerprint on " + slideRef + " resulted in: "
 							+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
 				} else {
@@ -1065,6 +1130,9 @@ public class Core {
 				fingerprint = jsonString;
 			}
 		} catch (Exception e) {
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
 			return null;
 		}
 		return fingerprint;
@@ -1143,6 +1211,9 @@ public class Core {
 			return response;
 
 		} catch (Exception e) {
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
 			return null;
 		}
 	}
@@ -1222,6 +1293,10 @@ public class Core {
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					if (jsonResponse.has("Code")) {
+						if (logger != null) {
+							logger.severe("ImageInfo to " + slideRef + " resulted in: " + jsonResponse.get("Message")
+									+ " (keep in mind that slideRef is case sensitive!)");
+						}
 						throw new Exception("ImageInfo to " + slideRef + " resulted in: " + jsonResponse.get("Message")
 								+ " (keep in mind that slideRef is case sensitive!)");
 					} else if (jsonResponse.has("d")) {
@@ -1246,7 +1321,10 @@ public class Core {
 					return null;
 				}
 			} catch (Exception e) {
-				System.out.print(e.getMessage());
+				// System.out.print(e.getMessage());
+				if (logger != null) {
+					logger.severe(e.getMessage());
+				}
 				return null;
 			}
 		}
@@ -1279,6 +1357,11 @@ public class Core {
 			} catch (Exception e) {
 				System.out.print("Something went wrong consulting the MaxZoomLevel key in info Map; value ="
 						+ info.get("MaxZoomLevel").toString());
+				if (logger != null) {
+					logger.severe(e.getMessage());
+					logger.severe("Something went wrong consulting the MaxZoomLevel key in info Map; value ="
+							+ info.get("MaxZoomLevel").toString());
+				}
 				return 0;
 			}
 		} else {
@@ -1287,6 +1370,11 @@ public class Core {
 			} catch (Exception e) {
 				System.out.print("Something went wrong consulting the NumberOfZoomLevels key in info Map; value ="
 						+ info.get("NumberOfZoomLevels").toString());
+				if (logger != null) {
+					logger.severe(e.getMessage());
+					logger.severe("Something went wrong consulting the NumberOfZoomLevels key in info Map; value ="
+							+ info.get("NumberOfZoomLevels").toString());
+				}
 				return 0;
 			}
 		}
@@ -1760,7 +1848,10 @@ public class Core {
 					pmaAmountOfDataDownloaded.get(sessionID) + con.getInputStream().toString().length());
 			return img;
 		} catch (Exception e) {
-			System.out.print(e.getMessage());
+			// System.out.print(e.getMessage());
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
 			return null;
 		}
 	}
@@ -1801,6 +1892,10 @@ public class Core {
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				if (jsonResponse.has("Code")) {
+					if (logger != null) {
+						logger.severe("get_barcode_text on " + slideRef + " resulted in: " + jsonResponse.get("Message")
+								+ " (keep in mind that slideRef is case sensitive!)");
+					}
 					throw new Exception("get_barcode_text on " + slideRef + " resulted in: "
 							+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
 				} else {
@@ -1812,6 +1907,9 @@ public class Core {
 				barcode = jsonString;
 			}
 		} catch (Exception e) {
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
 			return null;
 		}
 		return barcode;
@@ -1859,7 +1957,10 @@ public class Core {
 					pmaAmountOfDataDownloaded.get(sessionID) + con.getInputStream().toString().length());
 			return img;
 		} catch (Exception e) {
-			System.out.print(e.getMessage());
+			// System.out.print(e.getMessage());
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
 			return null;
 		}
 	}
@@ -1961,7 +2062,10 @@ public class Core {
 					pmaAmountOfDataDownloaded.get(sessionID) + con.getInputStream().toString().length());
 			return img;
 		} catch (Exception e) {
-			System.out.print(e.getMessage());
+			// System.out.print(e.getMessage());
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
 			return null;
 		}
 	}
@@ -2054,6 +2158,9 @@ public class Core {
 		String url;
 		url = pmaUrl(sessionID);
 		if (url == null) {
+			if (logger != null) {
+				logger.severe("Unable to determine the PMA.core instance belonging to " + sessionID);
+			}
 			throw new Exception("Unable to determine the PMA.core instance belonging to " + sessionID);
 		}
 		url = "tile" + "?SessionID=" + pmaQ(sessionID) + "&channels=" + pmaQ("0") + "&layer=" + zStack.toString()
@@ -2069,7 +2176,10 @@ public class Core {
 					pmaAmountOfDataDownloaded.get(sessionID) + con.getInputStream().toString().length());
 			return img;
 		} catch (Exception e) {
-			System.out.print(e.getMessage());
+			// System.out.print(e.getMessage());
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
 			return null;
 		}
 	}
@@ -2215,7 +2325,10 @@ public class Core {
 				try {
 					return getTile(varSlideRef, x, y, varZoomLevel, varZStack, varSessionID, varFormat, varQualty);
 				} catch (Exception e) {
-					System.out.print(e.getMessage());
+					// System.out.print(e.getMessage());
+					if (logger != null) {
+						logger.severe(e.getMessage());
+					}
 					return null;
 				}
 			}
@@ -2261,6 +2374,10 @@ public class Core {
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					if (jsonResponse.has("Code")) {
+						if (logger != null) {
+							logger.severe("getSubmittedForms on  " + slideRef + " resulted in: "
+									+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
+						}
 						throw new Exception("getSubmittedForms on  " + slideRef + " resulted in: "
 								+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
 					} else {
@@ -2285,6 +2402,9 @@ public class Core {
 				forms = null;
 			}
 		} catch (Exception e) {
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
 			return null;
 		}
 		return forms;
@@ -2317,6 +2437,10 @@ public class Core {
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					if (jsonResponse.has("Code")) {
+						if (logger != null) {
+							logger.severe("getSubmittedFormData on  " + slideRef + " resulted in: "
+									+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
+						}
 						throw new Exception("getSubmittedFormData on  " + slideRef + " resulted in: "
 								+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
 					} else {
@@ -2334,6 +2458,9 @@ public class Core {
 				data = null;
 			}
 		} catch (Exception e) {
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
 			return null;
 		}
 		return data;
@@ -2377,6 +2504,9 @@ public class Core {
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					if (jsonResponse.has("Code")) {
+						if (logger != null) {
+							logger.severe("" + jsonResponse.get("Message") + "");
+						}
 						throw new Exception("" + jsonResponse.get("Message") + "");
 					} else {
 						formDef = null;
@@ -2401,6 +2531,9 @@ public class Core {
 				formDef = null;
 			}
 		} catch (Exception e) {
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
 			return null;
 		}
 		return formDef;
@@ -2455,6 +2588,10 @@ public class Core {
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					if (jsonResponse.has("Code")) {
+						if (logger != null) {
+							logger.severe("getAvailableForms on  " + slideRef + " resulted in: "
+									+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
+						}
 						throw new Exception("getAvailableForms on  " + slideRef + " resulted in: "
 								+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
 					} else {
@@ -2473,6 +2610,9 @@ public class Core {
 				forms = null;
 			}
 		} catch (Exception e) {
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
 			return null;
 		}
 		return forms;
@@ -2526,6 +2666,10 @@ public class Core {
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					if (jsonResponse.has("Code")) {
+						if (logger != null) {
+							logger.severe("getAnnotations() on  " + slideRef + " resulted in: "
+									+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
+						}
 						throw new Exception("getAnnotations() on  " + slideRef + " resulted in: "
 								+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
 					} else {
@@ -2541,6 +2685,9 @@ public class Core {
 				data = null;
 			}
 		} catch (Exception e) {
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
 			return null;
 		}
 		return data;
@@ -2577,6 +2724,9 @@ public class Core {
 		} else {
 			url = pmaUrl(sessionID);
 			if (url == null) {
+				if (logger != null) {
+					logger.severe("Unable to determine the PMA.core instance belonging to " + sessionID);
+				}
 				throw new Exception("Unable to determine the PMA.core instance belonging to " + sessionID);
 			}
 			url = "viewer/index.htm" + "?sessionID=" + pmaQ(sessionID) + "^&pathOrUid=" + pmaQ(slideRef); // note the ^&
@@ -2587,7 +2737,10 @@ public class Core {
 		try {
 			Runtime.getRuntime().exec(osCmd + url);
 		} catch (Exception e) {
-			System.out.print(e.getMessage());
+			// System.out.print(e.getMessage());
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
 		}
 	}
 
@@ -2629,7 +2782,10 @@ public class Core {
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				if (jsonResponse.has("Code")) {
-
+					if (logger != null) {
+						logger.severe("get_slides from " + slideRef + " resulted in: " + jsonResponse.get("Message")
+								+ " (keep in mind that slideRef is case sensitive!)");
+					}
 					throw new Exception("get_slides from " + slideRef + " resulted in: " + jsonResponse.get("Message")
 							+ " (keep in mind that slideRef is case sensitive!)");
 				} else if (jsonResponse.has("d")) {
@@ -2654,7 +2810,10 @@ public class Core {
 			}
 
 		} catch (Exception e) {
-			System.out.print(e.getMessage());
+			// System.out.print(e.getMessage());
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
 			return null;
 		}
 	}
@@ -2671,15 +2830,29 @@ public class Core {
 	 * @return
 	 */
 	public static List<String> removeDriveName(List<String> lst) {
-		for (int i = 0; i < lst.size(); i++) {
-			String ss = lst.get(i);
-			String root = ss.split("/")[0];
-			if (root.matches(".*\\s\\(..\\)")) {
-				ss = root.substring(root.length() - 3, root.length() - 1) + "/" + ss.substring(root.length());
-				lst.set(i, ss);
+		try {
+			for (int i = 0; i < lst.size(); i++) {
+				String ss = lst.get(i);
+				String root = ss.split("/")[0];
+				if (root.matches(".*\\s\\(..\\)")) {
+					if (root.equals(ss)) {
+						ss = root.substring(root.length() - 3, root.length() - 1);
+					} else {
+						ss = root.substring(root.length() - 3, root.length() - 1) + "/"
+								+ ss.substring(root.length() + 1);
+					}
+					lst.set(i, ss);
+
+				}
 			}
+			return lst;
+		} catch (Exception e) {
+			// System.out.print(e.getMessage());
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
+			return null;
 		}
-		return lst;
 	}
 
 	/**
