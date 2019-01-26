@@ -8,6 +8,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -51,7 +52,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * whole slide imaging and microscopy
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.23
+ * @version 2.0.0.24
  */
 public class Core {
 	private static Map<String, Object> pmaSessions = new HashMap<String, Object>();
@@ -59,6 +60,7 @@ public class Core {
 	private static final String pmaCoreLiteURL = "http://localhost:54001/";
 	private static final String pmaCoreLiteSessionID = "SDK.Java";
 	private static Boolean pmaUseCacheWhenRetrievingTiles = true;
+	@SuppressWarnings("serial")
 	private static Map<String, Integer> pmaAmountOfDataDownloaded = new HashMap<String, Integer>() {
 		{
 			put(pmaCoreLiteSessionID, 0);
@@ -225,6 +227,7 @@ public class Core {
 
 	/**
 	 * This method is used to define which content will be received "XML" or "Json"
+	 * for "API" group calls
 	 * 
 	 * @param sessionID
 	 *            it's an optional argument (String), default value set to "null"
@@ -269,6 +272,56 @@ public class Core {
 			return join(url, "api/xml/");
 		} else {
 			return join(url, "api/json/");
+		}
+	}
+
+	/**
+	 * This method is used to define which content will be received "XML" or "Json"
+	 * for "Admin" group calls
+	 * 
+	 * @param sessionID
+	 *            it's an optional argument (String), default value set to "null"
+	 * @param xml
+	 *            it's an optional argument (Boolean), default value set to "true"
+	 * @return String add sequence to the url to specify which content to be
+	 *         received (XML or Json)
+	 */
+	private static String adminUrl(Object... varargs) {
+		// setting the default values when arguments' values are omitted
+		String sessionID = null;
+		Boolean xml = true;
+		if (varargs.length > 0) {
+			if (!(varargs[0] instanceof String) && varargs[0] != null) {
+				throw new IllegalArgumentException("...");
+			}
+			sessionID = (String) varargs[0];
+		}
+		if (varargs.length > 1) {
+			if (!(varargs[1] instanceof Boolean) && varargs[1] != null) {
+				throw new IllegalArgumentException("...");
+			}
+			xml = (Boolean) varargs[1];
+		}
+		// let's get the base URL first for the specified session
+		String url;
+		try {
+			url = pmaUrl(sessionID);
+		} catch (Exception e) {
+			// System.out.print(e.getMessage());
+			if (logger != null) {
+				logger.severe(e.getMessage());
+			}
+			url = null;
+		}
+		if (url == null) {
+			// sort of a hopeless situation; there is no URL to refer to
+			return null;
+		}
+		// remember, _pma_url is guaranteed to return a URL that ends with "/"
+		if (xml) {
+			return join(url, "admin/xml/");
+		} else {
+			return join(url, "admin/json/");
 		}
 	}
 
@@ -749,6 +802,44 @@ public class Core {
 		pmaAmountOfDataDownloaded.put(sessionID, pmaAmountOfDataDownloaded.get(sessionID) + contents.length());
 		Document dom = domParser(contents);
 		return xmlToStringArray((Element) dom.getFirstChild());
+	}
+
+	/**
+	 * This method is used to create a new directory on PMA.core
+	 * 
+	 * @param sessionID
+	 * @param path
+	 * @return
+	 */
+	public static boolean createDirectory(String sessionID, String path) {
+		try {
+			// we only create folders on PMA.core
+			if (isLite(pmaUrl(sessionID))) {
+				return false;
+			} else {
+				String url = adminUrl(sessionID, false) + "CreateDirectory";
+				URL urlResource = new URL(url);
+				HttpURLConnection con;
+				if (url.startsWith("https")) {
+					con = (HttpsURLConnection) urlResource.openConnection();
+				} else {
+					con = (HttpURLConnection) urlResource.openConnection();
+				}
+				con.setRequestMethod("POST");
+				con.setRequestProperty("Content-Type", "application/json");
+				con.setUseCaches(false);
+				con.setDoOutput(true);
+				String input = "{ \"sessionID\": \"" + sessionID + "\", \"path\": \"" + path + "\" }";
+				OutputStream os = con.getOutputStream();
+				os.write(input.getBytes("UTF-8"));
+				os.close();
+				String jsonString = Core.getJSONAsStringBuffer(con).toString();
+				return jsonString.equals("true") ? true : false;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
 	}
 
 	/**
@@ -2646,7 +2737,8 @@ public class Core {
 		if (slideRef.startsWith("/")) {
 			slideRef = slideRef.substring(1);
 		}
-		String dir = FilenameUtils.getFullPath(slideRef).substring(0, FilenameUtils.getFullPath(slideRef).length() - 1);
+		// String dir = FilenameUtils.getFullPath(slideRef).substring(0,
+		// FilenameUtils.getFullPath(slideRef).length() - 1);
 		JSONArray data;
 		String url = apiUrl(sessionID, false) + "GetAnnotations?sessionID=" + pmaQ(sessionID) + "&pathOrUid="
 				+ pmaQ(slideRef);
