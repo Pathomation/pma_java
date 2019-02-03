@@ -52,7 +52,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * whole slide imaging and microscopy
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.24
+ * @version 2.0.0.25
  */
 public class Core {
 	private static Map<String, Object> pmaSessions = new HashMap<String, Object>();
@@ -1213,7 +1213,7 @@ public class Core {
 					throw new Exception("get_fingerprint on " + slideRef + " resulted in: "
 							+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
 				} else {
-					return null;
+					return jsonResponse.getString("d");
 				}
 			} else {
 				pmaAmountOfDataDownloaded.put(sessionID,
@@ -1990,7 +1990,7 @@ public class Core {
 					throw new Exception("get_barcode_text on " + slideRef + " resulted in: "
 							+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
 				} else {
-					return null;
+					return jsonResponse.getString("d").equals("null") ? null : jsonResponse.getString("d");
 				}
 			} else {
 				pmaAmountOfDataDownloaded.put(sessionID,
