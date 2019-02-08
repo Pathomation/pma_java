@@ -7,7 +7,7 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="src" path="samples/pma.core"/>
-	<classpathentry excluding="pma.start/|pma.core/" kind="src" path="samples"/>
+	<classpathentry excluding="pma.core/|pma.start/" kind="src" path="samples"/>
 	<classpathentry kind="src" path="samples/pma.start"/>
 	<classpathentry kind="con" path="org.eclipse.m2e.MAVEN2_CLASSPATH_CONTAINER">
 		<attributes>
