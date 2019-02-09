@@ -9,7 +9,9 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.io.StringReader;
+import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
@@ -56,7 +58,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.27
+ * @version 2.0.0.28
  */
 public class Core {
 	private static Map<String, Object> pmaSessions = new HashMap<String, Object>();
@@ -179,8 +181,11 @@ public class Core {
 			encoding = encoding == null ? "UTF-8" : encoding;
 			return IOUtils.toString(in, encoding);
 		} catch (Exception e) {
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -200,8 +205,11 @@ public class Core {
 			inputStream.setCharacterStream(new StringReader(s));
 			return documentBuilder.parse(inputStream);
 		} catch (Exception e) {
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -229,8 +237,11 @@ public class Core {
 					.toString().equals("true");
 		} catch (Exception e) {
 			// this happens when NO instance of PMA.core is detected
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -258,12 +269,18 @@ public class Core {
 		Boolean xml = true;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof String) && varargs[0] != null) {
+				if (logger != null) {
+					logger.severe("apiUrl() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			sessionID = (String) varargs[0];
 		}
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof Boolean) && varargs[1] != null) {
+				if (logger != null) {
+					logger.severe("apiUrl() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			xml = (Boolean) varargs[1];
@@ -273,9 +290,11 @@ public class Core {
 		try {
 			url = pmaUrl(sessionID);
 		} catch (Exception e) {
-			// System.out.print(e.getMessage());
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			url = null;
 		}
@@ -313,12 +332,18 @@ public class Core {
 		Boolean xml = true;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof String) && varargs[0] != null) {
+				if (logger != null) {
+					logger.severe("adminUrl() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			sessionID = (String) varargs[0];
 		}
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof Boolean) && varargs[1] != null) {
+				if (logger != null) {
+					logger.severe("adminUrl() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			xml = (Boolean) varargs[1];
@@ -328,9 +353,11 @@ public class Core {
 		try {
 			url = pmaUrl(sessionID);
 		} catch (Exception e) {
-			// System.out.print(e.getMessage());
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			url = null;
 		}
@@ -439,9 +466,11 @@ public class Core {
 			try {
 				return URLEncoder.encode(arg, "UTF-8").replace("+", "%20");
 			} catch (Exception e) {
-				// System.out.print(e.getMessage());
+				e.printStackTrace();
 				if (logger != null) {
-					logger.severe(e.getMessage());
+					StringWriter sw = new StringWriter();
+					e.printStackTrace(new PrintWriter(sw));
+					logger.severe(sw.toString());
 				}
 				return "";
 			}
@@ -472,9 +501,11 @@ public class Core {
 			JSONArray jsonResponse = getJSONArrayResponse(jsonString);
 			return jsonResponse;
 		} catch (Exception e) {
-			// System.out.print(e.getMessage());
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -526,8 +557,11 @@ public class Core {
 			JSONArray jsonResponse = getJSONArrayResponse(jsonString);
 			return jsonResponse;
 		} catch (Exception e) {
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -557,9 +591,11 @@ public class Core {
 			JSONArray jsonResponse = getJSONArrayResponse(jsonString);
 			return jsonResponse;
 		} catch (Exception e) {
-			// System.out.print(e.getMessage());
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -607,8 +643,11 @@ public class Core {
 			return domParser(contents).getChildNodes().item(0).getChildNodes().item(0).getNodeValue().toString();
 		} catch (Exception e) {
 			// this happens when NO instance of PMA.core is detected
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -640,9 +679,11 @@ public class Core {
 			JSONObject jsonResponse = getJSONResponse(jsonString);
 			return jsonResponse;
 		} catch (Exception e) {
-			// System.out.print(e.getMessage());
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -698,9 +739,11 @@ public class Core {
 			dom = domParser(contents);
 		} catch (Exception e) {
 			// Something went wrong; unable to communicate with specified endpoint
-			// System.out.print(e.getMessage());
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -719,8 +762,11 @@ public class Core {
 			}
 			return sessionID;
 		} catch (Exception e) {
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -807,8 +853,11 @@ public class Core {
 			String jsonString = Core.getJSONAsStringBuffer(con).toString();
 			return jsonString.equals("true") ? true : false;
 		} catch (Exception e) {
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			return false;
 		}
@@ -870,6 +919,11 @@ public class Core {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
+			if (logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
+			}
 			return false;
 		}
 	}
@@ -906,12 +960,18 @@ public class Core {
 		String booleanOrInteger = "";
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof String) && varargs[0] != null) {
+				if (logger != null) {
+					logger.severe("getDirectories() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			sessionID = (String) varargs[0];
 		}
 		if (varargs.length > 1) {
 			if ((!(varargs[1] instanceof Integer) && !(varargs[1] instanceof Boolean)) && (varargs[1] != null)) {
+				if (logger != null) {
+					logger.severe("getDirectories() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			if (varargs[1] instanceof Boolean) {
@@ -987,9 +1047,11 @@ public class Core {
 			return dirs;
 
 		} catch (Exception e) {
-			// System.out.print(e.getMessage());
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -1071,12 +1133,18 @@ public class Core {
 		Integer integerRecursive = 0;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof String) && varargs[0] != null) {
+				if (logger != null) {
+					logger.severe("getSlides() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			sessionID = (String) varargs[0];
 		}
 		if (varargs.length > 1) {
 			if ((!(varargs[1] instanceof Integer) && !(varargs[1] instanceof Boolean)) && (varargs[1] != null)) {
+				if (logger != null) {
+					logger.severe("getSlides() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			if (varargs[1] instanceof Boolean) {
@@ -1152,9 +1220,11 @@ public class Core {
 			}
 			return slides;
 		} catch (Exception e) {
-			// System.out.print(e.getMessage());
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -1228,12 +1298,18 @@ public class Core {
 		String sessionID = null;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof Boolean) && varargs[0] != null) {
+				if (logger != null) {
+					logger.severe("getFingerPrint() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			strict = (Boolean) varargs[0];
 		}
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof String) && varargs[1] != null) {
+				if (logger != null) {
+					logger.severe("getFingerPrint() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			sessionID = (String) varargs[1];
@@ -1273,8 +1349,11 @@ public class Core {
 				fingerprint = jsonString.replace("\"", "");
 			}
 		} catch (Exception e) {
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -1356,8 +1435,11 @@ public class Core {
 			return response;
 
 		} catch (Exception e) {
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -1466,9 +1548,11 @@ public class Core {
 					return null;
 				}
 			} catch (Exception e) {
-				// System.out.print(e.getMessage());
+				e.printStackTrace();
 				if (logger != null) {
-					logger.severe(e.getMessage());
+					StringWriter sw = new StringWriter();
+					e.printStackTrace(new PrintWriter(sw));
+					logger.severe(sw.toString());
 				}
 				return null;
 			}
@@ -1504,8 +1588,11 @@ public class Core {
 			} catch (Exception e) {
 				System.out.print("Something went wrong consulting the MaxZoomLevel key in info Map; value ="
 						+ info.get("MaxZoomLevel").toString());
+				e.printStackTrace();
 				if (logger != null) {
-					logger.severe(e.getMessage());
+					StringWriter sw = new StringWriter();
+					e.printStackTrace(new PrintWriter(sw));
+					logger.severe(sw.toString());
 					logger.severe("Something went wrong consulting the MaxZoomLevel key in info Map; value ="
 							+ info.get("MaxZoomLevel").toString());
 				}
@@ -1517,8 +1604,11 @@ public class Core {
 			} catch (Exception e) {
 				System.out.print("Something went wrong consulting the NumberOfZoomLevels key in info Map; value ="
 						+ info.get("NumberOfZoomLevels").toString());
+				e.printStackTrace();
 				if (logger != null) {
-					logger.severe(e.getMessage());
+					StringWriter sw = new StringWriter();
+					e.printStackTrace(new PrintWriter(sw));
+					logger.severe(sw.toString());
 					logger.severe("Something went wrong consulting the NumberOfZoomLevels key in info Map; value ="
 							+ info.get("NumberOfZoomLevels").toString());
 				}
@@ -1551,12 +1641,18 @@ public class Core {
 		Integer minNumberOfTiles = 0;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof String) && varargs[0] != null) {
+				if (logger != null) {
+					logger.severe("getZoomLevelsList() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			sessionID = (String) varargs[0];
 		}
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof Integer) && varargs[1] != null) {
+				if (logger != null) {
+					logger.severe("getZoomLevelsList() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			minNumberOfTiles = (Integer) varargs[1];
@@ -1597,12 +1693,18 @@ public class Core {
 		Integer minNumberOfTiles = 0;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof String) && varargs[0] != null) {
+				if (logger != null) {
+					logger.severe("getZoomLevelsDict() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			sessionID = (String) varargs[0];
 		}
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof Integer) && varargs[1] != null) {
+				if (logger != null) {
+					logger.severe("getZoomLevelsDict() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			minNumberOfTiles = (Integer) varargs[1];
@@ -1656,12 +1758,18 @@ public class Core {
 		String sessionID = null;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof Integer) && varargs[0] != null) {
+				if (logger != null) {
+					logger.severe("getZoomLevelsDict() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			zoomLevel = (Integer) varargs[0];
 		}
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof String) && varargs[1] != null) {
+				if (logger != null) {
+					logger.severe("getZoomLevelsDict() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			sessionID = (String) varargs[1];
@@ -1711,12 +1819,18 @@ public class Core {
 		String sessionID = null;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof Integer) && varargs[0] != null) {
+				if (logger != null) {
+					logger.severe("getPixelDimensions() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			zoomLevel = (Integer) varargs[0];
 		}
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof String) && varargs[1] != null) {
+				if (logger != null) {
+					logger.severe("getPixelDimensions() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			sessionID = (String) varargs[1];
@@ -1760,12 +1874,18 @@ public class Core {
 		String sessionID = null;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof Integer) && varargs[0] != null) {
+				if (logger != null) {
+					logger.severe("getNumberOfTiles() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			zoomLevel = (Integer) varargs[0];
 		}
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof String) && varargs[1] != null) {
+				if (logger != null) {
+					logger.severe("getNumberOfTiles() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			sessionID = (String) varargs[1];
@@ -1953,18 +2073,27 @@ public class Core {
 		String sessionID = null;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof Integer) && varargs[0] != null) {
+				if (logger != null) {
+					logger.severe("getMagnification() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			zoomLevel = (Integer) varargs[0];
 		}
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof Boolean) && varargs[1] != null) {
+				if (logger != null) {
+					logger.severe("getMagnification() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			exact = (Boolean) varargs[1];
 		}
 		if (varargs.length > 2) {
 			if (!(varargs[2] instanceof String) && varargs[2] != null) {
+				if (logger != null) {
+					logger.severe("getMagnification() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			sessionID = (String) varargs[2];
@@ -2009,6 +2138,11 @@ public class Core {
 			return url;
 		} catch (Exception e) {
 			e.printStackTrace();
+			if (logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
+			}
 			return null;
 		}
 
@@ -2041,9 +2175,11 @@ public class Core {
 					pmaAmountOfDataDownloaded.get(sessionID) + con.getInputStream().toString().length());
 			return img;
 		} catch (Exception e) {
-			// System.out.print(e.getMessage());
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -2102,8 +2238,11 @@ public class Core {
 				barcode = jsonString.replace("\"", "");
 			}
 		} catch (Exception e) {
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -2155,9 +2294,11 @@ public class Core {
 					pmaAmountOfDataDownloaded.get(sessionID) + con.getInputStream().toString().length());
 			return img;
 		} catch (Exception e) {
-			// System.out.print(e.getMessage());
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -2191,18 +2332,27 @@ public class Core {
 		Integer width = 0;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof String) && varargs[0] != null) {
+				if (logger != null) {
+					logger.severe("getThumbnailUrl() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			sessionID = (String) varargs[0];
 		}
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof Integer) && varargs[1] != null) {
+				if (logger != null) {
+					logger.severe("getThumbnailUrl() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			height = (Integer) varargs[1];
 		}
 		if (varargs.length > 2) {
 			if (!(varargs[2] instanceof Integer) && varargs[2] != null) {
+				if (logger != null) {
+					logger.severe("getThumbnailUrl() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			width = (Integer) varargs[2];
@@ -2219,6 +2369,11 @@ public class Core {
 			return url;
 		} catch (Exception e) {
 			e.printStackTrace();
+			if (logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
+			}
 			return null;
 		}
 	}
@@ -2251,18 +2406,27 @@ public class Core {
 		Integer width = 0;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof String) && varargs[0] != null) {
+				if (logger != null) {
+					logger.severe("getThumbnailImage() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			sessionID = (String) varargs[0];
 		}
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof Integer) && varargs[1] != null) {
+				if (logger != null) {
+					logger.severe("getThumbnailImage() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			height = (Integer) varargs[1];
 		}
 		if (varargs.length > 2) {
 			if (!(varargs[2] instanceof Integer) && varargs[2] != null) {
+				if (logger != null) {
+					logger.severe("getThumbnailImage() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			width = (Integer) varargs[2];
@@ -2281,9 +2445,11 @@ public class Core {
 					pmaAmountOfDataDownloaded.get(sessionID) + con.getInputStream().toString().length());
 			return img;
 		} catch (Exception e) {
-			// System.out.print(e.getMessage());
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -2337,42 +2503,63 @@ public class Core {
 		Integer quality = 100;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof Integer) && varargs[0] != null) {
+				if (logger != null) {
+					logger.severe("getTile() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			x = (Integer) varargs[0];
 		}
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof Integer) && varargs[1] != null) {
+				if (logger != null) {
+					logger.severe("getTile() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			y = (Integer) varargs[1];
 		}
 		if (varargs.length > 2) {
 			if (!(varargs[2] instanceof Integer) && varargs[2] != null) {
+				if (logger != null) {
+					logger.severe("getTile() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			zoomLevel = (Integer) varargs[2];
 		}
 		if (varargs.length > 3) {
 			if (!(varargs[3] instanceof Integer) && varargs[3] != null) {
+				if (logger != null) {
+					logger.severe("getTile() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			zStack = (Integer) varargs[3];
 		}
 		if (varargs.length > 4) {
 			if (!(varargs[4] instanceof String) && varargs[4] != null) {
+				if (logger != null) {
+					logger.severe("getTile() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			sessionID = (String) varargs[4];
 		}
 		if (varargs.length > 5) {
 			if (!(varargs[5] instanceof String) && varargs[5] != null) {
+				if (logger != null) {
+					logger.severe("getTile() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			format = (String) varargs[5];
 		}
 		if (varargs.length > 6) {
 			if (!(varargs[6] instanceof Integer) && varargs[6] != null) {
+				if (logger != null) {
+					logger.severe("getTile() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			quality = (Integer) varargs[6];
@@ -2410,9 +2597,11 @@ public class Core {
 					pmaAmountOfDataDownloaded.get(sessionID) + con.getInputStream().toString().length());
 			return img;
 		} catch (Exception e) {
-			// System.out.print(e.getMessage());
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -2476,54 +2665,81 @@ public class Core {
 		Integer quality = 100;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof Integer) && varargs[0] != null) {
+				if (logger != null) {
+					logger.severe("getTiles() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			fromX = (Integer) varargs[0];
 		}
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof Integer) && varargs[1] != null) {
+				if (logger != null) {
+					logger.severe("getTiles() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			fromY = (Integer) varargs[1];
 		}
 		if (varargs.length > 2) {
 			if (!(varargs[2] instanceof Integer) && varargs[2] != null) {
+				if (logger != null) {
+					logger.severe("getTiles() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			toX = (Integer) varargs[2];
 		}
 		if (varargs.length > 3) {
 			if (!(varargs[3] instanceof Integer) && varargs[3] != null) {
+				if (logger != null) {
+					logger.severe("getTiles() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			toY = (Integer) varargs[3];
 		}
 		if (varargs.length > 4) {
 			if (!(varargs[4] instanceof Integer) && varargs[4] != null) {
+				if (logger != null) {
+					logger.severe("getTiles() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			zoomLevel = (Integer) varargs[4];
 		}
 		if (varargs.length > 5) {
 			if (!(varargs[5] instanceof Integer) && varargs[5] != null) {
+				if (logger != null) {
+					logger.severe("getTiles() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			zStack = (Integer) varargs[5];
 		}
 		if (varargs.length > 6) {
 			if (!(varargs[6] instanceof String) && varargs[6] != null) {
+				if (logger != null) {
+					logger.severe("getTiles() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			sessionID = (String) varargs[6];
 		}
 		if (varargs.length > 7) {
 			if (!(varargs[7] instanceof String) && varargs[7] != null) {
+				if (logger != null) {
+					logger.severe("getTiles() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			format = (String) varargs[7];
 		}
 		if (varargs.length > 8) {
 			if (!(varargs[8] instanceof Integer) && varargs[8] != null) {
+				if (logger != null) {
+					logger.severe("getTiles() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			quality = (Integer) varargs[8];
@@ -2577,9 +2793,11 @@ public class Core {
 				try {
 					return getTile(varSlideRef, x, y, varZoomLevel, varZStack, varSessionID, varFormat, varQualty);
 				} catch (Exception e) {
-					// System.out.print(e.getMessage());
+					e.printStackTrace();
 					if (logger != null) {
-						logger.severe(e.getMessage());
+						StringWriter sw = new StringWriter();
+						e.printStackTrace(new PrintWriter(sw));
+						logger.severe(sw.toString());
 					}
 					return null;
 				}
@@ -2655,8 +2873,11 @@ public class Core {
 				forms = null;
 			}
 		} catch (Exception e) {
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -2722,8 +2943,11 @@ public class Core {
 				data = null;
 			}
 		} catch (Exception e) {
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -2797,8 +3021,11 @@ public class Core {
 				formDef = null;
 			}
 		} catch (Exception e) {
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -2878,8 +3105,11 @@ public class Core {
 				forms = null;
 			}
 		} catch (Exception e) {
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -2965,8 +3195,11 @@ public class Core {
 				data = null;
 			}
 		} catch (Exception e) {
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -3019,9 +3252,11 @@ public class Core {
 		try {
 			Runtime.getRuntime().exec(osCmd + url);
 		} catch (Exception e) {
-			// System.out.print(e.getMessage());
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 		}
 	}
@@ -3093,9 +3328,11 @@ public class Core {
 			}
 
 		} catch (Exception e) {
-			// System.out.print(e.getMessage());
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -3128,9 +3365,11 @@ public class Core {
 			}
 			return lst;
 		} catch (Exception e) {
-			// System.out.print(e.getMessage());
+			e.printStackTrace();
 			if (logger != null) {
-				logger.severe(e.getMessage());
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
 			return null;
 		}
