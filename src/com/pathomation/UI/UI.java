@@ -3,6 +3,7 @@ package com.pathomation.UI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import com.pathomation.Core;
 
@@ -23,6 +24,8 @@ public class UI {
 	public static List<String> pmaUIGalleries = new ArrayList<>();
 	public static int pmaUILoaderCount = 0;
 	public static List<String> pmaUILoaders = new ArrayList<>();
+	// for logging purposes
+	public static Logger logger = null;
 
 	/**
 	 * Internal helper function to prevent PMA.UI framework from being loaded more
@@ -134,12 +137,18 @@ public class UI {
 		Map<String, String> options = null;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof String) && varargs[0] != null) {
+				if (logger != null) {
+					logger.severe("embedSlideByUsername() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			password = (String) varargs[0];
 		}
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof Map<?, ?>) && varargs[1] != null) {
+				if (logger != null) {
+					logger.severe("embedSlideByUsername() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 
@@ -227,12 +236,18 @@ public class UI {
 		Map<String, String> options = null;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof String) && varargs[0] != null) {
+				if (logger != null) {
+					logger.severe("embedGalleryByUsername() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 			password = (String) varargs[0];
 		}
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof Map<?, ?>) && varargs[1] != null) {
+				if (logger != null) {
+					logger.severe("embedGalleryByUsername() : Illegal argument");
+				}
 				throw new IllegalArgumentException("...");
 			}
 
@@ -257,15 +272,26 @@ public class UI {
 	public static String linkGalleryToViewport(String galleryDiv, String viewportDiv) throws Exception {
 		// verify the validity of the galleryDiv argument
 		if (pmaUIViewports.contains(galleryDiv)) {
+			if (logger != null) {
+				logger.severe(
+						"galleryDiv is not a PMA.UI gallery (it's actually a viewport; did you switch the arguments up?)");
+			}
 			throw new Exception(
 					"galleryDiv is not a PMA.UI gallery (it's actually a viewport; did you switch the arguments up?)");
 		}
 		if (!pmaUIGalleries.contains(galleryDiv)) {
+			if (logger != null) {
+				logger.severe("galleryDiv is not a valid PMA.UI gallery container");
+			}
 			throw new Exception("galleryDiv is not a valid PMA.UI gallery container");
 		}
 
 		// verify the validity of the $viewportDiv argument
 		if (pmaUIGalleries.contains(viewportDiv)) {
+			if (logger != null) {
+				logger.severe(
+						"viewportDiv is not a PMA.UI viewport (it's actually a gallery; did you switch the arguments up?)");
+			}
 			throw new Exception(
 					"viewportDiv is not a PMA.UI viewport (it's actually a gallery; did you switch the arguments up?)");
 		}
