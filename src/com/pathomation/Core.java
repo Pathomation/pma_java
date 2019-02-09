@@ -49,11 +49,14 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * <h1>Java SDK</h1> Java wrapper library for PMA.start, a universal viewer for
- * whole slide imaging and microscopy
+ * <h1>Java SDK</h1>
+ * <p>
+ * Java wrapper library for PMA.start, a universal viewer for whole slide
+ * imaging and microscopy
+ * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.26
+ * @version 2.0.0.27
  */
 public class Core {
 	private static Map<String, Object> pmaSessions = new HashMap<String, Object>();
@@ -73,9 +76,13 @@ public class Core {
 	/**
 	 * This method is used to get the session's ID
 	 * 
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return String returns the actual session's ID
+	 * @param varargs Array of optional arguments
+	 *                <p>
+	 *                sessionID : First optional argument(String), default
+	 *                value(null), session's ID
+	 *                </p>
+	 * @return The same sessionID if explicited, otherwise it recovers a session's
+	 *         ID
 	 */
 	private static String sessionId(String... varargs) {
 		// setting the default value when argument's value is omitted
@@ -93,7 +100,7 @@ public class Core {
 	/**
 	 * This method is used to get PMA.core active session
 	 * 
-	 * @return String returns PMA.core active session
+	 * @return PMA.core active session
 	 */
 	private static String firstSessionId() {
 		// do we have any stored sessions from earlier login events?
@@ -122,10 +129,13 @@ public class Core {
 	/**
 	 * This method is used to get the url related to the session's ID
 	 * 
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return String url related to the session's ID
-	 * @throws Exception
+	 * @param varargs Array of optional arguments
+	 *                <p>
+	 *                sessionID : First optional argument(String), default
+	 *                value(null), session's ID
+	 *                </p>
+	 * @return Url related to the session's ID
+	 * @throws Exception if sessionID is invalid
 	 */
 	private static String pmaUrl(String... varargs) throws Exception {
 		// setting the default value when argument's value is omitted
@@ -158,7 +168,7 @@ public class Core {
 	 * This method is used to retrieve HTML Code from URL
 	 * 
 	 * @param url to get HTML code from
-	 * @return String HTML code generated from the url argument
+	 * @return HTML code generated from the url argument
 	 */
 	public static String urlReader(String url) {
 		try {
@@ -201,9 +211,12 @@ public class Core {
 	 * This method is used to check if an instance of PMA.core is running (by
 	 * checking the existence of value "true" in a XML file)
 	 * 
-	 * @param pmaCoreURL it's an optional argument (String), default value set to
-	 *                   "pmaCoreLiteURL"
-	 * @return Boolean true if an instance of PMA.core is running, false otherwise
+	 * @param varargs Array of optional arguments
+	 *                <p>
+	 *                pmaCoreURL : First optional argument(String), default
+	 *                value(Class field pmaCoreLiteURL), url of PMA.core instance
+	 *                </p>
+	 * @return True if an instance of PMA.core is running, false otherwise
 	 */
 	private static Boolean pmaIsLite(String... varargs) {
 		// setting the default value when argument's value is omitted
@@ -225,14 +238,19 @@ public class Core {
 
 	/**
 	 * This method is used to define which content will be received "XML" or "Json"
-	 * for "API" group calls
+	 * for "API" Web service calls
 	 * 
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @param xml       it's an optional argument (Boolean), default value set to
-	 *                  "true"
-	 * @return String add sequence to the url to specify which content to be
-	 *         received (XML or Json)
+	 * @param varargs Array of optional arguments
+	 *                <p>
+	 *                sessionID : First optional argument(String), default
+	 *                value(null), session's ID
+	 *                </p>
+	 *                <p>
+	 *                xml : Second optional argument(Boolean), default value(true),
+	 *                define if method will return XML or Json content
+	 *                </p>
+	 * @return Add a sequence to the url to specify which content to be received
+	 *         (XML or Json)
 	 */
 	private static String apiUrl(Object... varargs) {
 		// setting the default values when arguments' values are omitted
@@ -275,14 +293,19 @@ public class Core {
 
 	/**
 	 * This method is used to define which content will be received "XML" or "Json"
-	 * for "Admin" group calls
+	 * for "Admin" Web service calls
 	 * 
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @param xml       it's an optional argument (Boolean), default value set to
-	 *                  "true"
-	 * @return String add sequence to the url to specify which content to be
-	 *         received (XML or Json)
+	 * @param varargs Array of optional arguments
+	 *                <p>
+	 *                sessionID : First optional argument(String), default
+	 *                value(null), session's ID
+	 *                </p>
+	 *                <p>
+	 *                xml : Second optional argument(Boolean), default value(true),
+	 *                define if method will return XML or Json content
+	 *                </p>
+	 * @return Adds sequence to the url to specify which content to be received (XML
+	 *         or Json)
 	 */
 	private static String adminUrl(Object... varargs) {
 		// setting the default values when arguments' values are omitted
@@ -327,13 +350,14 @@ public class Core {
 	 * This method is used to concatenate a couple of Strings while replacing "\\"
 	 * by "/"
 	 * 
-	 * @param s array of Strings
-	 * @return String concatenation of a couple of String while making sure the
-	 *         first string always ends with "/"
+	 * @param varargs Array of String optional arguments, each argument is a string
+	 *                to be concatenated
+	 * @return Concatenation of a couple of String while making sure the first
+	 *         string always ends with "/"
 	 */
-	private static String join(String... s) {
+	private static String join(String... varargs) {
 		String joinString = "";
-		for (String ss : s) {
+		for (String ss : varargs) {
 			if (!joinString.endsWith("/") && (!joinString.equals(""))) {
 				joinString = joinString.concat("/");
 			}
@@ -348,10 +372,13 @@ public class Core {
 	 * This method is used to get a list of the values of "String" tags of a XML
 	 * document
 	 * 
-	 * @param root  XML document
-	 * @param limit it's an optional argument (int), default value set to "0"
-	 * @return List{@literal <}String{@literal >} a list of the values of "String"
-	 *         tags of a XML document
+	 * @param root    XML document
+	 * @param varargs Array of optional arguments
+	 *                <p>
+	 *                limit : First optional argument(int), default value(0),
+	 *                defines a limit
+	 *                </p>
+	 * @return Values' list of tags named "string" in a XML document
 	 */
 	private static List<String> xmlToStringArray(Document root, Integer... varargs) {
 		// setting the default value when argument's value is omitted
@@ -374,10 +401,13 @@ public class Core {
 	 * This method is an overload of method xmlToStringArray to cope with "root"
 	 * argument as an "Element" instead of a "Document"
 	 * 
-	 * @param root  XML document
-	 * @param limit it's an optional argument (int), default value set to "0"
-	 * @return List{@literal <}String{@literal >} a list of the values of "String"
-	 *         tags of a XML document
+	 * @param root    XML document
+	 * @param varargs Array of optional arguments
+	 *                <p>
+	 *                limit : First optional argument(int), default value(0),
+	 *                defines a limit
+	 *                </p>
+	 * @return Values' list of tags named "string" in a XML document
 	 */
 	private static List<String> xmlToStringArray(Element root, Integer... varargs) {
 		// setting the default value when argument's value is omitted
@@ -400,7 +430,7 @@ public class Core {
 	 * This method is used to encode a String to be compatible as a url
 	 * 
 	 * @param arg string to be encoded
-	 * @return String encoded String to be compatible as a url
+	 * @return Encoded String to be compatible as a url
 	 */
 	private static String pmaQ(String arg) {
 		if (arg == null) {
@@ -423,7 +453,7 @@ public class Core {
 	 * 
 	 * @param pmaControlURL    URL for PMA.Control
 	 * @param pmaCoreSessionID PMA.core session ID
-	 * @return JSONArray containing the list of sessions
+	 * @return List of registred sessions
 	 */
 	public static JSONArray getSessions(String pmaControlURL, String pmaCoreSessionID) {
 		String url = join(pmaControlURL, "api/Sessions?sessionID=" + pmaQ(pmaCoreSessionID));
@@ -456,8 +486,7 @@ public class Core {
 	 * 
 	 * @param pmaControlURL    URL for PMA.Control
 	 * @param pmaCoreSessionID PMA.core session ID
-	 * @return Mapt{@literal <}String, Mapt{@literal <}String,
-	 *         Stringt{@literal >}t{@literal >} containing the sessions' IDs
+	 * @return Map of data related to registred session IDs
 	 */
 	public static Map<String, Map<String, String>> getSessionIds(String pmaControlURL, String pmaCoreSessionID) {
 		JSONArray fullSessions = getSessions(pmaControlURL, pmaCoreSessionID);
@@ -479,11 +508,10 @@ public class Core {
 	 * 
 	 * @param pmaControlURL    URL for PMA.Control
 	 * @param pmaCoreSessionID PMA.core session ID
-	 * @return JSONArray containing the list of case sessions
+	 * @return Array of case collections
 	 */
 	public static JSONArray getCaseCollections(String pmaControlURL, String pmaCoreSessionID) {
 		String url = join(pmaControlURL, "api/CaseCollections?sessionID=" + pmaQ(pmaCoreSessionID));
-		System.out.println(url);
 		try {
 			URL urlResource = new URL(url);
 			HttpURLConnection con;
@@ -498,7 +526,6 @@ public class Core {
 			JSONArray jsonResponse = getJSONArrayResponse(jsonString);
 			return jsonResponse;
 		} catch (Exception e) {
-			// System.out.print(e.getMessage());
 			if (logger != null) {
 				logger.severe(e.getMessage());
 			}
@@ -511,7 +538,7 @@ public class Core {
 	 * 
 	 * @param pmaControlURL    URL for PMA.Control
 	 * @param pmaCoreSessionID PMA.core session ID
-	 * @return JSONArray containing the list of projects
+	 * @return Array of projects
 	 */
 	public static JSONArray getProjects(String pmaControlURL, String pmaCoreSessionID) {
 		String url = join(pmaControlURL, "api/Projects?sessionID=" + pmaQ(pmaCoreSessionID));
@@ -542,10 +569,12 @@ public class Core {
 	 * This method is used to check if there is a PMA.core.lite or PMA.core instance
 	 * running
 	 * 
-	 * @param pmacoreURL it's an optional argument (String), default value set to
-	 *                   "pmaCoreLiteURL"
-	 * @return Boolean checking if there is a PMA.core.lite or PMA.core instance
-	 *         running
+	 * @param varargs Array of optional arguments
+	 *                <p>
+	 *                pmaCoreURL : First optional argument(String), default
+	 *                value(Class field pmaCoreLiteURL), url of PMA.core instance
+	 *                </p>
+	 * @return Checks if there is a PMA.core.lite or PMA.core instance running
 	 */
 	public static Boolean isLite(String... varargs) {
 		// setting the default value when argument's value is omitted
@@ -557,9 +586,12 @@ public class Core {
 	/**
 	 * This method is used to get the version number
 	 * 
-	 * @param pmacoreURL it's an optional argument (String), default value set to
-	 *                   "pmaCoreLiteURL"
-	 * @return String version number
+	 * @param varargs Array of optional arguments
+	 *                <p>
+	 *                pmaCoreURL : First optional argument(String), default
+	 *                value(Class field pmaCoreLiteURL), url of PMA.core instance
+	 *                </p>
+	 * @return Version number
 	 */
 	public static String getVersionInfo(String... varargs) {
 		// setting the default value when argument's value is omitted
@@ -587,7 +619,7 @@ public class Core {
 	 * pmacontrolURL
 	 * 
 	 * @param pmaControlURL PMA Control's URL
-	 * @return JSONObject containing the version info
+	 * @return Version information
 	 */
 	public static JSONObject getVersionInfoPmaControl(String pmaControlURL) {
 		// Get version info from PMA.control instance running at pmacontrolURL
@@ -619,14 +651,21 @@ public class Core {
 	/**
 	 * This method is used to authenticate &amp; connect to a PMA.core instance
 	 * using credentials
-	 * 
-	 * @param pmacoreURL      it's an optional argument (String), default value set
-	 *                        to "pmaCoreLiteURL"
-	 * @param pmacoreUsername it's an optional argument (String), default value set
-	 *                        to ""
-	 * @param pmacorePassword it's an optional argument (String), default value set
-	 *                        to ""
-	 * @return String sessionID of the successfully created session
+	 *
+	 * @param varargs Array of optional arguments
+	 *                <p>
+	 *                pmacoreURL : First optional argument(String), default
+	 *                value(Class field pmaCoreLiteURL), url of PMA.core instance
+	 *                </p>
+	 *                <p>
+	 *                pmacoreUsername : Second optional argument(String), default
+	 *                value(""), username for PMA.core instance
+	 *                </p>
+	 *                <p>
+	 *                pmacorePassword : Third optional argument(String), default
+	 *                value(""), password for PMA.core instance
+	 *                </p>
+	 * @return session's ID if session was created successfully, otherwise null
 	 */
 	public static String connect(String... varargs) {
 		// setting the default values when arguments' values are omitted
@@ -690,8 +729,11 @@ public class Core {
 	/**
 	 * This method is used to disconnect from a running PMA.core instance
 	 * 
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
+	 * @param varargs Array of optional arguments
+	 *                <p>
+	 *                sessionID : First optional argument(String), default
+	 *                value(null), session's ID
+	 *                </p>
 	 * @return true if there was a PMA.core instance running to disconnect from,
 	 *         false otherwise
 	 */
@@ -717,14 +759,19 @@ public class Core {
 	}
 
 	/**
-	 * Getter for member pmaCoreLiteSessionID
+	 * Getter for Class field pmaCoreLiteSessionID
 	 * 
-	 * @return pmaCoreLiteSessionID
+	 * @return value of Class field pmaCoreLiteSessionID
 	 */
 	public static String getPmaCoreLiteSessionID() {
 		return pmaCoreLiteSessionID;
 	}
 
+	/**
+	 * Getter for Class field pmaCoreLiteURL
+	 * 
+	 * @return value of Class field pmaCoreLiteURL
+	 */
 	public static String getPmacoreliteurl() {
 		return pmaCoreLiteURL;
 	}
@@ -734,10 +781,13 @@ public class Core {
 	 * and reachable This method works only for PMA.core, don't use it for PMA.start
 	 * for it will return always false
 	 * 
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return boolean true if sessionID is valid and the server is online and
-	 *         reachable, false otherwise
+	 * @param varargs Array of optional arguments
+	 *                <p>
+	 *                sessionID : First optional argument(String), default
+	 *                value(null), session's ID
+	 *                </p>
+	 * @return true if sessionID is valid and the server is online and reachable,
+	 *         false otherwise
 	 */
 	public static boolean ping(String... varargs) {
 		// setting the default value when argument's value is omitted
@@ -767,10 +817,12 @@ public class Core {
 	/**
 	 * This method is used to get root-directories available for a sessionID
 	 * 
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return List{@literal <}String{@literal >} Array of root-directories
-	 *         available to sessionID
+	 * @param varargs Array of optional arguments
+	 *                <p>
+	 *                sessionID : First optional argument(String), default
+	 *                value(null), session's ID
+	 *                </p>
+	 * @return Array of root-directories available to a session's ID
 	 */
 	public static List<String> getRootDirectories(String... varargs) {
 		// setting the default value when argument's value is omitted
@@ -787,9 +839,9 @@ public class Core {
 	/**
 	 * This method is used to create a new directory on PMA.core
 	 * 
-	 * @param sessionID
-	 * @param path
-	 * @return
+	 * @param sessionID a session ID
+	 * @param path      path to create the new directory in
+	 * @return true if directory was created successfully, false otherwise
 	 */
 	public static boolean createDirectory(String sessionID, String path) {
 		try {
@@ -824,16 +876,22 @@ public class Core {
 
 	/**
 	 * This method is used to get sub-directories available to sessionID in the
-	 * start directory
+	 * start directory following a recursive (or not) approach
 	 * 
-	 * @param startDir  Start directory
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @param recursive it's an optional argument (can be Boolean or Integer), it
-	 *                  defines if recursion applies and if yes its depth
-	 * 
-	 * @return List{@literal <}String{@literal >} sub-directories available to
-	 *         sessionID in the start directory
+	 * @param startDir Start directory
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 *                 <p>
+	 *                 recursivity : Second optional argument(Boolean or Integer),
+	 *                 default value(Boolean, false), if it's a Boolean if defines
+	 *                 either no recursivity or a limitless recursivity, if it's an
+	 *                 Integer it defines a limited in depth recursivity or no
+	 *                 recursivity at all if this Integer equals 0
+	 *                 </p>
+	 * @return Sub-directories available to a session's ID in a start directory
 	 */
 	public static List<String> getDirectories(String startDir, Object... varargs) {
 		// setting the default values when arguments' values are omitted
@@ -940,11 +998,16 @@ public class Core {
 	/**
 	 * This method is used to get the first non empty directory
 	 * 
-	 * @param startDir  it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return String Path to the first non empty directory
+	 * @param varargs Array of optional arguments
+	 *                <p>
+	 *                startDir : First optional argument(String), default
+	 *                value(null), start directory
+	 *                </p>
+	 *                <p>
+	 *                sessionID : Second optional argument(String), default
+	 *                value(null), session's ID
+	 *                </p>
+	 * @return Path to the first non empty directory found
 	 */
 	public static String getFirstNonEmptyDirectory(String... varargs) {
 		// setting the default values when arguments' values are omitted
@@ -978,15 +1041,22 @@ public class Core {
 
 	/**
 	 * This method is used to get a list of slides available to sessionID in the
-	 * start directory
+	 * start directory following a recursive (or not) approach
 	 * 
-	 * @param startDir  Start directory
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @param recursive it's an optional argument (can be Boolean or Integer), it
-	 *                  defines if recursion applies and if yes its depth
-	 * @return List{@literal <}String{@literal >} list of slides available to
-	 *         sessionID in the start directory
+	 * @param startDir Start directory
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 *                 <p>
+	 *                 recursivity : Second optional argument(Boolean or Integer),
+	 *                 default value(Boolean, false), if it's a Boolean if defines
+	 *                 either no recursivity or a limitless recursivity, if it's an
+	 *                 Integer it defines a limited in depth recursivity or no
+	 *                 recursivity at all if this Integer equals 0
+	 *                 </p>
+	 * @return List of slides available to a session's ID in a start directory
 	 */
 	public static List<String> getSlides(String startDir, Object... varargs) {
 		// setting the default values when arguments' values are omitted
@@ -1094,7 +1164,7 @@ public class Core {
 	 * This method is used to determine the file extension for a slide's path
 	 * 
 	 * @param slideRef slide's path
-	 * @return String file extension for a slide's path
+	 * @return File extension extracted from a slide's path
 	 */
 	public static String getSlideFileExtension(String slideRef) {
 		// Determine the file extension for this slide
@@ -1106,7 +1176,7 @@ public class Core {
 	 * path
 	 * 
 	 * @param slideRef slide's path
-	 * @return String file name for a slide's path
+	 * @return File name extracted from a slide's path
 	 */
 	public static String getSlideFileName(String slideRef) {
 		// Determine the file name (with extension) for this slide
@@ -1114,12 +1184,15 @@ public class Core {
 	}
 
 	/**
-	 * This method is used to get the UID for a specific slide
+	 * This method is used to get the UID for a defined slide
 	 * 
-	 * @param slideRef  slide's path
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return String UID for a specific slide's path
+	 * @param slideRef slide's path
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return UID for a defined slide's path
 	 */
 	public static String getUid(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
@@ -1136,12 +1209,18 @@ public class Core {
 	/**
 	 * This method is used to get the fingerprint for a specific slide
 	 * 
-	 * @param slideRef
-	 * @param strict    it's an optional argument (String), default value set to
-	 *                  "false"
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return String containing the fingerprint
+	 * @param slideRef slide's path
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 strict : First optional argument(Boolean), default
+	 *                 value(false), loose fingerprint if false, strict fingerprint
+	 *                 if true
+	 *                 </p>
+	 *                 <p>
+	 *                 sessionID : Second optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return Fingerprint of the slide
 	 */
 	public static String getFingerPrint(String slideRef, Object... varargs) {
 		// Get the fingerprint for a specific slide
@@ -1205,7 +1284,7 @@ public class Core {
 	/**
 	 * This method is under construction
 	 * 
-	 * @return String information about session (Under construction)
+	 * @return Information about session (Under construction)
 	 */
 	public static String whoAmI() {
 		// Getting information about your Session (under construction)
@@ -1214,10 +1293,9 @@ public class Core {
 	}
 
 	/**
-	 * This method is a getter for class member "pmaSessions"
+	 * This method is a getter for class field pmaSessions
 	 * 
-	 * @return Map{@literal <}String, Object{@literal >} value of class member
-	 *         "pmaSessions"
+	 * @return Value of class field pmaSessions
 	 */
 	public static Map<String, Object> sessions() {
 		return pmaSessions;
@@ -1226,10 +1304,13 @@ public class Core {
 	/**
 	 * This method is used to get tile size information for sessionID
 	 * 
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return List{@literal <}Integer{@literal >} two items (duplicated) list of
-	 *         tile size information for sessionID
+	 * @param varargs Array of optional arguments
+	 *                <p>
+	 *                sessionID : First optional argument(String), default
+	 *                value(null), session's ID
+	 *                </p>
+	 * @return A list of two items (duplicated) relative to the tile size
+	 *         information for a session's ID
 	 */
 	@SuppressWarnings("unchecked")
 	public static List<Integer> getTileSize(String... varargs) {
@@ -1253,9 +1334,10 @@ public class Core {
 	}
 
 	/**
+	 * This method is used to create a StringBuffer from a connection URL
 	 * 
-	 * @param con url to retrieve JSON from
-	 * @return StringBuffer Json result
+	 * @param con http connection URL to retrieve JSON from
+	 * @return string buffer created from the connection URL
 	 */
 	public static StringBuffer getJSONAsStringBuffer(HttpURLConnection con) {
 		try {
@@ -1282,9 +1364,10 @@ public class Core {
 	}
 
 	/**
+	 * This method is used to check if a json returned is an object
 	 * 
-	 * @param value json returned as String
-	 * @return Boolean true if it's a JSONObject, false if it's an Array
+	 * @param value json in String format
+	 * @return True if it's a JSONObject, false otherwise
 	 */
 	public static Boolean isJSONObject(String value) {
 		if (value.startsWith("{")) {
@@ -1295,10 +1378,10 @@ public class Core {
 	}
 
 	/**
-	 * This method is used to get a JSONObject from a String argument
+	 * This method is used to create a json Object out of a string
 	 * 
-	 * @param value String argument
-	 * @return JSONObject converts String argument to JSONObject
+	 * @param value json in String format
+	 * @return Creates a Json object from a string
 	 */
 	public static JSONObject getJSONResponse(String value) {
 		JSONObject jsonResponse = new JSONObject(value.toString());
@@ -1306,10 +1389,10 @@ public class Core {
 	}
 
 	/**
-	 * This method is used to get a JSONArray from a String argument
+	 * This method is used to creates a json Array out of a string
 	 * 
-	 * @param value String argument
-	 * @return JSONArray converts String argument to JSONArray
+	 * @param value json in String format
+	 * @return Creates a Json array from a string
 	 */
 	public static JSONArray getJSONArrayResponse(String value) {
 		JSONArray jsonResponse = new JSONArray(value);
@@ -1319,11 +1402,13 @@ public class Core {
 	/**
 	 * This method is used to get a raw image in the form of nested maps
 	 * 
-	 * @param slideRef  slide's path or UID
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return Map{@literal <}String, Object{@literal >} nested maps forming a raw
-	 *         image
+	 * @param slideRef slide's path or UID
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return Nested maps forming a raw image
 	 */
 	@SuppressWarnings("unchecked")
 	public static Map<String, Object> getSlideInfo(String slideRef, String... varargs) {
@@ -1396,10 +1481,13 @@ public class Core {
 	 * This method is used to determine the maximum zoom level that still represents
 	 * an optical magnification
 	 * 
-	 * @param slideRef  slide's path
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return int max zoom level that still represents an optical magnification
+	 * @param slideRef slide's path
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return Max zoom level that still represents an optical magnification
 	 */
 	public static int getMaxZoomLevel(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
@@ -1443,15 +1531,19 @@ public class Core {
 	 * This method is used to get list with all zoom levels, from 0 to max zoom
 	 * level
 	 * 
-	 * @param slideRef         slide's path
-	 * @param sessionID        it's an optional argument (String), default value set
-	 *                         to "null"
-	 * @param minNumberOfTiles it's an optional argument (Integer), default value
-	 *                         set to "0", used to specify that you're only
-	 *                         interested in zoom levels that include at least a
-	 *                         given number of tiles
-	 * @return List{@literal <}Integer{@literal >} list with all zoom levels, from 0
-	 *         to max zoom level
+	 * @param slideRef slide's path
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 *                 <p>
+	 *                 minNumberOfTiles : Second optional argument(Integer), default
+	 *                 value(0), minimal number of tiles used to specify that you're
+	 *                 only interested in zoom levels that include at least a given
+	 *                 number of tiles
+	 *                 </p>
+	 * @return List with all zoom levels, from 0 to max zoom level
 	 */
 	public static List<Integer> getZoomLevelsList(String slideRef, Object... varargs) {
 		// setting the default values when arguments' values are omitted
@@ -1485,16 +1577,19 @@ public class Core {
 	/**
 	 * This method is used to get a map with the number of tiles per zoom level
 	 * 
-	 * @param slideRef         slide's path
-	 * @param sessionID        it's an optional argument (String), default value set
-	 *                         to "null"
-	 * @param minNumberOfTiles it's an optional argument (Integer), default value
-	 *                         set to "0", used to specify that you're only
-	 *                         interested in zoom levels that include at least a
-	 *                         given number of tiles
-	 * @return Map{@literal <}Integer,
-	 *         List{@literal <}Integer{@literal >}{@literal >} map with the number
-	 *         of tiles per zoom level
+	 * @param slideRef slide's path
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 *                 <p>
+	 *                 minNumberOfTiles : Second optional argument(Integer), default
+	 *                 value(0), minimal number of tiles used to specify that you're
+	 *                 only interested in zoom levels that include at least a given
+	 *                 number of tiles
+	 *                 </p>
+	 * @return Map with the number of tiles per zoom level
 	 */
 	public static Map<Integer, List<Integer>> getZoomLevelsDict(String slideRef, Object... varargs) {
 		// setting the default values when arguments' values are omitted
@@ -1542,13 +1637,18 @@ public class Core {
 	 * This method is used to get the physical dimension in terms of pixels per
 	 * micrometer of a slide
 	 * 
-	 * @param slideRef  slide's path
-	 * @param zoomLevel it's an optional argument (Integer), default value set to
-	 *                  "null"
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return List{@literal <}Float{@literal >} two items list containing the
-	 *         physical dimension in terms of pixels per micrometer of a slide
+	 * @param slideRef slide's path
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 zoomLevel : First optional argument(Integer), default
+	 *                 value(null), zoom level
+	 *                 </p>
+	 *                 <p>
+	 *                 sessionID : Second optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return Two items list containing the physical dimension in terms of pixels
+	 *         per micrometer of a slide
 	 */
 	public static List<Float> getPixelsPerMicrometer(String slideRef, Object... varargs) {
 		// setting the default values when arguments' values are omitted
@@ -1592,13 +1692,18 @@ public class Core {
 	 * This method is used to get the total dimensions of a slide image at a given
 	 * zoom level
 	 * 
-	 * @param slideRef  slide's path
-	 * @param zoomLevel it's an optional argument (Integer), default value set to
-	 *                  "null"
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return List{@literal <}Integer{@literal >} two items list with the total
-	 *         dimensions of a slide image at a given zoom level
+	 * @param slideRef slide's path
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 zoomLevel : First optional argument(Integer), default
+	 *                 value(null), zoom level
+	 *                 </p>
+	 *                 <p>
+	 *                 sessionID : Second optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return Two items list with the total dimensions of a slide image at a given
+	 *         zoom level
 	 */
 	public static List<Integer> getPixelDimensions(String slideRef, Object... varargs) {
 		// setting the default values when arguments' values are omitted
@@ -1636,13 +1741,18 @@ public class Core {
 	 * This method is used to determine the number of tiles needed to reconstitute a
 	 * slide at a given zoom level
 	 * 
-	 * @param slideRef  slide's path
-	 * @param zoomLevel it's an optional argument (Integer), default value set to
-	 *                  "null"
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return List{@literal <}Integer{@literal >} three items list to determine the
-	 *         number of tiles needed to reconstitute a slide at a given zoom level
+	 * @param slideRef slide's path
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 zoomLevel : First optional argument(Integer), default
+	 *                 value(null), zoom level
+	 *                 </p>
+	 *                 <p>
+	 *                 sessionID : Second optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return Three items list to determine the number of tiles needed to
+	 *         reconstitute a slide at a given zoom level
 	 */
 	public static List<Integer> getNumberOfTiles(String slideRef, Object... varargs) {
 		// setting the default values when arguments' values are omitted
@@ -1678,11 +1788,14 @@ public class Core {
 	 * This method is used to Determine the physical dimensions of the sample
 	 * represented by the slide
 	 * 
-	 * @param slideRef  slide's path
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return List{@literal <}Float{@literal >} two items list to determine the
-	 *         physical dimensions of the sample represented by the slide
+	 * @param slideRef slide's path
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return Two items list to determine the physical dimensions of the sample
+	 *         represented by the slide
 	 */
 	public static List<Float> getPhysicalDimensions(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
@@ -1701,10 +1814,13 @@ public class Core {
 	/**
 	 * This method is used to get the number of channels for a slide
 	 * 
-	 * @param slideRef  slide's path
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return int number of channels for a slide (1 when slide is brightfield)
+	 * @param slideRef slide's path
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return Number of channels for a slide (1 when slide is brightfield)
 	 */
 	@SuppressWarnings("unchecked")
 	public static int getNumberOfChannels(String slideRef, String... varargs) {
@@ -1720,10 +1836,13 @@ public class Core {
 	/**
 	 * This method is used to get the number of (z-stacked) layers for a slide
 	 * 
-	 * @param slideRef  slide's path
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return int number of layers for a slide
+	 * @param slideRef slide's path
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return Number of layers for a slide
 	 */
 	@SuppressWarnings("unchecked")
 	public static int getNumberOfLayers(String slideRef, String... varargs) {
@@ -1737,10 +1856,13 @@ public class Core {
 	/**
 	 * This method is used to get the number of (z-stacked) layers for a slide
 	 * 
-	 * @param slideRef  slide's path
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return int number of Z-Stack layers for a slide
+	 * @param slideRef slide's path
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return Number of Z-Stack layers for a slide
 	 */
 	public static int getNumberOfZStackLayers(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
@@ -1752,10 +1874,13 @@ public class Core {
 	 * This method is used to determine whether a slide is a fluorescent image or
 	 * not
 	 * 
-	 * @param slideRef  slide's path
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return Boolean true if slide is a fluorescent image, false otherwise
+	 * @param slideRef slide's path
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return True if slide is a fluorescent image, false otherwise
 	 */
 	public static Boolean isFluorescent(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
@@ -1768,11 +1893,13 @@ public class Core {
 	 * This method is used to determine whether a slide contains multiple (stacked)
 	 * layers or not
 	 * 
-	 * @param slideRef  slide's path
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return Boolean true if slide contains multiple (stacked) layers, false
-	 *         otherwise
+	 * @param slideRef slide's path
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return True if slide contains multiple (stacked) layers, false otherwise
 	 */
 	public static Boolean isMultiLayer(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
@@ -1784,10 +1911,13 @@ public class Core {
 	/**
 	 * This method is used to determine whether a slide is a z-stack or not
 	 * 
-	 * @param slideRef  slide's path
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return Boolean true if slide is a z-stack, false otherwise
+	 * @param slideRef slide's path
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return True if slide is a z-stack, false otherwise
 	 */
 	public static Boolean isZStack(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
@@ -1800,14 +1930,21 @@ public class Core {
 	 * This method is used to get the magnification represented at a certain zoom
 	 * level
 	 * 
-	 * @param slideRef  slide's path
-	 * @param zoomLevel it's an optional argument (Integer), default value set to
-	 *                  "null"
-	 * @param exact     it's an optional argument (Boolean), default value set to
-	 *                  "null"
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return int magnification represented at a certain zoom level
+	 * @param slideRef slide's path
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 zoomLevel : First optional argument(Integer), default
+	 *                 value(false), zoom level
+	 *                 </p>
+	 *                 <p>
+	 *                 exact : Second optional argument(Boolean), default
+	 *                 value(null), defines if exact or not
+	 *                 </p>
+	 *                 <p>
+	 *                 sessionID : Third optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return Magnification represented at a certain zoom level
 	 */
 	public static int getMagnification(String slideRef, Object... varargs) {
 		// setting the default values when arguments' values are omitted
@@ -1850,13 +1987,15 @@ public class Core {
 	 * This method is used to get the URL that points to the barcode (alias for
 	 * "label") for a slide
 	 * 
-	 * @param slideRef  slide's path
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return String URL that points to the barcode (alias for "label") for a slide
-	 * @throws Exception
+	 * @param slideRef slide's path
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return URL that points to the barcode (alias for "label") for a slide
 	 */
-	public static String getBarcodeUrl(String slideRef, String... varargs) throws Exception {
+	public static String getBarcodeUrl(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Get the URL that points to the barcode (alias for "label") for a slide
@@ -1864,17 +2003,27 @@ public class Core {
 		if (slideRef.startsWith("/")) {
 			slideRef = slideRef.substring(1);
 		}
-		String url = pmaUrl(sessionID) + "barcode" + "?SessionID=" + pmaQ(sessionID) + "&pathOrUid=" + pmaQ(slideRef);
-		return url;
+		String url;
+		try {
+			url = pmaUrl(sessionID) + "barcode" + "?SessionID=" + pmaQ(sessionID) + "&pathOrUid=" + pmaQ(slideRef);
+			return url;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+
 	}
 
 	/**
 	 * This method is used to get the barcode (alias for "label") image for a slide
 	 * 
-	 * @param slideRef  slide's path
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return Image barcode (alias for "label") image for a slide
+	 * @param slideRef slide's path
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return Barcode (alias for "label") image for a slide
 	 */
 	public static Image getBarcodeImage(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
@@ -1903,10 +2052,13 @@ public class Core {
 	/**
 	 * This method is used to get the text encoded by the barcode
 	 * 
-	 * @param slideRef  slide's path or UID
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return String containing the barcode text
+	 * @param slideRef slide's path or UID
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return The barcode text
 	 */
 	public static String getBarcodeText(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
@@ -1961,13 +2113,15 @@ public class Core {
 	/**
 	 * This method is used to get the URL that points to the label for a slide
 	 * 
-	 * @param slideRef  slide's path
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return String url that points to the label for a slide
-	 * @throws Exception
+	 * @param slideRef slide's path
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return Url that points to the label for a slide
 	 */
-	public static String getLabelUrl(String slideRef, String... varargs) throws Exception {
+	public static String getLabelUrl(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Get the URL that points to the label for a slide
@@ -1977,10 +2131,13 @@ public class Core {
 	/**
 	 * This method is used to get the label image for a slide
 	 * 
-	 * @param slideRef  slide's path
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return Image label Image for a slide
+	 * @param slideRef slide's path
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return Image label for a slide
 	 */
 	public static Image getLabelImage(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
@@ -2009,15 +2166,25 @@ public class Core {
 	/**
 	 * This method is used to get the URL that points to the thumbnail for a slide
 	 * 
-	 * @param slideRef  slide's path or UID
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @param height    desired height of the thumbnail, to omit it use value "0"
-	 * @param width     desired width of the thumbnail, to omit it use value "0"
-	 * @return String URL that points to the thumbnail for a slide
-	 * @throws Exception
+	 * @param slideRef slide's path or UID
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 *                 <p>
+	 *                 height : Second optional argument(Integer), default value(0),
+	 *                 height of the requested thumbnail, if value set to 0 it will
+	 *                 be ignored
+	 *                 </p>
+	 *                 <p>
+	 *                 width : Third optional argument(Integer), default value(0),
+	 *                 width of the requested thumbnail, if value set to 0 it will
+	 *                 be ignored
+	 *                 </p>
+	 * @return URL that points to the thumbnail for a slide
 	 */
-	public static String getThumbnailUrl(String slideRef, Object... varargs) throws Exception {
+	public static String getThumbnailUrl(String slideRef, Object... varargs) {
 		// setting the default values when arguments' values are omitted
 		String sessionID = null;
 		Integer height = 0;
@@ -2045,20 +2212,37 @@ public class Core {
 		if (slideRef.startsWith("/")) {
 			slideRef = slideRef.substring(1);
 		}
-		String url = pmaUrl(sessionID) + "thumbnail" + "?SessionID=" + pmaQ(sessionID) + "&pathOrUid=" + pmaQ(slideRef)
-				+ ((height > 0) ? "&h=" + height.toString() : "") + ((width > 0) ? "&w=" + width.toString() : "");
-		return url;
+		String url;
+		try {
+			url = pmaUrl(sessionID) + "thumbnail" + "?SessionID=" + pmaQ(sessionID) + "&pathOrUid=" + pmaQ(slideRef)
+					+ ((height > 0) ? "&h=" + height.toString() : "") + ((width > 0) ? "&w=" + width.toString() : "");
+			return url;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 
 	/**
 	 * This method is used to get the thumbnail image for a slide
 	 * 
-	 * @param slideRef  slide's path
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @param height    desired height of the thumbnail, to omit it use value "0"
-	 * @param width     desired width of the thumbnail, to omit it use value "0"
-	 * @return Image thumbnail image for a slide
+	 * @param slideRef slide's path
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 *                 <p>
+	 *                 height : Second optional argument(Integer), default value(0),
+	 *                 height of the requested thumbnail, if value set to 0 it will
+	 *                 be ignored
+	 *                 </p>
+	 *                 <p>
+	 *                 width : Third optional argument(Integer), default value(0),
+	 *                 width of the requested thumbnail, if value set to 0 it will
+	 *                 be ignored
+	 *                 </p>
+	 * @return Image thumbnail for a slide
 	 */
 	public static Image getThumbnailImage(String slideRef, Object... varargs) {
 		// setting the default values when arguments' values are omitted
@@ -2108,23 +2292,39 @@ public class Core {
 	/**
 	 * This method is used to get a single tile at position (x, y)
 	 * 
-	 * @param slideRef  slide's path or UID
-	 * @param x         it's an optional argument (Integer), default value set to
-	 *                  "0"
-	 * @param y         it's an optional argument (Integer), default value set to
-	 *                  "0"
-	 * @param zoomLevel it's an optional argument (Integer), default value set to
-	 *                  "null"
-	 * @param zStack    it's an optional argument (Integer), default value set to
-	 *                  "0"
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @param format    it's an optional argument (String), default value set to
-	 *                  "jpg"
-	 * @param quality   it's an optional argument (Integer), default value set to
-	 *                  "100"
-	 * @return Image single tile at position (x, y)
-	 * @throws Exception
+	 * @param slideRef slide's path or UID
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 x : First optional argument(Integer), default value(0), x
+	 *                 position
+	 *                 </p>
+	 *                 <p>
+	 *                 y : Second optional argument(Integer), default value(0), y
+	 *                 position
+	 *                 </p>
+	 *                 <p>
+	 *                 zoomLevel : Third optional argument(Integer), default
+	 *                 value(null), zoom level
+	 *                 </p>
+	 *                 <p>
+	 *                 zStack : Fourth optional argument(Integer), default value(0),
+	 *                 Number of z stacks
+	 *                 </p>
+	 *                 <p>
+	 *                 sessionID : Fifth optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 *                 <p>
+	 *                 format : Sixth optional argument(String), default value(jpg),
+	 *                 image format
+	 *                 </p>
+	 *                 <p>
+	 *                 quality : Seventh optional argument(Integer), default
+	 *                 value(100), quality
+	 *                 </p>
+	 * @return Single tile at position (x, y)
+	 * @throws Exception if unable to determine the PMA.core instance the session ID
+	 *                   belong to
 	 */
 	public static Image getTile(String slideRef, Object... varargs) throws Exception {
 		// setting the default values when arguments' values are omitted
@@ -2222,26 +2422,45 @@ public class Core {
 	 * This method is used to get all tiles with a (fromX, fromY, toX, toY)
 	 * rectangle
 	 * 
-	 * @param slideRef  slide's path or UID
-	 * @param fromX     it's an optional argument (Integer), default value set to
-	 *                  "0"
-	 * @param fromY     it's an optional argument (Integer), default value set to
-	 *                  "0"
-	 * @param toX       it's an optional argument (Integer), default value set to
-	 *                  "null"
-	 * @param toY       it's an optional argument (Integer), default value set to
-	 *                  "null"
-	 * @param zoomLevel it's an optional argument (Integer), default value set to
-	 *                  "null"
-	 * @param zStack    it's an optional argument (Integer), default value set to
-	 *                  "0"
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @param format    it's an optional argument (String), default value set to
-	 *                  "jpg"
-	 * @param quality   it's an optional argument (Integer), default value set to
-	 *                  "100"
-	 * @return Stream all tiles with a (fromX, fromY, toX, toY) rectangle
+	 * @param slideRef slide's path or UID
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 fromX : First optional argument(Integer), default value(0),
+	 *                 starting x position
+	 *                 </p>
+	 *                 <p>
+	 *                 fromY : Second optional argument(Integer), default value(0),
+	 *                 starting y position
+	 *                 </p>
+	 *                 <p>
+	 *                 toX : Third optional argument(Integer), default value(0),
+	 *                 ending x position
+	 *                 </p>
+	 *                 <p>
+	 *                 toY : Fourth optional argument(Integer), default value(0),
+	 *                 ending y position
+	 *                 </p>
+	 *                 <p>
+	 *                 zoomLevel : Fifth optional argument(Integer), default
+	 *                 value(null), zoom level
+	 *                 </p>
+	 *                 <p>
+	 *                 zStack : Sixth optional argument(Integer), default value(0),
+	 *                 Number of z stacks
+	 *                 </p>
+	 *                 <p>
+	 *                 sessionID : Seventh optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 *                 <p>
+	 *                 format : Eigth optional argument(String), default value(jpg),
+	 *                 image format
+	 *                 </p>
+	 *                 <p>
+	 *                 quality : Ninth optional argument(Integer), default
+	 *                 value(100), quality
+	 *                 </p>
+	 * @return All tiles with a (fromX, fromY, toX, toY) rectangle
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static Stream getTiles(String slideRef, Object... varargs) {
@@ -2372,11 +2591,13 @@ public class Core {
 	 * This method is used to find out what forms where submitted for a specific
 	 * slide
 	 * 
-	 * @param slideRef  slide's path or UID
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return Map{@literal <}String, String{@literal >} of forms submitted for a
-	 *         specific slide
+	 * @param slideRef slide's path or UID
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return Map of forms submitted for a defined slide
 	 */
 	public static Map<String, String> getSubmittedForms(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
@@ -2442,6 +2663,17 @@ public class Core {
 		return forms;
 	}
 
+	/**
+	 * This method is used to get submitted forms data in json Array format
+	 * 
+	 * @param slideRef slide's path or UID
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return Submitted forms data in json Array format
+	 */
 	public static JSONArray getSubmittedFormData(String slideRef, String... varargs) {
 		// setting the default values when arguments' values are omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
@@ -2502,11 +2734,14 @@ public class Core {
 	 * This method is used to prepare a form-dictionary that can be used later on to
 	 * submit new form data for a slide
 	 * 
-	 * @param formID    Form's ID
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return Map{@literal <}String, String{@literal >} form-map that can be used
-	 *         later on to submit new form data for a slide
+	 * @param formID  Form's ID
+	 * @param varargs Array of optional arguments
+	 *                <p>
+	 *                sessionID : First optional argument(String), default
+	 *                value(null), session's ID
+	 *                </p>
+	 * @return Form-map that can be used later on to submit new form data for a
+	 *         slide
 	 */
 	public static Map<String, String> prepareFormMap(String formID, String... varargs) {
 		// setting the default values when arguments' values are omitted
@@ -2574,13 +2809,17 @@ public class Core {
 	 * This method is used to get a Map of the forms available to fill out, either
 	 * system-wide (leave slideref to "null"), or for a particular slide
 	 * 
-	 * @param slideRef  it's an optional argument (String) for slide's path, default
-	 *                  value set to "null"
-	 * @param sessionID it's an optional argument (String) for session's ID, default
-	 *                  value set to "null"
-	 * @return Map{@literal <}String, String{@literal} of the forms available to
-	 *         fill out, either system-wide (leave slideref to "null"), or for a
-	 *         particular slide
+	 * @param varargs Array of optional arguments
+	 *                <p>
+	 *                slideRef : First optional argument(String), default
+	 *                value(null), slide's path
+	 *                </p>
+	 *                <p>
+	 *                sessionID : Second optional argument(String), default
+	 *                value(null), session's ID
+	 *                </p>
+	 * @return Map of the forms available to fill out, either system-wide (leave
+	 *         slideref to "null"), or for a particular slide
 	 */
 	public static Map<String, String> getAvailableForms(String... varargs) {
 		// setting the default values when arguments' values are omitted
@@ -2647,6 +2886,15 @@ public class Core {
 		return forms;
 	}
 
+	/**
+	 * To be elaborated later
+	 * 
+	 * @param slideRef To be elaborated later
+	 * @param formID   To be elaborated later
+	 * @param formMap  To be elaborated later
+	 * @param varargs  To be elaborated later
+	 * @return To be elaborated later
+	 */
 	public static String submitFormData(String slideRef, String formID, String formMap, String... varargs) {
 		// setting the default value when argument' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
@@ -2661,10 +2909,13 @@ public class Core {
 	/**
 	 * This method is used to retrieve the annotations for slide slideRef
 	 * 
-	 * @param slideRef
-	 * @param sessionID it's an optional argument (String) for session's ID, default
-	 *                  value set to "null"
-	 * @return
+	 * @param slideRef slide's path
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return Annotations for a slide in a json Array format
 	 */
 	public static JSONArray getAnnotations(String slideRef, String... varargs) {
 		// setting the default value when argument' value is omitted
@@ -2726,16 +2977,19 @@ public class Core {
 	 * This method is used to launch the default web browser and load a web-based
 	 * viewer for the slide
 	 * 
-	 * @param slideRef  slide's path or UID
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @throws Exception
+	 * @param slideRef slide's path or UID
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @throws Exception if unable to determine the PMA.core instance the session ID
+	 *                   belongs to
 	 */
 	public static void showSlide(String slideRef, String... varargs) throws Exception {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Launch the default web browser and load a web-based viewer for the slide
-		sessionID = sessionId(sessionID);
 		sessionID = sessionId(sessionID);
 		if (slideRef.startsWith("/")) {
 			slideRef = slideRef.substring(1);
@@ -2776,11 +3030,13 @@ public class Core {
 	 * This method is used to get sub-directories available to sessionID in the
 	 * start directory
 	 * 
-	 * @param slideRef  slide's path or UID
-	 * @param sessionID it's an optional argument (String), default value set to
-	 *                  "null"
-	 * @return List{@literal <}String{@literal >} List of all files related to
-	 *         selected slide
+	 * @param slideRef slide's path or UID
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return List of all files related to a selected slide
 	 */
 	public static List<String> enumerateFilesForSlide(String slideRef, String... varargs) {
 		// setting the default value when argument's value is omitted
@@ -2852,8 +3108,8 @@ public class Core {
 	 * e.g. "Primary Disk (C:)/samples" it's necessary to remove drive name from the
 	 * path's root to be able to use these paths in file system
 	 * 
-	 * @param lst List of strings (directories, root directories, slides...)
-	 * @return
+	 * @param lst List of paths (directories, root directories, slides...)
+	 * @return List of paths formatted to remove the Disk label if it exists
 	 */
 	public static List<String> removeDriveName(List<String> lst) {
 		try {
@@ -2868,7 +3124,6 @@ public class Core {
 								+ ss.substring(root.length() + 1);
 					}
 					lst.set(i, ss);
-
 				}
 			}
 			return lst;
@@ -2888,8 +3143,8 @@ public class Core {
 	 * drive name e.g. "Primary Disk (C:)/samples" it's necessary to add drive name
 	 * to the path's root to be able to make a valid request to PMA.core(.lite)
 	 * 
-	 * @param value
-	 * @return
+	 * @param value path to be formatted
+	 * @return Path formatted to include the Disk label if it doesn't exist
 	 */
 	public static String createPathWithLabel(String value) {
 		Path path = Paths.get(value);
