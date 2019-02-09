@@ -6,7 +6,6 @@ import java.util.Map;
 
 import com.pathomation.Core;
 
-
 /**
  * Wrapper around PMA.UI JavaScript framework
  * 
@@ -26,12 +25,11 @@ public class UI {
 	public static List<String> pmaUILoaders = new ArrayList<>();
 
 	/**
-	 * internal helper function to prevent PMA.UI framework from being loaded more
+	 * Internal helper function to prevent PMA.UI framework from being loaded more
 	 * than once
 	 * 
-	 * @param sessionID
-	 *            session ID of the actual session
-	 * @return The links related to JS & CSS files to be included
+	 * @param sessionID session ID of the actual session
+	 * @return The links related to JS and CSS files to be included
 	 */
 	public static String pmaEmbedPmaUIFramework(String sessionID) {
 		if (!pmaUIFrameworkEmbedded) {
@@ -66,19 +64,21 @@ public class UI {
 	}
 
 	/**
-	 * output HTML code to display a single slide through a PMA.UI viewport control
+	 * Output HTML code to display a single slide through a PMA.UI viewport control
 	 * authentication against PMA.core happens through a pre-established
 	 * 
-	 * @param server
-	 *            PMA.Start of PMA.core
-	 * @param slideRef
-	 *            path to the slide
-	 * @param sessionID
-	 *            session id of the actual session
-	 * @param options
-	 *            Map of the options defining the display of the view port
-	 * @return
+	 * @param server    PMA.Start or PMA.core instance
+	 * @param slideRef  path to the slide
+	 * @param sessionID session id of the actual session
+	 * @param varargs   Array of optional arguments
+	 *                  <p>
+	 *                  options : First optional argument(Map{@literal <}String,
+	 *                  String{@literal >}), default value(null), Map of the options
+	 *                  defining the display of the view port
+	 *                  </p>
+	 * @return List of embed slides
 	 */
+	@SuppressWarnings("unchecked")
 	public static List<String> embedSlideBySessionID(String server, String slideRef, String sessionID,
 			Map<String, String>... varargs) {
 		// setting the default value when argument's value is omitted
@@ -105,26 +105,28 @@ public class UI {
 	}
 
 	/**
-	 * output HTML code to display a single slide through a PMA.UI viewport control
+	 * Output HTML code to display a single slide through a PMA.UI viewport control
 	 * authentication against PMA.core happens in real-time through the provided
 	 * $username and $password credentials Note that the username and password and
 	 * NOT rendered in the HTML output (authentication happens on the server-side).
 	 * 
-	 * @param server
-	 *            PMA.Start of PMA.core
-	 * @param slideRef
-	 *            path to the slide
-	 * @param username
-	 *            credentials' username
-	 * @param password
-	 *            optional argument (String), default value set to empty string. it
-	 *            defines the credentials' password
-	 * @param options
-	 *            optional argument (Map of Strings) defining the display of the
-	 *            view port
-	 * @return
+	 * @param server   PMA.Start or PMA.core instance
+	 * @param slideRef path to the slide
+	 * @param username credentials' username
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 password : First optional argument(String), default
+	 *                 value(""), credentials' password
+	 *                 </p>
+	 *                 <p>
+	 *                 options : Second optional argument(Map{@literal <}String,
+	 *                 String{@literal >}), default value(null), Map of the options
+	 *                 defining the display of the view port
+	 *                 </p>
+	 * @return List of embed slides by username
 	 */
 
+	@SuppressWarnings("unchecked")
 	public static List<String> embedSlideByUsername(String server, String slideRef, String username,
 			Object... varargs) {
 		// setting the default values when arguments' values are omitted
@@ -149,20 +151,22 @@ public class UI {
 	}
 
 	/**
-	 * output HTML code to display a gallery that shows all thumbnails that exist in
+	 * Output HTML code to display a gallery that shows all thumbnails that exist in
 	 * a specific folder hosted by the specified PMA.core instance authentication
 	 * against PMA.core happens through a pre-established SessionID
 	 * 
-	 * @param server
-	 *            PMA.Start of PMA.core
-	 * @param path
-	 *            folder containing the slides
-	 * @param sessionID
-	 *            session id of the actual session
-	 * @param options
-	 *            Map of the options defining the display of the view port
-	 * @return
+	 * @param server    PMA.Start or PMA.core instance
+	 * @param path      folder containing the slides
+	 * @param sessionID session id of the actual session
+	 * @param varargs   Array of optional arguments
+	 *                  <p>
+	 *                  options : First optional argument(Map{@literal <}String,
+	 *                  String{@literal >}), default value(null), Map of the options
+	 *                  defining the display of the view port
+	 *                  </p>
+	 * @return List of embed galleries by session ID
 	 */
+	@SuppressWarnings("unchecked")
 	public static List<String> embedGalleryBySessionID(String server, String path, String sessionID,
 			Map<String, String>... varargs) {
 		// setting the default value when argument's value is omitted
@@ -194,25 +198,29 @@ public class UI {
 	}
 
 	/**
-	 * output HTML code to display a gallery that shows all thumbnails that exist in
+	 * Output HTML code to display a gallery that shows all thumbnails that exist in
 	 * a specific folder hosted by the specified PMA.core instance authentication
 	 * against PMA.core happens in real-time through the provided $username and
 	 * $password credentials Note that the username and password are NOT rendered in
 	 * the HTML output (authentication happens on the server-side). * @param server
 	 * PMA.Start of PMA.core
 	 * 
-	 * @param path
-	 *            folder containing the slides
-	 * @param username
-	 *            credentials' username
-	 * @param password
-	 *            optional argument (String), default value set to empty string. it
-	 *            defines the credentials' password
-	 * @param options
-	 *            optional argument (Map of Strings) defining the display of the
-	 *            view port
-	 * @return
+	 * @param server   PMA.Start or PMA.core instance
+	 * @param path     folder containing the slides
+	 * @param username credentials' username
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 password : First optional argument(String), default
+	 *                 value(""), credentials' password
+	 *                 </p>
+	 *                 <p>
+	 *                 options : Second optional argument(Map{@literal <}String,
+	 *                 String{@literal >}), default value(null), Map of the options
+	 *                 defining the display of the view port
+	 *                 </p>
+	 * @return List of embed galleries by username
 	 */
+	@SuppressWarnings("unchecked")
 	public static List<String> embedGalleryByUsername(String server, String path, String username, Object... varargs) {
 		// setting the default values when arguments' values are omitted
 		String password = "";
@@ -235,15 +243,16 @@ public class UI {
 	}
 
 	/**
-	 * output HTML code to couple an earlier instantiated PMA.UI gallery to a PMA.UI
+	 * Output HTML code to couple an earlier instantiated PMA.UI gallery to a PMA.UI
 	 * viewport. The PMA.UI viewport can be instantiated earlier, or not at all
 	 * 
-	 * @param galleryDiv
-	 *            HTML Div holding the gallery
-	 * @param viewportDiv
-	 *            HTML Div holding the viewport
-	 * @return
-	 * @throws Exception
+	 * @param galleryDiv  HTML Div holding the gallery
+	 * @param viewportDiv HTML Div holding the viewport
+	 * @return Html code generated couple an earlier instantiated PMA.UI gallery to
+	 *         a PMA.UI viewport
+	 * @throws Exception if galleryDiv is not a PMA.UI gallery or galleryDiv is not
+	 *                   a valid PMA.UI gallery container or viewportDiv is not a
+	 *                   PMA.UI viewport
 	 */
 	public static String linkGalleryToViewport(String galleryDiv, String viewportDiv) throws Exception {
 		// verify the validity of the galleryDiv argument
