@@ -58,7 +58,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.28
+ * @version 2.0.0.29
  */
 public class Core {
 	private static Map<String, Object> pmaSessions = new HashMap<String, Object>();
@@ -1453,6 +1453,20 @@ public class Core {
 	 */
 	public static Boolean isJSONObject(String value) {
 		if (value.startsWith("{")) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	/**
+	 * This method is used to check if a json returned is an array
+	 * 
+	 * @param value json in String format
+	 * @return True if it's a JSONObject, false otherwise
+	 */
+	public static Boolean isJSONArray(String value) {
+		if (value.startsWith("[")) {
 			return true;
 		} else {
 			return false;
@@ -3263,7 +3277,7 @@ public class Core {
 
 	/**
 	 * This method is used to get sub-directories available to sessionID in the
-	 * start directory
+	 * start directory for PMA.start ONLY
 	 * 
 	 * @param slideRef slide's path or UID
 	 * @param varargs  Array of optional arguments
@@ -3325,6 +3339,75 @@ public class Core {
 					files.add(jsonResponse.optString(i));
 				}
 				return files;
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
+			}
+			return null;
+		}
+	}
+	
+	/**
+	 * This method is used to get sub-directories available to sessionID in the
+	 * start directory for PMA.core ONLY
+	 * 
+	 * @param slideRef slide's path or UID
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return List of all files related to a selected slide
+	 */
+	@SuppressWarnings("serial")
+	public static List<Map<String, String>> enumerateFilesForSlidePMACore(String slideRef, String... varargs) {
+		// setting the default value when argument's value is omitted
+		String sessionID = varargs.length > 0 ? varargs[0] : null;
+		// Obtain all files actually associated with a specific slide
+		// This is most relevant with slides that are defined by multiple files, like
+		// MRXS or VSI
+		sessionID = sessionId(sessionID);
+		if (slideRef.startsWith("/")) {
+			slideRef = slideRef.substring(1);
+		}
+		String url = apiUrl(sessionID, false) + "GetFilenames?sessionID=" + pmaQ(sessionID) + "&pathOrUid="
+				+ pmaQ(slideRef);
+		try {
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("GET");
+			String jsonString = getJSONAsStringBuffer(con).toString();
+			if (isJSONArray(jsonString)) {
+				JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+				pmaAmountOfDataDownloaded.put(sessionID,
+						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
+				List<Map<String, String>> result = new ArrayList<>();
+				for (int i = 0; i < jsonResponse.length(); i++) {
+					final int finalI = i;
+					result.add(new HashMap<String, String>()
+							{{
+								put("LastModified", jsonResponse.getJSONObject(finalI).getString("LastModified"));
+								put("Path", jsonResponse.getJSONObject(finalI).getString("Path"));
+								put("Size", String.valueOf(jsonResponse.getJSONObject(finalI).getLong("Size")));
+							}}
+					);
+				}
+				return result;
+			} else {
+					if (logger != null) {
+						logger.severe("enumerateFilesForSlidePMACore() : Failure to get related files");
+					}
+					return null;
 			}
 
 		} catch (Exception e) {
