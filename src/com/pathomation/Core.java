@@ -58,7 +58,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.29
+ * @version 2.0.0.30
  */
 public class Core {
 	private static Map<String, Object> pmaSessions = new HashMap<String, Object>();
@@ -74,6 +74,8 @@ public class Core {
 	};
 	// for logging purposes
 	public static Logger logger = null;
+	// To store the Disk labels
+	private static Map<String, String> diskLabels = new HashMap<String, String>();
 
 	/**
 	 * This method is used to get the session's ID
@@ -1508,6 +1510,7 @@ public class Core {
 	 */
 	@SuppressWarnings("unchecked")
 	public static Map<String, Object> getSlideInfo(String slideRef, String... varargs) {
+		//long b = System.currentTimeMillis();
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Return raw image information in the form of nested maps
@@ -1540,18 +1543,22 @@ public class Core {
 						throw new Exception("ImageInfo to " + slideRef + " resulted in: " + jsonResponse.get("Message")
 								+ " (keep in mind that slideRef is case sensitive!)");
 					} else if (jsonResponse.has("d")) {
+						//long a = System.currentTimeMillis();
 						// we convert the Json object to a Map<String, Object>
 						Map<String, Object> jsonMap = new ObjectMapper()
 								.readerFor(new TypeReference<Map<String, Object>>() {
 								}).with(DeserializationFeature.USE_LONG_FOR_INTS)
 								.readValue(jsonResponse.get("d").toString());
 						((Map<String, Object>) pmaSlideInfos.get(sessionID)).put(slideRef, jsonMap);
+						//System.out.println("image info local : " + (System.currentTimeMillis() - a));
 					} else {
+						//long a = System.currentTimeMillis();
 						// we convert the Json object to a Map<String, Object>
 						Map<String, Object> jsonMap = new ObjectMapper()
 								.readerFor(new TypeReference<Map<String, Object>>() {
 								}).with(DeserializationFeature.USE_LONG_FOR_INTS).readValue(jsonResponse.toString());
 						((Map<String, Object>) pmaSlideInfos.get(sessionID)).put(slideRef, jsonMap);
+						//System.out.println("image info remote : " + (System.currentTimeMillis() - a));
 					}
 				} else {
 					// JSONArray jsonResponse = getJSONArrayResponse(jsonString);
@@ -1571,7 +1578,7 @@ public class Core {
 				return null;
 			}
 		}
-
+		//System.out.println("image info total : " + (System.currentTimeMillis() - b));
 		return (Map<String, Object>) ((Map<String, Object>) pmaSlideInfos.get(sessionID)).get(slideRef);
 	}
 
@@ -3432,6 +3439,7 @@ public class Core {
 	 * @return List of paths formatted to remove the Disk label if it exists
 	 */
 	public static List<String> removeDriveName(List<String> lst) {
+		//long a = System.currentTimeMillis();
 		try {
 			for (int i = 0; i < lst.size(); i++) {
 				String ss = lst.get(i);
@@ -3446,6 +3454,7 @@ public class Core {
 					lst.set(i, ss);
 				}
 			}
+			//System.out.println("total remove drive : " + (System.currentTimeMillis() - a));
 			return lst;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -3469,9 +3478,18 @@ public class Core {
 	 * @return Path formatted to include the Disk label if it doesn't exist
 	 */
 	public static String createPathWithLabel(String value) {
+		//long a = System.currentTimeMillis();
 		Path path = Paths.get(value);
 		String root = path.getRoot().toString();
-		String displayName = FileSystemView.getFileSystemView().getSystemDisplayName(new File(root));
+		String displayName;
+		// if the label is already stored, no need to fetch it again
+		// this operation is specially slow!
+		if (diskLabels != null && diskLabels.containsKey(root)) {
+			displayName = diskLabels.get(root).toString();
+		} else {
+			displayName = FileSystemView.getFileSystemView().getSystemDisplayName(new File(root));
+			diskLabels.put(root, displayName);
+		}
 		// "Local Disk (x:)" refers to a blank disk name but Windows add the default
 		// label "Local Disk"
 		// we need to omit this case since for it PMA.core(.lite) would require a drive
@@ -3479,6 +3497,7 @@ public class Core {
 		if (displayName.matches(".*\\s\\(..\\)") && !displayName.matches("Local\\sDisk\\s\\(..\\)")) {
 			value = displayName + "/" + value.substring(root.length());
 		}
+		//System.out.println("total create path : " + (System.currentTimeMillis() - a));
 		return value;
 	}
 
