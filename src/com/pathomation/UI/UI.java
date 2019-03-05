@@ -8,7 +8,7 @@ import java.util.logging.Logger;
 import com.pathomation.Core;
 
 /**
- * Wrapper around PMA.UI JavaScript framework
+ * Wrapper class around PMA.UI JavaScript framework
  * 
  * @author Yassine Iddaoui
  *

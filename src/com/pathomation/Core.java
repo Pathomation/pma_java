@@ -58,7 +58,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.30
+ * @version 2.0.0.31
  */
 public class Core {
 	private static Map<String, Object> pmaSessions = new HashMap<String, Object>();
@@ -76,6 +76,8 @@ public class Core {
 	public static Logger logger = null;
 	// To store the Disk labels
 	private static Map<String, String> diskLabels = new HashMap<String, String>();
+	// Object Mapper for Jackson library
+	private static ObjectMapper objectMapper = new ObjectMapper();
 
 	/**
 	 * This method is used to get the session's ID
@@ -376,28 +378,6 @@ public class Core {
 	}
 
 	/**
-	 * This method is used to concatenate a couple of Strings while replacing "\\"
-	 * by "/"
-	 * 
-	 * @param varargs Array of String optional arguments, each argument is a string
-	 *                to be concatenated
-	 * @return Concatenation of a couple of String while making sure the first
-	 *         string always ends with "/"
-	 */
-	private static String join(String... varargs) {
-		String joinString = "";
-		for (String ss : varargs) {
-			if (!joinString.endsWith("/") && (!joinString.equals(""))) {
-				joinString = joinString.concat("/");
-			}
-			if (ss != null) {
-				joinString = joinString.concat(ss);
-			}
-		}
-		return joinString;
-	}
-
-	/**
 	 * This method is used to get a list of the values of "String" tags of a XML
 	 * document
 	 * 
@@ -454,6 +434,28 @@ public class Core {
 		}
 		return l;
 	}
+	
+	/**
+	 * This method is used to concatenate a couple of Strings while replacing "\\"
+	 * by "/"
+	 * 
+	 * @param varargs Array of String optional arguments, each argument is a string
+	 *                to be concatenated
+	 * @return Concatenation of a couple of String while making sure the first
+	 *         string always ends with "/"
+	 */
+	public static String join(String... varargs) {
+		String joinString = "";
+		for (String ss : varargs) {
+			if (!joinString.endsWith("/") && (!joinString.equals(""))) {
+				joinString = joinString.concat("/");
+			}
+			if (ss != null) {
+				joinString = joinString.concat(ss);
+			}
+		}
+		return joinString;
+	}
 
 	/**
 	 * This method is used to encode a String to be compatible as a url
@@ -461,7 +463,7 @@ public class Core {
 	 * @param arg string to be encoded
 	 * @return Encoded String to be compatible as a url
 	 */
-	private static String pmaQ(String arg) {
+	public static String pmaQ(String arg) {
 		if (arg == null) {
 			return "";
 		} else {
@@ -476,130 +478,6 @@ public class Core {
 				}
 				return "";
 			}
-		}
-	}
-
-	/**
-	 * This method is used to get the list of sessions
-	 * 
-	 * @param pmaControlURL    URL for PMA.Control
-	 * @param pmaCoreSessionID PMA.core session ID
-	 * @return List of registred sessions
-	 */
-	public static JSONArray getSessions(String pmaControlURL, String pmaCoreSessionID) {
-		String url = join(pmaControlURL, "api/Sessions?sessionID=" + pmaQ(pmaCoreSessionID));
-		System.out.println(url);
-		try {
-			URL urlResource = new URL(url);
-			HttpURLConnection con;
-			if (url.startsWith("https")) {
-				con = (HttpsURLConnection) urlResource.openConnection();
-			} else {
-				con = (HttpURLConnection) urlResource.openConnection();
-			}
-			con.setRequestMethod("GET");
-			con.setRequestProperty("Accept", "application/json");
-			String jsonString = getJSONAsStringBuffer(con).toString();
-			JSONArray jsonResponse = getJSONArrayResponse(jsonString);
-			return jsonResponse;
-		} catch (Exception e) {
-			e.printStackTrace();
-			if (logger != null) {
-				StringWriter sw = new StringWriter();
-				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
-			}
-			return null;
-		}
-	}
-
-	/**
-	 * 
-	 * This method is used to get the list of sessions' IDs
-	 * 
-	 * @param pmaControlURL    URL for PMA.Control
-	 * @param pmaCoreSessionID PMA.core session ID
-	 * @return Map of data related to registred session IDs
-	 */
-	public static Map<String, Map<String, String>> getSessionIds(String pmaControlURL, String pmaCoreSessionID) {
-		JSONArray fullSessions = getSessions(pmaControlURL, pmaCoreSessionID);
-		Map<String, Map<String, String>> newSession = new HashMap<>();
-		for (int i = 0; i < fullSessions.length(); i++) {
-			Map<String, String> sessData = new HashMap<String, String>();
-			sessData.put("LogoPath", fullSessions.getJSONObject(i).getString("LogoPath"));
-			sessData.put("StartsOn", fullSessions.getJSONObject(i).getString("StartsOn"));
-			sessData.put("EndsOn", fullSessions.getJSONObject(i).getString("EndsOn"));
-			sessData.put("ModuleId", fullSessions.getJSONObject(i).getString("ModuleId"));
-			sessData.put("State", fullSessions.getJSONObject(i).getString("State"));
-			newSession.put(fullSessions.getJSONObject(i).getString("Id"), sessData);
-		}
-		return newSession;
-	}
-
-	/**
-	 * This method is used to get case collections
-	 * 
-	 * @param pmaControlURL    URL for PMA.Control
-	 * @param pmaCoreSessionID PMA.core session ID
-	 * @return Array of case collections
-	 */
-	public static JSONArray getCaseCollections(String pmaControlURL, String pmaCoreSessionID) {
-		String url = join(pmaControlURL, "api/CaseCollections?sessionID=" + pmaQ(pmaCoreSessionID));
-		try {
-			URL urlResource = new URL(url);
-			HttpURLConnection con;
-			if (url.startsWith("https")) {
-				con = (HttpsURLConnection) urlResource.openConnection();
-			} else {
-				con = (HttpURLConnection) urlResource.openConnection();
-			}
-			con.setRequestMethod("GET");
-			con.setRequestProperty("Accept", "application/json");
-			String jsonString = getJSONAsStringBuffer(con).toString();
-			JSONArray jsonResponse = getJSONArrayResponse(jsonString);
-			return jsonResponse;
-		} catch (Exception e) {
-			e.printStackTrace();
-			if (logger != null) {
-				StringWriter sw = new StringWriter();
-				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
-			}
-			return null;
-		}
-	}
-
-	/**
-	 * This method is used to get the list of projects
-	 * 
-	 * @param pmaControlURL    URL for PMA.Control
-	 * @param pmaCoreSessionID PMA.core session ID
-	 * @return Array of projects
-	 */
-	public static JSONArray getProjects(String pmaControlURL, String pmaCoreSessionID) {
-		String url = join(pmaControlURL, "api/Projects?sessionID=" + pmaQ(pmaCoreSessionID));
-		System.out.println(url);
-		try {
-			URL urlResource = new URL(url);
-			HttpURLConnection con;
-			if (url.startsWith("https")) {
-				con = (HttpsURLConnection) urlResource.openConnection();
-			} else {
-				con = (HttpURLConnection) urlResource.openConnection();
-			}
-			con.setRequestMethod("GET");
-			con.setRequestProperty("Accept", "application/json");
-			String jsonString = getJSONAsStringBuffer(con).toString();
-			JSONArray jsonResponse = getJSONArrayResponse(jsonString);
-			return jsonResponse;
-		} catch (Exception e) {
-			e.printStackTrace();
-			if (logger != null) {
-				StringWriter sw = new StringWriter();
-				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
-			}
-			return null;
 		}
 	}
 
@@ -645,42 +523,6 @@ public class Core {
 			return domParser(contents).getChildNodes().item(0).getChildNodes().item(0).getNodeValue().toString();
 		} catch (Exception e) {
 			// this happens when NO instance of PMA.core is detected
-			e.printStackTrace();
-			if (logger != null) {
-				StringWriter sw = new StringWriter();
-				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
-			}
-			return null;
-		}
-	}
-
-	/**
-	 * This method is used to get version info from PMA.control instance running at
-	 * pmacontrolURL
-	 * 
-	 * @param pmaControlURL PMA Control's URL
-	 * @return Version information
-	 */
-	public static JSONObject getVersionInfoPmaControl(String pmaControlURL) {
-		// Get version info from PMA.control instance running at pmacontrolURL
-		// why? because GetVersionInfo can be invoked WITHOUT a valid SessionID;
-		// apiUrl() takes session information into account
-		String url = join(pmaControlURL, "api/version");
-		try {
-			URL urlResource = new URL(url);
-			HttpURLConnection con;
-			if (url.startsWith("https")) {
-				con = (HttpsURLConnection) urlResource.openConnection();
-			} else {
-				con = (HttpURLConnection) urlResource.openConnection();
-			}
-			con.setRequestMethod("GET");
-			con.setRequestProperty("Accept", "application/json");
-			String jsonString = getJSONAsStringBuffer(con).toString();
-			JSONObject jsonResponse = getJSONResponse(jsonString);
-			return jsonResponse;
-		} catch (Exception e) {
 			e.printStackTrace();
 			if (logger != null) {
 				StringWriter sw = new StringWriter();
@@ -820,7 +662,7 @@ public class Core {
 	 * 
 	 * @return value of Class field pmaCoreLiteURL
 	 */
-	public static String getPmacoreliteurl() {
+	public static String getPmaCoreLiteUrl() {
 		return pmaCoreLiteURL;
 	}
 
@@ -1424,7 +1266,7 @@ public class Core {
 		try {
 			BufferedReader in;
 			if (Integer.toString(con.getResponseCode()).startsWith("2")) {
-				in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+				in = new BufferedReader(new InputStreamReader(con.getInputStream(), "UTF-8"));
 			} else {
 				in = new BufferedReader(new InputStreamReader(con.getErrorStream()));
 			}
@@ -1435,7 +1277,6 @@ public class Core {
 			}
 			in.close();
 			return response;
-
 		} catch (Exception e) {
 			e.printStackTrace();
 			if (logger != null) {
@@ -1510,7 +1351,6 @@ public class Core {
 	 */
 	@SuppressWarnings("unchecked")
 	public static Map<String, Object> getSlideInfo(String slideRef, String... varargs) {
-		//long b = System.currentTimeMillis();
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Return raw image information in the form of nested maps
@@ -1545,20 +1385,17 @@ public class Core {
 					} else if (jsonResponse.has("d")) {
 						//long a = System.currentTimeMillis();
 						// we convert the Json object to a Map<String, Object>
-						Map<String, Object> jsonMap = new ObjectMapper()
+						Map<String, Object> jsonMap = objectMapper
 								.readerFor(new TypeReference<Map<String, Object>>() {
 								}).with(DeserializationFeature.USE_LONG_FOR_INTS)
 								.readValue(jsonResponse.get("d").toString());
 						((Map<String, Object>) pmaSlideInfos.get(sessionID)).put(slideRef, jsonMap);
-						//System.out.println("image info local : " + (System.currentTimeMillis() - a));
 					} else {
-						//long a = System.currentTimeMillis();
 						// we convert the Json object to a Map<String, Object>
-						Map<String, Object> jsonMap = new ObjectMapper()
+						Map<String, Object> jsonMap = objectMapper
 								.readerFor(new TypeReference<Map<String, Object>>() {
 								}).with(DeserializationFeature.USE_LONG_FOR_INTS).readValue(jsonResponse.toString());
 						((Map<String, Object>) pmaSlideInfos.get(sessionID)).put(slideRef, jsonMap);
-						//System.out.println("image info remote : " + (System.currentTimeMillis() - a));
 					}
 				} else {
 					// JSONArray jsonResponse = getJSONArrayResponse(jsonString);
@@ -1578,7 +1415,6 @@ public class Core {
 				return null;
 			}
 		}
-		//System.out.println("image info total : " + (System.currentTimeMillis() - b));
 		return (Map<String, Object>) ((Map<String, Object>) pmaSlideInfos.get(sessionID)).get(slideRef);
 	}
 
@@ -3439,7 +3275,6 @@ public class Core {
 	 * @return List of paths formatted to remove the Disk label if it exists
 	 */
 	public static List<String> removeDriveName(List<String> lst) {
-		//long a = System.currentTimeMillis();
 		try {
 			for (int i = 0; i < lst.size(); i++) {
 				String ss = lst.get(i);
@@ -3454,7 +3289,6 @@ public class Core {
 					lst.set(i, ss);
 				}
 			}
-			//System.out.println("total remove drive : " + (System.currentTimeMillis() - a));
 			return lst;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -3478,7 +3312,6 @@ public class Core {
 	 * @return Path formatted to include the Disk label if it doesn't exist
 	 */
 	public static String createPathWithLabel(String value) {
-		//long a = System.currentTimeMillis();
 		Path path = Paths.get(value);
 		String root = path.getRoot().toString();
 		String displayName;
@@ -3497,7 +3330,6 @@ public class Core {
 		if (displayName.matches(".*\\s\\(..\\)") && !displayName.matches("Local\\sDisk\\s\\(..\\)")) {
 			value = displayName + "/" + value.substring(root.length());
 		}
-		//System.out.println("total create path : " + (System.currentTimeMillis() - a));
 		return value;
 	}
 
