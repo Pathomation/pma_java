@@ -11,6 +11,7 @@ import java.util.logging.Logger;
 import javax.net.ssl.HttpsURLConnection;
 
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * Wrapper class around PMA.control API
@@ -154,7 +155,30 @@ public class Control {
 			return null;
 		}
 	}
-
+	
+	/**
+	 * This method is used to get a case collection by its title
+	 * 
+	 * @param pmaControlURL URL for PMA.Control
+	 * @param pmaCoreSessionID PMA.core session ID
+	 * @param caseCollection The case collection's title
+	 * @return The case collection in json object format
+	 */
+	public static JSONObject getCaseCollectionByTitle(String pmaControlURL, String pmaCoreSessionID, String caseCollection) {
+		JSONArray caseCollections = getCaseCollections(pmaControlURL, pmaCoreSessionID);
+		if (caseCollections == null) {
+			return null;
+		} else {
+			for (int i = 0; i < caseCollections.length(); i++) {
+				if (caseCollections.optJSONObject(i).get("Title").toString().equals(caseCollection)) {
+					return caseCollections.optJSONObject(i);
+				}
+			}
+			// The case collection wasn't found!
+			return null;
+		}
+	}
+	
 	/**
 	 * This method is used to retrieve all projects and their data in PMA.control
 	 * 

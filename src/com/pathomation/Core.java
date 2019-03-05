@@ -58,7 +58,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.31
+ * @version 2.0.0.32
  */
 public class Core {
 	private static Map<String, Object> pmaSessions = new HashMap<String, Object>();
