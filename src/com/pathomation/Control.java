@@ -47,7 +47,7 @@ public class Control {
 			con.setRequestMethod("GET");
 			con.setRequestProperty("Accept", "application/json");
 			String jsonString = Core.getJSONAsStringBuffer(con).toString();
-			//JSONObject jsonResponse = Core.getJSONResponse(jsonString);
+			// JSONObject jsonResponse = Core.getJSONResponse(jsonString);
 			// we remove ""
 			return jsonString.substring(1, jsonString.length() - 1);
 		} catch (Exception e) {
@@ -128,10 +128,18 @@ public class Control {
 	 * 
 	 * @param pmaControlURL    URL for PMA.Control
 	 * @param pmaCoreSessionID PMA.core session ID
+	 * @param varargs          Array of optional arguments
+	 *                         <p>
+	 *                         project : First optional argument(String), default
+	 *                         value(null), project case collections belong to
+	 *                         </p>
 	 * @return Array of case collections
 	 */
-	public static JSONArray getCaseCollections(String pmaControlURL, String pmaCoreSessionID) {
-		String url = Core.join(pmaControlURL, "api/CaseCollections?sessionID=" + Core.pmaQ(pmaCoreSessionID));
+	public static JSONArray getCaseCollections(String pmaControlURL, String pmaCoreSessionID, String... varargs) {
+		// setting the default value when argument's value is omitted
+		String project = ((varargs.length > 0) && (varargs[0] != null)) ? varargs[0] : "";
+		String url = Core.join(pmaControlURL, "api/CaseCollections?sessionID=" + Core.pmaQ(pmaCoreSessionID)
+				+ ((project.length() > 0) ? ("&project=" + Core.pmaQ(project)) : ""));
 		try {
 			URL urlResource = new URL(url);
 			HttpURLConnection con;
@@ -155,16 +163,17 @@ public class Control {
 			return null;
 		}
 	}
-	
+
 	/**
 	 * This method is used to get a case collection by its title
 	 * 
-	 * @param pmaControlURL URL for PMA.Control
+	 * @param pmaControlURL    URL for PMA.Control
 	 * @param pmaCoreSessionID PMA.core session ID
-	 * @param caseCollection The case collection's title
+	 * @param caseCollection   The case collection's title
 	 * @return The case collection in json object format
 	 */
-	public static JSONObject getCaseCollectionByTitle(String pmaControlURL, String pmaCoreSessionID, String caseCollection) {
+	public static JSONObject getCaseCollectionByTitle(String pmaControlURL, String pmaCoreSessionID,
+			String caseCollection) {
 		JSONArray caseCollections = getCaseCollections(pmaControlURL, pmaCoreSessionID);
 		if (caseCollections == null) {
 			return null;
@@ -178,7 +187,7 @@ public class Control {
 			return null;
 		}
 	}
-	
+
 	/**
 	 * This method is used to retrieve all projects and their data in PMA.control
 	 * 
