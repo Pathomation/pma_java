@@ -27,6 +27,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -58,7 +59,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.33
+ * @version 2.0.0.34
  */
 public class Core {
 	private static Map<String, Object> pmaSessions = new HashMap<String, Object>();
@@ -434,7 +435,7 @@ public class Core {
 		}
 		return l;
 	}
-	
+
 	/**
 	 * This method is used to concatenate a couple of Strings while replacing "\\"
 	 * by "/"
@@ -1301,7 +1302,7 @@ public class Core {
 			return false;
 		}
 	}
-	
+
 	/**
 	 * This method is used to check if a json returned is an array
 	 * 
@@ -1383,19 +1384,23 @@ public class Core {
 						throw new Exception("ImageInfo to " + slideRef + " resulted in: " + jsonResponse.get("Message")
 								+ " (keep in mind that slideRef is case sensitive!)");
 					} else if (jsonResponse.has("d")) {
-						//long a = System.currentTimeMillis();
 						// we convert the Json object to a Map<String, Object>
-						Map<String, Object> jsonMap = objectMapper
-								.readerFor(new TypeReference<Map<String, Object>>() {
-								}).with(DeserializationFeature.USE_LONG_FOR_INTS)
-								.readValue(jsonResponse.get("d").toString());
-						((Map<String, Object>) pmaSlideInfos.get(sessionID)).put(slideRef, jsonMap);
+						Map<String, Object> jsonMap = objectMapper.readerFor(new TypeReference<Map<String, Object>>() {
+						}).with(DeserializationFeature.USE_LONG_FOR_INTS).readValue(jsonResponse.get("d").toString());
+						// we store the map created for both the slide name & the UID
+						((Map<String, Object>) pmaSlideInfos.get(sessionID))
+								.put(jsonResponse.getJSONObject("d").optString("Filename"), jsonMap);
+						((Map<String, Object>) pmaSlideInfos.get(sessionID))
+								.put(jsonResponse.getJSONObject("d").optString("UID"), jsonMap);
 					} else {
 						// we convert the Json object to a Map<String, Object>
-						Map<String, Object> jsonMap = objectMapper
-								.readerFor(new TypeReference<Map<String, Object>>() {
-								}).with(DeserializationFeature.USE_LONG_FOR_INTS).readValue(jsonResponse.toString());
-						((Map<String, Object>) pmaSlideInfos.get(sessionID)).put(slideRef, jsonMap);
+						Map<String, Object> jsonMap = objectMapper.readerFor(new TypeReference<Map<String, Object>>() {
+						}).with(DeserializationFeature.USE_LONG_FOR_INTS).readValue(jsonResponse.toString());
+						// we store the map created for both the slide name & the UID
+						((Map<String, Object>) pmaSlideInfos.get(sessionID)).put(jsonResponse.getString("Filename"),
+								jsonMap);
+						((Map<String, Object>) pmaSlideInfos.get(sessionID)).put(jsonResponse.getString("UID"),
+								jsonMap);
 					}
 				} else {
 					// JSONArray jsonResponse = getJSONArrayResponse(jsonString);
@@ -1416,6 +1421,124 @@ public class Core {
 			}
 		}
 		return (Map<String, Object>) ((Map<String, Object>) pmaSlideInfos.get(sessionID)).get(slideRef);
+	}
+
+	/**
+	 * This method is used to get raw images in the form of nested maps
+	 * 
+	 * @param slideRefs List of slides' path or UID
+	 * @param varargs   Array of optional arguments
+	 *                  <p>
+	 *                  sessionID : First optional argument(String), default
+	 *                  value(null), session's ID
+	 *                  </p>
+	 * @return Nested maps forming raw images
+	 */
+	@SuppressWarnings("unchecked")
+	public static Map<String, Map<String, Object>> getSlidesInfo(List<String> slideRefs, String... varargs) {
+		// setting the default value when arguments' value is omitted
+		String sessionID = varargs.length > 0 ? varargs[0] : null;
+		// Return raw image information in the form of nested maps
+		sessionID = sessionId(sessionID);
+		List<String> slideRefsNew = new ArrayList<>();
+		for (String slideRef : slideRefs) {
+			if (slideRef.startsWith("/")) {
+				slideRef = slideRef.substring(1);
+			}
+			if (!((Map<String, Object>) pmaSlideInfos.get(sessionID)).containsKey(slideRef)) {
+				slideRefsNew.add(slideRef);
+			}
+		}
+		if (slideRefsNew.size() > 0) {
+			try {
+				String url = apiUrl(sessionID, false) + "GetImagesInfo";
+				URL urlResource = new URL(url);
+				HttpURLConnection con;
+				if (url.startsWith("https")) {
+					con = (HttpsURLConnection) urlResource.openConnection();
+				} else {
+					con = (HttpURLConnection) urlResource.openConnection();
+				}
+				con.setRequestMethod("POST");
+				con.setRequestProperty("Content-Type", "application/json");
+				con.setUseCaches(false);
+				con.setDoOutput(true);
+				// we convert the list of slide to a string of this fashion :
+				// ["slide1","slide2"....]
+				String slideRefsNewForJson = slideRefsNew.stream().map(n -> ("\"" + n + "\""))
+						.collect(Collectors.joining(",", "[", "]"));
+				String input = "{ \"sessionID\": \"" + sessionID + "\", \"pathOrUids\": " + slideRefsNewForJson + "}";
+				OutputStream os = con.getOutputStream();
+				os.write(input.getBytes("UTF-8"));
+				os.close();
+				String jsonString = getJSONAsStringBuffer(con).toString();
+				if (isJSONObject(jsonString)) {
+					JSONObject jsonResponse = getJSONResponse(jsonString);
+					pmaAmountOfDataDownloaded.put(sessionID,
+							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
+					if (jsonResponse.has("Code")) {
+						if (logger != null) {
+							logger.severe("ImageInfos to " + slideRefs.toString() + " resulted in: "
+									+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
+						}
+						throw new Exception("ImageInfos to " + slideRefs.toString() + " resulted in: "
+								+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
+					} else if (jsonResponse.has("d")) {
+						JSONArray jsonArrayResponse = jsonResponse.getJSONArray("d");
+						for (int i = 0; i < jsonArrayResponse.length(); i++) {
+							// we convert the Json object to a Map<String, Object>
+							Map<String, Object> jsonMap = objectMapper
+									.readerFor(new TypeReference<Map<String, Object>>() {
+									}).with(DeserializationFeature.USE_LONG_FOR_INTS)
+									.readValue(jsonArrayResponse.getJSONObject(i).toString());
+							// we store the map created for both the slide name & the UID
+							((Map<String, Object>) pmaSlideInfos.get(sessionID))
+									.put(jsonArrayResponse.getJSONObject(i).getString("Filename"), jsonMap);
+							((Map<String, Object>) pmaSlideInfos.get(sessionID))
+									.put(jsonArrayResponse.getJSONObject(i).getString("UID"), jsonMap);
+						}
+					} else {
+						return null;
+					}
+				} else {
+					JSONArray jsonArrayResponse = getJSONArrayResponse(jsonString);
+					pmaAmountOfDataDownloaded.put(sessionID,
+							pmaAmountOfDataDownloaded.get(sessionID) + jsonArrayResponse.length());
+					for (int i = 0; i < jsonArrayResponse.length(); i++) {
+						// we convert the Json object to a Map<String, Object>
+						Map<String, Object> jsonMap = objectMapper.readerFor(new TypeReference<Map<String, Object>>() {
+						}).with(DeserializationFeature.USE_LONG_FOR_INTS)
+								.readValue(jsonArrayResponse.getJSONObject(i).toString());
+						// we store the map created for both the slide name & the UID
+						((Map<String, Object>) pmaSlideInfos.get(sessionID))
+								.put(jsonArrayResponse.getJSONObject(i).getString("Filename"), jsonMap);
+						((Map<String, Object>) pmaSlideInfos.get(sessionID))
+								.put(jsonArrayResponse.getJSONObject(i).getString("UID"), jsonMap);
+					}
+				}
+				Map<String, Map<String, Object>> results = new HashMap<String, Map<String, Object>>();
+				for (String slide : slideRefs) {
+					results.put(slide,
+							(Map<String, Object>) ((Map<String, Object>) pmaSlideInfos.get(sessionID)).get(slide));
+				}
+				return results;
+			} catch (Exception e) {
+				e.printStackTrace();
+				if (logger != null) {
+					StringWriter sw = new StringWriter();
+					e.printStackTrace(new PrintWriter(sw));
+					logger.severe(sw.toString());
+				}
+				return null;
+			}
+		}
+		// if for all the slides, the image info data has been already stored on
+		// pmaSlideInfos
+		Map<String, Map<String, Object>> results = new HashMap<String, Map<String, Object>>();
+		for (String slide : slideRefs) {
+			results.put(slide, (Map<String, Object>) ((Map<String, Object>) pmaSlideInfos.get(sessionID)).get(slide));
+		}
+		return results;
 	}
 
 	/**
@@ -3194,7 +3317,7 @@ public class Core {
 			return null;
 		}
 	}
-	
+
 	/**
 	 * This method is used to get sub-directories available to sessionID in the
 	 * start directory for PMA.core ONLY
@@ -3237,20 +3360,20 @@ public class Core {
 				List<Map<String, String>> result = new ArrayList<>();
 				for (int i = 0; i < jsonResponse.length(); i++) {
 					final int finalI = i;
-					result.add(new HashMap<String, String>()
-							{{
-								put("LastModified", jsonResponse.getJSONObject(finalI).getString("LastModified"));
-								put("Path", jsonResponse.getJSONObject(finalI).getString("Path"));
-								put("Size", String.valueOf(jsonResponse.getJSONObject(finalI).getLong("Size")));
-							}}
-					);
+					result.add(new HashMap<String, String>() {
+						{
+							put("LastModified", jsonResponse.getJSONObject(finalI).getString("LastModified"));
+							put("Path", jsonResponse.getJSONObject(finalI).getString("Path"));
+							put("Size", String.valueOf(jsonResponse.getJSONObject(finalI).getLong("Size")));
+						}
+					});
 				}
 				return result;
 			} else {
-					if (logger != null) {
-						logger.severe("enumerateFilesForSlidePMACore() : Failure to get related files");
-					}
-					return null;
+				if (logger != null) {
+					logger.severe("enumerateFilesForSlidePMACore() : Failure to get related files");
+				}
+				return null;
 			}
 
 		} catch (Exception e) {
