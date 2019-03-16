@@ -59,7 +59,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.34
+ * @version 2.0.0.35
  */
 public class Core {
 	private static Map<String, Object> pmaSessions = new HashMap<String, Object>();
@@ -606,6 +606,84 @@ public class Core {
 				pmaAmountOfDataDownloaded.put(sessionID, contents.length());
 			}
 			return sessionID;
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
+			}
+			return null;
+		}
+	}
+
+	/**
+	 * This method is used to authenticate &amp; connect as an admin to a PMA.core
+	 * instance using admin credentials
+	 *
+	 * @param varargs Array of optional arguments
+	 *                <p>
+	 *                pmacoreURL : First optional argument(String), default
+	 *                value(Class field pmaCoreLiteURL), url of PMA.core instance
+	 *                </p>
+	 *                <p>
+	 *                pmacoreUsername : Second optional argument(String), default
+	 *                value(""), username for PMA.core instance
+	 *                </p>
+	 *                <p>
+	 *                pmacorePassword : Third optional argument(String), default
+	 *                value(""), password for PMA.core instance
+	 *                </p>
+	 * @return session's ID if session was created successfully, otherwise null
+	 */
+	public static String adminConnect(String... varargs) {
+		// setting the default values when arguments' values are omitted
+		String pmaCoreURL = varargs.length > 0 ? varargs[0] : pmaCoreLiteURL;
+		String pmaCoreUsername = varargs.length > 1 ? varargs[1] : "";
+		String pmaCorePassword = varargs.length > 2 ? varargs[2] : "";
+		// Attempt to connect to PMA.core instance; success results in a SessionID
+		if (pmaCoreURL.equals(pmaCoreLiteURL)) {
+			if (isLite()) {
+				// no point authenticating localhost / PMA.core.lite
+				return pmaCoreLiteSessionID;
+			} else {
+				return null;
+			}
+		}
+		// purposefully DON'T use helper function apiUrl() here:
+		// why? Because apiUrl() takes session information into account (which we
+		// don't have yet)
+		String url = join(pmaCoreURL, "admin/json/AdminAuthenticate?caller=SDK.Java");
+		if (!pmaCoreUsername.equals("")) {
+			url = url.concat("&username=").concat(pmaQ(pmaCoreUsername));
+		}
+		if (!pmaCorePassword.equals("")) {
+			url = url.concat("&password=").concat(pmaQ(pmaCorePassword));
+		}
+		try {
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("GET");
+			String jsonString = getJSONAsStringBuffer(con).toString();
+			if (isJSONObject(jsonString)) {
+				JSONObject jsonResponse = getJSONResponse(jsonString);
+				if (jsonResponse.getBoolean("Success")) {
+					String sessionID = jsonResponse.getString("SessionId");
+					pmaSessions.put(sessionID, pmaCoreURL);
+					pmaSlideInfos.put(sessionID, new HashMap<String, Object>());
+					pmaAmountOfDataDownloaded.put(sessionID, jsonResponse.length());
+					return sessionID;
+				} else {
+					return null;
+				}
+			} else {
+				return null;
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			if (logger != null) {
