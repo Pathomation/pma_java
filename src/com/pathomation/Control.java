@@ -4,7 +4,9 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -98,10 +100,10 @@ public class Control {
 
 	/**
 	 * This method is used to Retrieve a dictionary with currently defined training
-	 * sessions in PMA.control The resulting dictionary use the session's identifier
-	 * as the dictionary key, and therefore this method is easier to quickly
-	 * retrieve and represent session-related data. However, this method returns
-	 * less verbose data than get_sessions()
+	 * sessions in PMA.control. The resulting dictionary use the session's
+	 * identifier as the dictionary key, and therefore this method is easier to
+	 * quickly retrieve and represent session-related data. However, this method
+	 * returns less verbose data than getSessions()
 	 * 
 	 * @param pmaControlURL    URL for PMA.Control
 	 * @param pmaCoreSessionID PMA.core session ID
@@ -162,6 +164,31 @@ public class Control {
 			}
 			return null;
 		}
+	}
+
+	/**
+	 * This method is used to get list of titles of all defined case
+	 * collections in PMA.control
+	 * 
+	 * @param pmaControlURL    URL for PMA.Control
+	 * @param pmaCoreSessionID PMA.core session ID
+	 * @param varargs          Array of optional arguments
+	 *                         <p>
+	 *                         project : First optional argument(String), default
+	 *                         value(null), project case collections belong to
+	 *                         </p>
+	 * @return List of case collections titles
+	 */
+	public static List<String> getCaseCollectionTitles(String pmaControlURL, String pmaCoreSessionID,
+			String... varargs) {
+		// setting the default value when argument's value is omitted
+		String project = ((varargs.length > 0) && (varargs[0] != null)) ? varargs[0] : "";
+		JSONArray caseCollections = getCaseCollections(pmaControlURL, pmaCoreSessionID, project);
+		List<String> resutls = new ArrayList<>();
+		for (int i = 0; i < caseCollections.length(); i++) {
+			resutls.add(caseCollections.optJSONObject(i).optString("Title"));
+		}
+		return resutls;
 	}
 
 	/**

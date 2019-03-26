@@ -1,4 +1,8 @@
 # pma_java
+
+[![Maven Central](https://img.shields.io/maven-central/v/com.pathomation/pma-java.svg?color=%234DC71F)](https://mvnrepository.com/artifact/com.pathomation/pma-java)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
 pma_java is a Java wrapper library for PMA.start (http://free.pathomation.com), a universal viewer by Pathomation for whole slide imaging and microscopy.
 
 YOU NEED TO HAVE PMA.START (OR PMA.CORE) RUNNING IN ORDER TO USE THIS LIBRARY. PMA_JAVA IS NOT A STAND-ALONE LIBRARY FOR WSI.
