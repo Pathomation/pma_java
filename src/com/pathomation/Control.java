@@ -8,12 +8,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.logging.Logger;
 
 import javax.net.ssl.HttpsURLConnection;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Wrapper class around PMA.control API
@@ -126,7 +130,7 @@ public class Control {
 
 	/**
 	 * This method is used to retrieve all the data for all the defined case
-	 * collections in PMA.control
+	 * collections in PMA.control (RAW JSON data; not suited for human consumption)
 	 * 
 	 * @param pmaControlURL    URL for PMA.Control
 	 * @param pmaCoreSessionID PMA.core session ID
@@ -137,7 +141,7 @@ public class Control {
 	 *                         </p>
 	 * @return Array of case collections
 	 */
-	public static JSONArray getCaseCollections(String pmaControlURL, String pmaCoreSessionID, String... varargs) {
+	private static JSONArray getCaseCollections(String pmaControlURL, String pmaCoreSessionID, String... varargs) {
 		// setting the default value when argument's value is omitted
 		String project = ((varargs.length > 0) && (varargs[0] != null)) ? varargs[0] : "";
 		String url = Core.join(pmaControlURL, "api/CaseCollections?sessionID=" + Core.pmaQ(pmaCoreSessionID)
@@ -167,8 +171,8 @@ public class Control {
 	}
 
 	/**
-	 * This method is used to get list of titles of all defined case
-	 * collections in PMA.control
+	 * This method is used to get list of titles of all defined case collections in
+	 * PMA.control
 	 * 
 	 * @param pmaControlURL    URL for PMA.Control
 	 * @param pmaCoreSessionID PMA.core session ID
@@ -216,13 +220,35 @@ public class Control {
 	}
 
 	/**
+	 * Helper method to convert a list of sessions with default arguments into a
+	 * summarized dictionary
+	 * 
+	 * @param originalProjectSessions The original project sessions prior to formatting
+	 * @return List of summarized maps of the project's sessions in ID, Title format 
+	 */
+	@SuppressWarnings("serial")
+	private static List<Map<Integer, String>> formatProjectEmbeddedSessionsProperly(JSONArray originalProjectSessions) {
+		List<Map<Integer, String>> listMap = new ArrayList<>();
+		for (int i = 0; i < originalProjectSessions.length(); i++) {
+			JSONObject jsonObject = originalProjectSessions.optJSONObject(i);
+			listMap.add(new HashMap<Integer, String>() {
+				{
+					put(jsonObject.optInt("Id"), jsonObject.optString("Title"));
+				}
+			});
+		}
+		return listMap;
+	}
+
+	/**
 	 * This method is used to retrieve all projects and their data in PMA.control
+	 * (RAW JSON data; not suited for human consumption)
 	 * 
 	 * @param pmaControlURL    URL for PMA.Control
 	 * @param pmaCoreSessionID PMA.core session ID
 	 * @return Array of projects
 	 */
-	public static JSONArray getProjects(String pmaControlURL, String pmaCoreSessionID) {
+	private static JSONArray getProjects(String pmaControlURL, String pmaCoreSessionID) {
 		String url = Core.join(pmaControlURL, "api/Projects?sessionID=" + Core.pmaQ(pmaCoreSessionID));
 		System.out.println(url);
 		try {
@@ -249,4 +275,123 @@ public class Control {
 		}
 	}
 
+	/**
+	 * This method is used to retrieve the projects then returns exclusively their
+	 * titles
+	 * 
+	 * @param pmaControlURL
+	 * @param pmaCoreSessionID
+	 * @return List of projects' titles
+	 */
+	public static List<String> getProjectTitles(String pmaControlURL, String pmaCoreSessionID) {
+		try {
+			return new ArrayList<String>(getProjectTitlesDict(pmaControlURL, pmaCoreSessionID).values());
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
+			}
+			return null;
+		}
+	}
+
+	/**
+	 * This method is used to retrieve projects then returns a map of project-IDS
+	 * and titles
+	 * 
+	 * @param pmaControlURL    URL for PMA.Control
+	 * @param pmaCoreSessionID PMA.core session ID
+	 * @return Map of project-IDs and titles
+	 */
+	public static Map<Integer, String> getProjectTitlesDict(String pmaControlURL, String pmaCoreSessionID) {
+		Map<Integer, String> map = new HashMap<>();
+		JSONArray allProjects = getProjects(pmaControlURL, pmaCoreSessionID);
+		try {
+			for (int i = 0; i < allProjects.length(); i++) {
+				map.put(allProjects.optJSONObject(i).getInt("Id"), allProjects.optJSONObject(i).getString("Title"));
+			}
+			return map;
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
+			}
+			return null;
+		}
+	}
+
+	/**
+	 * This method is used to get a project details (project defined by its ID)
+	 * 
+	 * @param pmaControlURL       URL for PMA.Control
+	 * @param pmacontrolProjectID Project's ID
+	 * @param pmaCoreSessionID    PMA.core session ID
+	 * @return Map of the project's details
+	 */
+	@SuppressWarnings("unchecked")
+	public static Map<String, Object> getProject(String pmaControlURL, Integer pmacontrolProjectID,
+			String pmaCoreSessionID) {
+		try {
+			JSONArray allProjects = getProjects(pmaControlURL, pmaCoreSessionID);
+			for (int i = 0; i < allProjects.length(); i++) {
+				JSONObject prj = allProjects.optJSONObject(i);
+				if (prj.optInt("Id") == pmacontrolProjectID) {
+					// summary session-related information so that it makes sense
+					Map<String, Object> jsonMap = new ObjectMapper()
+							.readerFor(new TypeReference<Map<String, Object>>() {
+							}).readValue(prj.toString());
+					jsonMap.put("Sessions", formatProjectEmbeddedSessionsProperly(prj.optJSONArray("Sessions")));
+					// now integrate case collection information
+					// we get the case collections belonging to the project (via the title)
+					JSONArray colls = getCaseCollections(pmaControlURL, pmaCoreSessionID, prj.getString("Title"));
+					jsonMap.put("CaseCollections", new HashMap<Integer, String>());
+					for (int j = 0; j < colls.length(); j++) {
+						JSONObject jsonObject = colls.optJSONObject(j);
+						((Map<Integer, String>) jsonMap.get("CaseCollections")).put(jsonObject.getInt("Id"),
+								jsonObject.getString("Title"));
+					}
+					return jsonMap;
+				}
+			}
+			// Project ID not found
+			return null;
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
+			}
+			return null;
+		}
+	}
+
+	/**
+	 * This method is used to get the projects whose title matches a certain keyword
+	 * search pattern
+	 * 
+	 * @param pmaControlURL    URL for PMA.Control
+	 * @param keyword          Keyword to seach projects against
+	 * @param pmaCoreSessionID PMA.core session ID
+	 * @return List of Maps of projects whose title matches the search criteria
+	 */
+	public static List<Map<String, Object>> searchProject(String pmaControlURL, String keyword,
+			String pmaCoreSessionID) {
+		Map<Integer, String> mapProjectTitles = getProjectTitlesDict(pmaControlURL, pmaCoreSessionID);
+		List<Map<String, Object>> lstProjects = new ArrayList<>();
+		for (Entry<Integer, String> entry : mapProjectTitles.entrySet()) {
+			if (entry.getValue().contains(keyword)) {
+				lstProjects.add(getProject(pmaControlURL, entry.getKey(), pmaCoreSessionID));
+			}
+		}
+		if (lstProjects.size() > 0) {
+			return lstProjects;
+		} else {
+			return null;
+		}
+	}
 }
