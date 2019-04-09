@@ -27,9 +27,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class Control {
 
-	private static Map<String, JSONArray> caseCollectionsJson = new HashMap<>();
-	private static Map<String, JSONArray> projectsJson = new HashMap<>();
-	// private static Map<String, Object> sessionJson = new HashMap<>();
+	private static Map<String, JSONArray> caseCollectionsJson = new HashMap<>(); //reserved for future use
+	private static Map<String, JSONArray> projectsJson = new HashMap<>(); //reserved for future use
+    private static Map<String, Object> sessionJson = new HashMap<>(); //reserved for future use
 
 	// for logging purposes
 	public static Logger logger = null;
@@ -79,7 +79,7 @@ public class Control {
 	 * @param pmaCoreSessionID PMA.core session ID
 	 * @return List of registred sessions
 	 */
-	public static JSONArray getSessions(String pmaControlURL, String pmaCoreSessionID) {
+	private static JSONArray getSessions(String pmaControlURL, String pmaCoreSessionID) {
 		String url = Core.join(pmaControlURL, "api/Sessions?sessionID=" + Core.pmaQ(pmaCoreSessionID));
 		System.out.println(url);
 		try {
@@ -133,6 +133,65 @@ public class Control {
 	}
 
 	/**
+	 * This method is used to retrieve sessions (possibly filtered by project ID),
+	 * titles only
+	 * 
+	 * @param pmaControlURL       URL for PMA.Control
+	 * @param pmaControlProjectID Project's ID
+	 * @param pmaCoreSessionID    PMA.core session ID
+	 * @return List of session titles
+	 */
+	public static List<String> getSessionTitles(String pmaControlURL, Integer pmaControlProjectID,
+			String pmaCoreSessionID) {
+		try {
+			return new ArrayList<String>(
+					getSessionTitlesDict(pmaControlURL, pmaControlProjectID, pmaCoreSessionID).values());
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
+			}
+			return null;
+		}
+	}
+
+	/**
+	 * This method is used to retrieve sessions (possibly filtered by project ID),
+	 * returns a map of session IDs and titles
+	 * 
+	 * @param pmaControlURL       URL for PMA.Control
+	 * @param pmaControlProjectID Project's ID
+	 * @param pmaCoreSessionID    PMA.core session ID
+	 * @return Map of session IDs and titles
+	 */
+	public static Map<Integer, String> getSessionTitlesDict(String pmaControlURL, Integer pmaControlProjectID,
+			String pmaCoreSessionID) {
+		Map<Integer, String> map = new HashMap<>();
+		try {
+			JSONArray allSessions = getSessions(pmaControlURL, pmaCoreSessionID);
+			for (int i = 0; i < allSessions.length(); i++) {
+				JSONObject session = allSessions.optJSONObject(i);
+				if (pmaControlProjectID == null) {
+					map.put(session.optInt("Id"), session.optString("Title"));
+				} else if (pmaControlProjectID == session.optInt("ModuleId")) {
+					map.put(session.optInt("Id"), session.optString("Title"));
+				}
+			}
+			return map;
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
+			}
+			return null;
+		}
+	}
+
+	/**
 	 * This method is used to retrieve all the data for all the defined case
 	 * collections in PMA.control (RAW JSON data; not suited for human consumption)
 	 * 
@@ -151,21 +210,33 @@ public class Control {
 		String url = Core.join(pmaControlURL, "api/CaseCollections?sessionID=" + Core.pmaQ(pmaCoreSessionID)
 				+ ((project.length() > 0) ? ("&project=" + Core.pmaQ(project)) : ""));
 		try {
-			if (!caseCollectionsJson.containsKey(url)) {
-				URL urlResource = new URL(url);
-				HttpURLConnection con;
-				if (url.startsWith("https")) {
-					con = (HttpsURLConnection) urlResource.openConnection();
-				} else {
-					con = (HttpURLConnection) urlResource.openConnection();
-				}
-				con.setRequestMethod("GET");
-				con.setRequestProperty("Accept", "application/json");
-				String jsonString = Core.getJSONAsStringBuffer(con).toString();
-				JSONArray jsonResponse = Core.getJSONArrayResponse(jsonString);
-				caseCollectionsJson.put(url, jsonResponse);
+//			if (!caseCollectionsJson.containsKey(url)) {
+//				URL urlResource = new URL(url);
+//				HttpURLConnection con;
+//				if (url.startsWith("https")) {
+//					con = (HttpsURLConnection) urlResource.openConnection();
+//				} else {
+//					con = (HttpURLConnection) urlResource.openConnection();
+//				}
+//				con.setRequestMethod("GET");
+//				con.setRequestProperty("Accept", "application/json");
+//				String jsonString = Core.getJSONAsStringBuffer(con).toString();
+//				JSONArray jsonResponse = Core.getJSONArrayResponse(jsonString);
+//				caseCollectionsJson.put(url, jsonResponse);
+//			}
+//			return caseCollectionsJson.get(url);
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
 			}
-			return caseCollectionsJson.get(url);
+			con.setRequestMethod("GET");
+			con.setRequestProperty("Accept", "application/json");
+			String jsonString = Core.getJSONAsStringBuffer(con).toString();
+			JSONArray jsonResponse = Core.getJSONArrayResponse(jsonString);
+			return jsonResponse;
 		} catch (Exception e) {
 			e.printStackTrace();
 			if (logger != null) {
@@ -266,11 +337,11 @@ public class Control {
 		try {
 			JSONArray allColletions = getCaseCollections(pmaControlURL, pmaCoreSessionID);
 			for (int i = 0; i < allColletions.length(); i++) {
-				JSONObject jsonObject = allColletions.optJSONObject(i);
+				JSONObject collection = allColletions.optJSONObject(i);
 				if (pmaControlProjectID == null) {
-					map.put(jsonObject.optInt("Id"), jsonObject.optString("Title"));
-				} else if (pmaControlProjectID == jsonObject.optInt("ModuleId")) {
-					map.put(jsonObject.optInt("Id"), jsonObject.optString("Title"));
+					map.put(collection.optInt("Id"), collection.optString("Title"));
+				} else if (pmaControlProjectID == collection.optInt("ModuleId")) {
+					map.put(collection.optInt("Id"), collection.optString("Title"));
 				}
 			}
 			return map;
@@ -339,21 +410,33 @@ public class Control {
 	private static JSONArray getProjects(String pmaControlURL, String pmaCoreSessionID) {
 		String url = Core.join(pmaControlURL, "api/Projects?sessionID=" + Core.pmaQ(pmaCoreSessionID));
 		try {
-			if (!projectsJson.containsKey(url)) {
-				URL urlResource = new URL(url);
-				HttpURLConnection con;
-				if (url.startsWith("https")) {
-					con = (HttpsURLConnection) urlResource.openConnection();
-				} else {
-					con = (HttpURLConnection) urlResource.openConnection();
-				}
-				con.setRequestMethod("GET");
-				con.setRequestProperty("Accept", "application/json");
-				String jsonString = Core.getJSONAsStringBuffer(con).toString();
-				JSONArray jsonResponse = Core.getJSONArrayResponse(jsonString);
-				projectsJson.put(url, jsonResponse);
+//			if (!projectsJson.containsKey(url)) {
+//				URL urlResource = new URL(url);
+//				HttpURLConnection con;
+//				if (url.startsWith("https")) {
+//					con = (HttpsURLConnection) urlResource.openConnection();
+//				} else {
+//					con = (HttpURLConnection) urlResource.openConnection();
+//				}
+//				con.setRequestMethod("GET");
+//				con.setRequestProperty("Accept", "application/json");
+//				String jsonString = Core.getJSONAsStringBuffer(con).toString();
+//				JSONArray jsonResponse = Core.getJSONArrayResponse(jsonString);
+//				projectsJson.put(url, jsonResponse);
+//			}
+//			return projectsJson.get(url);
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
 			}
-			return projectsJson.get(url);
+			con.setRequestMethod("GET");
+			con.setRequestProperty("Accept", "application/json");
+			String jsonString = Core.getJSONAsStringBuffer(con).toString();
+			JSONArray jsonResponse = Core.getJSONArrayResponse(jsonString);
+			return jsonResponse;
 		} catch (Exception e) {
 			e.printStackTrace();
 			if (logger != null) {
