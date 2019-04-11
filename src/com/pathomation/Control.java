@@ -262,6 +262,33 @@ public class Control {
 					+ pmaCoreSessionID;
 		}
 	}
+	
+	/**
+	 * This method is used to get all participants registered across all sessions, include the Role they play
+	 * 
+	 * @param pmaControlURL PMA.control URL
+	 * @param pmaCoreSessionID PMA.core session ID
+	 * @return Map of all participants registered across all sessions, include the Role they play
+	 */
+	@SuppressWarnings("unchecked")
+	public static Map<String, Object> getAllParticipants(String pmaControlURL, String pmaCoreSessionID) {
+		JSONArray fullSessions = getSessions(pmaControlURL, pmaCoreSessionID);
+		Map<String, Object> userMap = new HashMap<>();
+		for (int i = 0; i < fullSessions.length(); i++) {
+			JSONObject session = fullSessions.optJSONObject(i);
+			Map<String, Object> sMap = formatSessionProperly(session);
+			JSONArray participants = session.optJSONArray("Participants");
+			for (int j = 0; j < participants.length(); j++) {
+				JSONObject participant = participants.optJSONObject(j);
+				if (!userMap.containsKey(participant.getString("User"))) {
+					userMap.put(participant.getString("User"), new HashMap<Integer, Map<String, Object>>());
+				}
+				((Map<Integer, Map<String, Object>>) userMap.get(participant.getString("User"))).put(session.optInt("Id"), sMap);
+				((Map<Integer, Map<String, Object>>) userMap.get(participant.getString("User"))).get(session.optInt("Id")).put("Role", participant.getString("Role"));
+			}
+		}
+		return userMap;
+	}
 
 	/**
 	 * This method is used to register a participant for a session
