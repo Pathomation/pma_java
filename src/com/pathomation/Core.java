@@ -59,7 +59,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.40
+ * @version 2.0.0.41
  */
 public class Core {
 	private static Map<String, Object> pmaSessions = new HashMap<String, Object>();
@@ -79,6 +79,7 @@ public class Core {
 	private static Map<String, String> diskLabels = new HashMap<String, String>();
 	// Object Mapper for Jackson library
 	private static ObjectMapper objectMapper = new ObjectMapper();
+	private static Map<String, String> urlContent = new HashMap<>();
 
 	/**
 	 * This method is used to get the session's ID
@@ -434,6 +435,39 @@ public class Core {
 			}
 		}
 		return l;
+	}
+
+	/**
+	 * This method is used to cache requested URLs
+	 * 
+	 * @param url      URL to request
+	 * @param property Header value
+	 * @return Data returned following a request to a specific URL
+	 */
+	public static String httpGet(String url, String property) {
+		if (!urlContent.containsKey(url)) {
+			try {
+				URL urlResource = new URL(url);
+				HttpURLConnection con;
+				if (url.startsWith("https")) {
+					con = (HttpsURLConnection) urlResource.openConnection();
+				} else {
+					con = (HttpURLConnection) urlResource.openConnection();
+				}
+				con.setRequestMethod("GET");
+				con.setRequestProperty("Accept", property);
+				urlContent.put(url, Core.getJSONAsStringBuffer(con).toString());
+			} catch (Exception e) {
+				e.printStackTrace();
+				if (logger != null) {
+					StringWriter sw = new StringWriter();
+					e.printStackTrace(new PrintWriter(sw));
+					logger.severe(sw.toString());
+				}
+				return null;
+			}
+		}
+		return urlContent.get(url).toString();
 	}
 
 	/**
