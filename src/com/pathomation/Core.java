@@ -59,7 +59,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.41
+ * @version 2.0.0.42
  */
 public class Core {
 	private static Map<String, Object> pmaSessions = new HashMap<String, Object>();
@@ -468,6 +468,13 @@ public class Core {
 			}
 		}
 		return urlContent.get(url).toString();
+	}
+
+	/**
+	 * This method is used to clear the URLs cache
+	 */
+	public static void clearURLCache() {
+		urlContent = new HashMap<>();
 	}
 
 	/**

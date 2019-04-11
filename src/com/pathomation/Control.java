@@ -1,5 +1,6 @@
 package com.pathomation;
 
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.HttpURLConnection;
@@ -27,9 +28,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class Control {
 
-	private static Map<String, JSONArray> caseCollectionsJson = new HashMap<>(); //reserved for future use
-	private static Map<String, JSONArray> projectsJson = new HashMap<>(); //reserved for future use
-    private static Map<String, Object> sessionJson = new HashMap<>(); //reserved for future use
+	enum PmaSessionRole {
+		SUPERVISOR, TRAINEE, OBSERVER
+	}
+
+	enum PmaInteractionMode {
+		LOCKED, TEST_ACTIVE, REVIEW, CONSENSUS_VIEW, BROWSE, BOARD, CONSENSUS_SCORE_EDIT, SELF_REVIEW, SELF_TEST,
+		HIDDEN, CLINICAL_INFORMATION_EDIT
+	}
 
 	// for logging purposes
 	public static Logger logger = null;
@@ -47,17 +53,7 @@ public class Control {
 		// apiUrl() takes session information into account
 		String url = Core.join(pmaControlURL, "api/version");
 		try {
-			URL urlResource = new URL(url);
-			HttpURLConnection con;
-			if (url.startsWith("https")) {
-				con = (HttpsURLConnection) urlResource.openConnection();
-			} else {
-				con = (HttpURLConnection) urlResource.openConnection();
-			}
-			con.setRequestMethod("GET");
-			con.setRequestProperty("Accept", "application/json");
-			String jsonString = Core.getJSONAsStringBuffer(con).toString();
-			// JSONObject jsonResponse = Core.getJSONResponse(jsonString);
+			String jsonString = Core.httpGet(url, "application/json");
 			// we remove ""
 			return jsonString.substring(1, jsonString.length() - 1);
 		} catch (Exception e) {
@@ -81,18 +77,8 @@ public class Control {
 	 */
 	private static JSONArray getSessions(String pmaControlURL, String pmaCoreSessionID) {
 		String url = Core.join(pmaControlURL, "api/Sessions?sessionID=" + Core.pmaQ(pmaCoreSessionID));
-		System.out.println(url);
 		try {
-			URL urlResource = new URL(url);
-			HttpURLConnection con;
-			if (url.startsWith("https")) {
-				con = (HttpsURLConnection) urlResource.openConnection();
-			} else {
-				con = (HttpURLConnection) urlResource.openConnection();
-			}
-			con.setRequestMethod("GET");
-			con.setRequestProperty("Accept", "application/json");
-			String jsonString = Core.getJSONAsStringBuffer(con).toString();
+			String jsonString = Core.httpGet(url, "application/json");
 			JSONArray jsonResponse = Core.getJSONArrayResponse(jsonString);
 			return jsonResponse;
 		} catch (Exception e) {
@@ -105,9 +91,10 @@ public class Control {
 			return null;
 		}
 	}
-	
+
 	/**
-	 * Helper method to convert a JSON representation of a PMA.control training session to a proper Java-esque structure
+	 * Helper method to convert a JSON representation of a PMA.control training
+	 * session to a proper Java-esque structure
 	 * 
 	 * @param session Session details
 	 * @return Map of formatted session information
@@ -123,10 +110,12 @@ public class Control {
 		sessionData.put("ModuleId", session.getString("ModuleId"));
 		sessionData.put("State", session.getString("State"));
 		sessionData.put("CaseCollections", new HashMap<Integer, String>());
+		sessionData.put("NumberOfParticipants", session.optJSONArray("Participants").length());
 		JSONArray collections = session.getJSONArray("CaseCollections");
 		for (int i = 0; i <= collections.length(); i++) {
 			JSONObject collection = collections.optJSONObject(i);
-			((Map<Integer, String>) sessionData.get("CaseCollections")).put(collection.optInt("Id"), collection.optString("Title"));
+			((Map<Integer, String>) sessionData.get("CaseCollections")).put(collection.optInt("Id"),
+					collection.optString("Title"));
 		}
 		return sessionData;
 	}
@@ -156,19 +145,20 @@ public class Control {
 //		}
 //		return newSession;
 //	}
-	
+
 	/**
 	 * This method is used to Retrieve a dictionary with currently defined training
 	 * sessions in PMA.control. The resulting dictionary use the session's
 	 * identifier as the dictionary key, and therefore this method is easier to
 	 * quickly retrieve and represent session-related data.
 	 * 
-	 * @param pmaControlURL    URL for PMA.Control
+	 * @param pmaControlURL       URL for PMA.Control
 	 * @param pmaControlProjectID Project ID
-	 * @param pmaCoreSessionID PMA.core session ID
+	 * @param pmaCoreSessionID    PMA.core session ID
 	 * @return Map of data related to registred session IDs
 	 */
-	public static Map<Integer, Map<String, Object>> getSessions(String pmaControlURL, Integer pmaControlProjectID, String pmaCoreSessionID) {
+	public static Map<Integer, Map<String, Object>> getSessions(String pmaControlURL, Integer pmaControlProjectID,
+			String pmaCoreSessionID) {
 		JSONArray fullSessions = getSessions(pmaControlURL, pmaCoreSessionID);
 		Map<Integer, Map<String, Object>> newSessionMap = new HashMap<>();
 		for (int i = 0; i < fullSessions.length(); i++) {
@@ -179,16 +169,17 @@ public class Control {
 		}
 		return newSessionMap;
 	}
-	
+
 	/**
 	 * This method is used to get sessions for a certain participant
 	 * 
 	 * @param pmaControlURL    URL for PMA.Control
-	 * @param pmaCoreUsername PMA.core username
+	 * @param pmaCoreUsername  PMA.core username
 	 * @param pmaCoreSessionID PMA.core session ID
 	 * @return Map of sessions for a certain participant
 	 */
-	public static Map<Integer, Map<String, Object>> getSessionsForParticipant(String pmaControlURL, String pmaCoreUsername, String pmaCoreSessionID) {
+	public static Map<Integer, Map<String, Object>> getSessionsForParticipant(String pmaControlURL,
+			String pmaCoreUsername, String pmaCoreSessionID) {
 		JSONArray fullSessions = getSessions(pmaControlURL, pmaCoreSessionID);
 		Map<Integer, Map<String, Object>> newSessionMap = new HashMap<>();
 		for (int i = 0; i < fullSessions.length(); i++) {
@@ -205,16 +196,17 @@ public class Control {
 		}
 		return newSessionMap;
 	}
-	
+
 	/**
 	 * This method is used to extract the participants in a particular session
 	 * 
-	 * @param pmaControlURL    URL for PMA.Control
+	 * @param pmaControlURL       URL for PMA.Control
 	 * @param pmaControlSessionID PMA.control session ID
-	 * @param pmaCoreSessionID PMA.core session ID
+	 * @param pmaCoreSessionID    PMA.core session ID
 	 * @return Map of participants in a particular session
 	 */
-	public static Map<String, String> getSessionParticipants(String pmaControlURL, Integer pmaControlSessionID, String pmaCoreSessionID) {
+	public static Map<String, String> getSessionParticipants(String pmaControlURL, Integer pmaControlSessionID,
+			String pmaCoreSessionID) {
 		JSONArray fullSessions = getSessions(pmaControlURL, pmaCoreSessionID);
 		Map<String, String> userMap = new HashMap<>();
 		for (int i = 0; i < fullSessions.length(); i++) {
@@ -229,21 +221,98 @@ public class Control {
 		}
 		return userMap;
 	}
-	
+
 	/**
-	 * This method is used to check if a specific user participates in a specific session
+	 * This method is used to check if a specific user participates in a specific
+	 * session
 	 * 
-	 * @param pmaControlURL    URL for PMA.Control
-	 * @param pmaCoreUsername PMA.core username
+	 * @param pmaControlURL       URL for PMA.Control
+	 * @param pmaCoreUsername     PMA.core username
 	 * @param pmaControlSessionID PMA.control session ID
-	 * @param pmaCoreSessionID PMA.core session ID
-	 * @return True if a specific user participates in a specific session, false otherwise.
+	 * @param pmaCoreSessionID    PMA.core session ID
+	 * @return True if a specific user participates in a specific session, false
+	 *         otherwise.
 	 */
-	public static Boolean isParticipantInSession(String pmaControlURL, String pmaCoreUsername, Integer pmaControlSessionID, String pmaCoreSessionID) {
-		Map<String, String> allParticipants = getSessionParticipants(pmaControlURL, pmaControlSessionID, pmaCoreSessionID);
+	public static Boolean isParticipantInSession(String pmaControlURL, String pmaCoreUsername,
+			Integer pmaControlSessionID, String pmaCoreSessionID) {
+		Map<String, String> allParticipants = getSessionParticipants(pmaControlURL, pmaControlSessionID,
+				pmaCoreSessionID);
 		return allParticipants.containsKey(pmaCoreUsername);
 	}
-	
+
+	/**
+	 * This method is used to construct the session URL
+	 * 
+	 * @param pmaControlURL       URL for PMA.Control
+	 * @param pmaControlSessionID PMA.control session ID
+	 * @param pmaControlCase      Case name
+	 * @param pmaCoreSessionID    PMA.core session ID
+	 * @return Session's URL
+	 */
+	public static String getSessionURL(String pmaControlURL, Integer pmaControlSessionID, String pmaControlCase,
+			String pmaCoreSessionID) {
+		if (pmaControlCase == null) {
+			return Core.join(pmaControlURL, "training/training/") + pmaControlSessionID + "?SessionID="
+					+ pmaCoreSessionID;
+		} else if (pmaControlCase.matches("^[0-9]*$")) {
+			return Core.join(pmaControlURL, "training/training/") + pmaControlSessionID + "?SessionID="
+					+ pmaCoreSessionID;
+		} else {
+			return Core.join(pmaControlURL, "training/training/") + pmaControlSessionID + "?SessionID="
+					+ pmaCoreSessionID;
+		}
+	}
+
+	/**
+	 * This method is used to register a participant for a session
+	 * 
+	 * @param pmaControlURL             PMA.control URL
+	 * @param pmacoreUsername           PMA.core username
+	 * @param pmacontrolSessionID       PMA.control session ID
+	 * @param pmacontrolRole            Role
+	 * @param pmacontrolInteractionMode Interaction mode
+	 * @param pmacoreSessionID          PMA.core session ID
+	 */
+	public static void registerParticipantForSession(String pmaControlURL, String pmacoreUsername,
+			Integer pmacontrolSessionID, PmaSessionRole pmacontrolRole, PmaInteractionMode pmacontrolInteractionMode,
+			String pmacoreSessionID) {
+		String url = Core.join(pmaControlURL, "api/Sessions/") + pmacontrolSessionID.toString()
+				+ "/Participants?SessionID=" + pmacoreSessionID;
+//		Map<String, String> data = new HashMap<String, String>() {{
+//			put("UserName", pmacoreUsername);
+//			put("Role", String.valueOf(pmacontrolRole.ordinal()));
+//			put("InteractionMode", String.valueOf(pmacontrolInteractionMode.ordinal() + 1));
+//		}};
+		try {
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("POST");
+			con.setRequestProperty("Content-Type", "application/json");
+			con.setUseCaches(false);
+			con.setDoOutput(true);
+			String data = "{ \"UserName\": \"" + pmacoreUsername + "\", \"Role\": \""
+					+ String.valueOf(pmacontrolRole.ordinal()) + "\",  \"InteractionMode\": \""
+					+ String.valueOf(pmacontrolInteractionMode.ordinal() + 1) + "\" }";
+			OutputStream os = con.getOutputStream();
+			os.write(data.getBytes("UTF-8"));
+			os.close();
+			String jsonString = Core.getJSONAsStringBuffer(con).toString();
+			System.out.println(jsonString);
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
+			}
+		}
+	}
+
 	/**
 	 * This method is used to retrieve sessions (possibly filtered by project ID),
 	 * titles only
@@ -270,8 +339,8 @@ public class Control {
 	}
 
 	/**
-	 * This method is used to retrieve (training) sessions (possibly filtered by project ID),
-	 * returns a map of session IDs and titles
+	 * This method is used to retrieve (training) sessions (possibly filtered by
+	 * project ID), returns a map of session IDs and titles
 	 * 
 	 * @param pmaControlURL       URL for PMA.Control
 	 * @param pmaControlProjectID Project's ID
@@ -302,19 +371,20 @@ public class Control {
 			return null;
 		}
 	}
-	
+
 	/**
-	 * This method is used to return the first (training) session that has keyword as part of its string; search is case insensitive
+	 * This method is used to return the first (training) session that has keyword
+	 * as part of its string; search is case insensitive
 	 * 
-	 * @param pmaControlURL       URL for PMA.Control
-	 * @param keyword key word to search against
-	 * @param pmaCoreSessionID    PMA.core session ID
-	 * @return Map of the first (training) session whose title matches the search criteria
+	 * @param pmaControlURL    URL for PMA.Control
+	 * @param keyword          key word to search against
+	 * @param pmaCoreSessionID PMA.core session ID
+	 * @return Map of the first (training) session whose title matches the search
+	 *         criteria
 	 */
-	public static Map<String, Object> searchSession(String pmaControlURL, String keyword,
-			String pmaCoreSessionID) {
+	public static Map<String, Object> searchSession(String pmaControlURL, String keyword, String pmaCoreSessionID) {
 		JSONArray all = getSessions(pmaControlURL, pmaCoreSessionID);
-		
+
 		for (int i = 0; i < all.length(); i++) {
 			JSONObject el = all.optJSONObject(i);
 			if (keyword.toLowerCase().equals(el.getString("Title").toLowerCase())) {
@@ -358,16 +428,7 @@ public class Control {
 //				caseCollectionsJson.put(url, jsonResponse);
 //			}
 //			return caseCollectionsJson.get(url);
-			URL urlResource = new URL(url);
-			HttpURLConnection con;
-			if (url.startsWith("https")) {
-				con = (HttpsURLConnection) urlResource.openConnection();
-			} else {
-				con = (HttpURLConnection) urlResource.openConnection();
-			}
-			con.setRequestMethod("GET");
-			con.setRequestProperty("Accept", "application/json");
-			String jsonString = Core.getJSONAsStringBuffer(con).toString();
+			String jsonString = Core.httpGet(url, "application/json");
 			JSONArray jsonResponse = Core.getJSONArrayResponse(jsonString);
 			return jsonResponse;
 		} catch (Exception e) {
@@ -558,16 +619,7 @@ public class Control {
 //				projectsJson.put(url, jsonResponse);
 //			}
 //			return projectsJson.get(url);
-			URL urlResource = new URL(url);
-			HttpURLConnection con;
-			if (url.startsWith("https")) {
-				con = (HttpsURLConnection) urlResource.openConnection();
-			} else {
-				con = (HttpURLConnection) urlResource.openConnection();
-			}
-			con.setRequestMethod("GET");
-			con.setRequestProperty("Accept", "application/json");
-			String jsonString = Core.getJSONAsStringBuffer(con).toString();
+			String jsonString = Core.httpGet(url, "application/json");
 			JSONArray jsonResponse = Core.getJSONArrayResponse(jsonString);
 			return jsonResponse;
 		} catch (Exception e) {
