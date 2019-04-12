@@ -99,7 +99,7 @@ public class Control {
 	 * @param session Session details
 	 * @return Map of formatted session information
 	 */
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "serial" })
 	public static Map<String, Object> formatSessionProperly(JSONObject session) {
 		Map<String, Object> sessionData = new HashMap<>();
 		sessionData.put("Id", session.getString("Id"));
@@ -107,15 +107,21 @@ public class Control {
 		sessionData.put("LogoPath", session.getString("LogoPath"));
 		sessionData.put("StartsOn", session.getString("StartsOn"));
 		sessionData.put("EndsOn", session.getString("EndsOn"));
-		sessionData.put("ModuleId", session.getString("ModuleId"));
+		sessionData.put("ProjectId", session.getString("ProjectId"));
 		sessionData.put("State", session.getString("State"));
-		sessionData.put("CaseCollections", new HashMap<Integer, String>());
+		sessionData.put("CaseCollections", new HashMap<Integer, Map<String, String>>());
 		sessionData.put("NumberOfParticipants", session.optJSONArray("Participants").length());
 		JSONArray collections = session.getJSONArray("CaseCollections");
 		for (int i = 0; i <= collections.length(); i++) {
 			JSONObject collection = collections.optJSONObject(i);
-			((Map<Integer, String>) sessionData.get("CaseCollections")).put(collection.optInt("Id"),
-					collection.optString("Title"));
+			((Map<Integer, Map<String, String>>) sessionData.get("CaseCollections")).put(collection.optInt("Id"),
+					// collection.optString("Title")
+					new HashMap<String, String>() {
+						{
+							put("Title", collection.getString("Title"));
+							put("Url", collection.getString("Url"));
+						}
+					});
 		}
 		return sessionData;
 	}
@@ -163,7 +169,7 @@ public class Control {
 		Map<Integer, Map<String, Object>> newSessionMap = new HashMap<>();
 		for (int i = 0; i < fullSessions.length(); i++) {
 			JSONObject session = fullSessions.optJSONObject(i);
-			if ((pmaControlProjectID != null) || (pmaControlProjectID == session.optInt("ModuleId"))) {
+			if ((pmaControlProjectID != null) || (pmaControlProjectID == session.optInt("ProjectId"))) {
 				newSessionMap.put(session.optInt("Id"), formatSessionProperly(session));
 			}
 		}
@@ -262,13 +268,15 @@ public class Control {
 					+ pmaCoreSessionID;
 		}
 	}
-	
+
 	/**
-	 * This method is used to get all participants registered across all sessions, include the Role they play
+	 * This method is used to get all participants registered across all sessions,
+	 * include the Role they play
 	 * 
-	 * @param pmaControlURL PMA.control URL
+	 * @param pmaControlURL    PMA.control URL
 	 * @param pmaCoreSessionID PMA.core session ID
-	 * @return Map of all participants registered across all sessions, include the Role they play
+	 * @return Map of all participants registered across all sessions, include the
+	 *         Role they play
 	 */
 	@SuppressWarnings("unchecked")
 	public static Map<String, Object> getAllParticipants(String pmaControlURL, String pmaCoreSessionID) {
@@ -283,8 +291,10 @@ public class Control {
 				if (!userMap.containsKey(participant.getString("User"))) {
 					userMap.put(participant.getString("User"), new HashMap<Integer, Map<String, Object>>());
 				}
-				((Map<Integer, Map<String, Object>>) userMap.get(participant.getString("User"))).put(session.optInt("Id"), sMap);
-				((Map<Integer, Map<String, Object>>) userMap.get(participant.getString("User"))).get(session.optInt("Id")).put("Role", participant.getString("Role"));
+				((Map<Integer, Map<String, Object>>) userMap.get(participant.getString("User")))
+						.put(session.optInt("Id"), sMap);
+				((Map<Integer, Map<String, Object>>) userMap.get(participant.getString("User")))
+						.get(session.optInt("Id")).put("Role", participant.getString("Role"));
 			}
 		}
 		return userMap;
@@ -323,8 +333,9 @@ public class Control {
 			con.setUseCaches(false);
 			con.setDoOutput(true);
 			String data = "{ \"UserName\": \"" + pmacoreUsername + "\", \"Role\": \""
-					+ String.valueOf(pmacontrolRole.ordinal()) + "\",  \"InteractionMode\": \""
-					+ String.valueOf(pmacontrolInteractionMode.ordinal() + 1) + "\" }";
+					+ String.valueOf(pmacontrolRole.ordinal()) + "\" }"; // default interaction mode = Locked
+			// + ", \"InteractionMode\": \"" +
+			// String.valueOf(pmacontrolInteractionMode.ordinal() + 1) + "\" }";
 			OutputStream os = con.getOutputStream();
 			os.write(data.getBytes("UTF-8"));
 			os.close();
@@ -383,7 +394,7 @@ public class Control {
 				JSONObject session = all.optJSONObject(i);
 				if (pmaControlProjectID == null) {
 					map.put(session.optInt("Id"), session.optString("Title"));
-				} else if (pmaControlProjectID == session.optInt("ModuleId")) {
+				} else if (pmaControlProjectID == session.optInt("ProjectId")) {
 					map.put(session.optInt("Id"), session.optString("Title"));
 				}
 			}
@@ -561,7 +572,7 @@ public class Control {
 				JSONObject collection = allColletions.optJSONObject(i);
 				if (pmaControlProjectID == null) {
 					map.put(collection.optInt("Id"), collection.optString("Title"));
-				} else if (pmaControlProjectID == collection.optInt("ModuleId")) {
+				} else if (pmaControlProjectID == collection.optInt("ProjectId")) {
 					map.put(collection.optInt("Id"), collection.optString("Title"));
 				}
 			}
@@ -595,6 +606,40 @@ public class Control {
 			}
 		}
 		// Case collection not found
+		return null;
+	}
+
+	/**
+	 * This method is used to retrieve cases for a specific collection
+	 * 
+	 * @param pmaControlURL              PMA.control URL
+	 * @param pmaControlCaseCollectionID Case collection ID
+	 * @param pmaCoreSessionID           PMA.core session ID
+	 * @return List of cases for a specific collection
+	 */
+	public static JSONArray getCaseForCollection(String pmaControlURL, Integer pmaControlCaseCollectionID,
+			String pmaCoreSessionID) {
+		return getCaseCollection(pmaControlURL, pmaControlCaseCollectionID, pmaCoreSessionID).optJSONArray("Cases");
+	}
+
+	/**
+	 * This method is used to return the first collection that has keyword as part
+	 * of its string; search is case insensitive
+	 *
+	 * @param pmaControlURL    URL for PMA.Control
+	 * @param keyword          Keyword to seach collections against
+	 * @param pmaCoreSessionID PMA.core session ID
+	 * @return The first collection that matches the search criteria
+	 */
+	public static JSONObject searchCollection(String pmaControlURL, String keyword, String pmaCoreSessionID) {
+		JSONArray allCollections = getCaseCollections(pmaControlURL, pmaCoreSessionID);
+		for (int i = 0; i < allCollections.length(); i++) {
+			JSONObject collection = allCollections.optJSONObject(i);
+			if (collection.getString("Title").toLowerCase().contains(keyword.toLowerCase())) {
+				// summary session-related information so that it makes sense
+				return collection;
+			}
+		}
 		return null;
 	}
 
@@ -726,20 +771,22 @@ public class Control {
 				JSONObject prj = allProjects.optJSONObject(i);
 				if (prj.optInt("Id") == pmaControlProjectID) {
 					// summary session-related information so that it makes sense
-					Map<String, Object> jsonMap = new ObjectMapper()
+					Map<String, Object> project = new ObjectMapper()
 							.readerFor(new TypeReference<Map<String, Object>>() {
 							}).readValue(prj.toString());
-					jsonMap.put("Sessions", formatProjectEmbeddedSessionsProperly(prj.optJSONArray("Sessions")));
+					project.put("Sessions", formatProjectEmbeddedSessionsProperly(prj.optJSONArray("Sessions")));
 					// now integrate case collection information
 					// we get the case collections belonging to the project (via the title)
-					JSONArray colls = getCaseCollections(pmaControlURL, pmaCoreSessionID, prj.getString("Title"));
-					jsonMap.put("CaseCollections", new HashMap<Integer, String>());
-					for (int j = 0; j < colls.length(); j++) {
-						JSONObject jsonObject = colls.optJSONObject(j);
-						((Map<Integer, String>) jsonMap.get("CaseCollections")).put(jsonObject.getInt("Id"),
-								jsonObject.getString("Title"));
+					JSONArray collections = getCaseCollections(pmaControlURL, pmaCoreSessionID, prj.getString("Title"));
+					project.put("CaseCollections", new HashMap<Integer, String>());
+					for (int j = 0; j < collections.length(); j++) {
+						JSONObject collection = collections.optJSONObject(j);
+						if (collection.getInt("ProjectId") == prj.optInt("Id")) {
+							((Map<Integer, String>) project.get("CaseCollections")).put(collection.getInt("Id"),
+									collection.getString("Title"));
+						}
 					}
-					return jsonMap;
+					return project;
 				}
 			}
 			// Project ID not found
@@ -772,7 +819,7 @@ public class Control {
 			for (int j = 0; j < cases.length(); j++) {
 				JSONObject currentCase = cases.optJSONObject(j);
 				if (currentCase.optInt("Id") == pmacontrolCaseID) {
-					return getProject(pmaControlURL, collection.optInt("ModuleId"), pmaCoreSessionID);
+					return getProject(pmaControlURL, collection.optInt("ProjectId"), pmaCoreSessionID);
 				}
 			}
 		}
@@ -793,7 +840,7 @@ public class Control {
 		for (int i = 0; i < allCollections.length(); i++) {
 			JSONObject collection = allCollections.optJSONObject(i);
 			if (collection.optInt("Id") == pmacontrolCaseCollectionID) {
-				return getProject(pmaControlURL, collection.optInt("ModuleId"), pmaCoreSessionID);
+				return getProject(pmaControlURL, collection.optInt("ProjectId"), pmaCoreSessionID);
 			}
 		}
 		return null;
