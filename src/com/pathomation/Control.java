@@ -102,13 +102,13 @@ public class Control {
 	@SuppressWarnings({ "unchecked", "serial" })
 	public static Map<String, Object> formatSessionProperly(JSONObject session) {
 		Map<String, Object> sessionData = new HashMap<>();
-		sessionData.put("Id", session.getInt("Id"));
-		sessionData.put("Title", session.getString("Title"));
-		sessionData.put("LogoPath", session.getString("LogoPath"));
-		sessionData.put("StartsOn", session.getString("StartsOn"));
-		sessionData.put("EndsOn", session.getString("EndsOn"));
-		sessionData.put("ProjectId", session.getInt("ProjectId"));
-		sessionData.put("State", session.getString("State"));
+		sessionData.put("Id", session.optInt("Id"));
+		sessionData.put("Title", session.optString("Title"));
+		sessionData.put("LogoPath", session.optString("LogoPath"));
+		sessionData.put("StartsOn", session.optString("StartsOn"));
+		sessionData.put("EndsOn", session.optString("EndsOn"));
+		sessionData.put("ProjectId", session.optInt("ProjectId"));
+		sessionData.put("State", session.optString("State"));
 		sessionData.put("CaseCollections", new HashMap<Integer, Map<String, String>>());
 		sessionData.put("NumberOfParticipants", session.optJSONArray("Participants").length());
 		JSONArray collections = session.getJSONArray("CaseCollections");
@@ -118,8 +118,8 @@ public class Control {
 					collection.optInt("CaseCollectionId"),
 					new HashMap<String, String>() {
 						{
-							put("Title", collection.getString("Title"));
-							put("Url", collection.getString("Url"));
+							put("Title", collection.optString("Title"));
+							put("Url", collection.optString("Url"));
 						}
 					});
 		}
@@ -490,7 +490,7 @@ public class Control {
 
 		for (int i = 0; i < all.length(); i++) {
 			JSONObject el = all.optJSONObject(i);
-			if (keyword.toLowerCase().equals(el.getString("Title").toLowerCase())) {
+			if (keyword.toLowerCase().equals(el.optString("Title").toLowerCase())) {
 				return formatSessionProperly(el);
 			}
 		}
@@ -792,9 +792,9 @@ public class Control {
 					project.put("CaseCollections", new HashMap<Integer, String>());
 					for (int j = 0; j < collections.length(); j++) {
 						JSONObject collection = collections.optJSONObject(j);
-						if (collection.getInt("ProjectId") == prj.optInt("Id")) {
+						if (collection.optInt("ProjectId") == prj.optInt("Id")) {
 							((Map<Integer, String>) project.get("CaseCollections")).put(collection.getInt("Id"),
-									collection.getString("Title"));
+									collection.optString("Title"));
 						}
 					}
 					return project;
