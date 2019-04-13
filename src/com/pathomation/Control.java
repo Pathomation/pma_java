@@ -112,7 +112,7 @@ public class Control {
 		sessionData.put("CaseCollections", new HashMap<Integer, Map<String, String>>());
 		sessionData.put("NumberOfParticipants", session.optJSONArray("Participants").length());
 		JSONArray collections = session.getJSONArray("CaseCollections");
-		for (int i = 0; i <= collections.length(); i++) {
+		for (int i = 0; i < collections.length(); i++) {
 			JSONObject collection = collections.optJSONObject(i);
 			((Map<Integer, Map<String, String>>) sessionData.get("CaseCollections")).put(
 					collection.optInt("CaseCollectionId"),
