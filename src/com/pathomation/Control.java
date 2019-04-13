@@ -116,7 +116,6 @@ public class Control {
 			JSONObject collection = collections.optJSONObject(i);
 			((Map<Integer, Map<String, String>>) sessionData.get("CaseCollections")).put(
 					collection.optInt("CaseCollectionId"),
-					// collection.optString("Title")
 					new HashMap<String, String>() {
 						{
 							put("Title", collection.getString("Title"));
@@ -517,21 +516,6 @@ public class Control {
 		String url = Core.join(pmaControlURL, "api/CaseCollections?sessionID=" + Core.pmaQ(pmaCoreSessionID)
 				+ ((project.length() > 0) ? ("&project=" + Core.pmaQ(project)) : ""));
 		try {
-//			if (!caseCollectionsJson.containsKey(url)) {
-//				URL urlResource = new URL(url);
-//				HttpURLConnection con;
-//				if (url.startsWith("https")) {
-//					con = (HttpsURLConnection) urlResource.openConnection();
-//				} else {
-//					con = (HttpURLConnection) urlResource.openConnection();
-//				}
-//				con.setRequestMethod("GET");
-//				con.setRequestProperty("Accept", "application/json");
-//				String jsonString = Core.getJSONAsStringBuffer(con).toString();
-//				JSONArray jsonResponse = Core.getJSONArrayResponse(jsonString);
-//				caseCollectionsJson.put(url, jsonResponse);
-//			}
-//			return caseCollectionsJson.get(url);
 			String jsonString = Core.httpGet(url, "application/json");
 			JSONArray jsonResponse = Core.getJSONArrayResponse(jsonString);
 			return jsonResponse;
@@ -546,30 +530,6 @@ public class Control {
 		}
 	}
 
-//	/**
-//	 * This method is used to get list of titles of all defined case collections in
-//	 * PMA.control
-//	 * 
-//	 * @param pmaControlURL    URL for PMA.Control
-//	 * @param pmaCoreSessionID PMA.core session ID
-//	 * @param varargs          Array of optional arguments
-//	 *                         <p>
-//	 *                         project : First optional argument(String), default
-//	 *                         value(null), project case collections belong to
-//	 *                         </p>
-//	 * @return List of case collections titles
-//	 */
-//	public static List<String> getCaseCollectionTitles(String pmaControlURL, String pmaCoreSessionID,
-//			String... varargs) {
-//		// setting the default value when argument's value is omitted
-//		String project = ((varargs.length > 0) && (varargs[0] != null)) ? varargs[0] : "";
-//		JSONArray caseCollections = getCaseCollections(pmaControlURL, pmaCoreSessionID, project);
-//		List<String> resutls = new ArrayList<>();
-//		for (int i = 0; i < caseCollections.length(); i++) {
-//			resutls.add(caseCollections.optJSONObject(i).optString("Title"));
-//		}
-//		return resutls;
-//	}
 
 	/**
 	 * This method is used to retrieve case collections (possibly filtered by
@@ -742,21 +702,6 @@ public class Control {
 	private static JSONArray getProjects(String pmaControlURL, String pmaCoreSessionID) {
 		String url = Core.join(pmaControlURL, "api/Projects?sessionID=" + Core.pmaQ(pmaCoreSessionID));
 		try {
-//			if (!projectsJson.containsKey(url)) {
-//				URL urlResource = new URL(url);
-//				HttpURLConnection con;
-//				if (url.startsWith("https")) {
-//					con = (HttpsURLConnection) urlResource.openConnection();
-//				} else {
-//					con = (HttpURLConnection) urlResource.openConnection();
-//				}
-//				con.setRequestMethod("GET");
-//				con.setRequestProperty("Accept", "application/json");
-//				String jsonString = Core.getJSONAsStringBuffer(con).toString();
-//				JSONArray jsonResponse = Core.getJSONArrayResponse(jsonString);
-//				projectsJson.put(url, jsonResponse);
-//			}
-//			return projectsJson.get(url);
 			String jsonString = Core.httpGet(url, "application/json");
 			JSONArray jsonResponse = Core.getJSONArrayResponse(jsonString);
 			return jsonResponse;
