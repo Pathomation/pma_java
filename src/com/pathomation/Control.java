@@ -102,19 +102,20 @@ public class Control {
 	@SuppressWarnings({ "unchecked", "serial" })
 	public static Map<String, Object> formatSessionProperly(JSONObject session) {
 		Map<String, Object> sessionData = new HashMap<>();
-		sessionData.put("Id", session.getString("Id"));
+		sessionData.put("Id", session.getInt("Id"));
 		sessionData.put("Title", session.getString("Title"));
 		sessionData.put("LogoPath", session.getString("LogoPath"));
 		sessionData.put("StartsOn", session.getString("StartsOn"));
 		sessionData.put("EndsOn", session.getString("EndsOn"));
-		sessionData.put("ProjectId", session.getString("ProjectId"));
+		sessionData.put("ProjectId", session.getInt("ProjectId"));
 		sessionData.put("State", session.getString("State"));
 		sessionData.put("CaseCollections", new HashMap<Integer, Map<String, String>>());
 		sessionData.put("NumberOfParticipants", session.optJSONArray("Participants").length());
 		JSONArray collections = session.getJSONArray("CaseCollections");
 		for (int i = 0; i <= collections.length(); i++) {
 			JSONObject collection = collections.optJSONObject(i);
-			((Map<Integer, Map<String, String>>) sessionData.get("CaseCollections")).put(collection.optInt("Id"),
+			((Map<Integer, Map<String, String>>) sessionData.get("CaseCollections")).put(
+					collection.optInt("CaseCollectionId"),
 					// collection.optString("Title")
 					new HashMap<String, String>() {
 						{
@@ -303,24 +304,29 @@ public class Control {
 	/**
 	 * This method is used to register a participant for a session
 	 * 
-	 * @param pmaControlURL             PMA.control URL
-	 * @param pmacoreUsername           PMA.core username
-	 * @param pmacontrolSessionID       PMA.control session ID
-	 * @param pmacontrolRole            Role
-	 * @param pmacontrolInteractionMode Interaction mode
-	 * @param pmacoreSessionID          PMA.core session ID
+	 * @param pmaControlURL       PMA.control URL
+	 * @param pmaCoreUsername     PMA.core username
+	 * @param pmaControlSessionID PMA.control session ID
+	 * @param pmaControlRole      Role
+	 * @param pmaCoreSessionID    PMA.core session ID
+	 * @return URL connection output in JSON format
+	 * @throws Exception If user is ALREADY registered in the provided PMA.control
+	 *                   training session
 	 */
-	public static void registerParticipantForSession(String pmaControlURL, String pmacoreUsername,
-			Integer pmacontrolSessionID, PmaSessionRole pmacontrolRole, PmaInteractionMode pmacontrolInteractionMode,
-			String pmacoreSessionID) {
-		String url = Core.join(pmaControlURL, "api/Sessions/") + pmacontrolSessionID.toString()
-				+ "/Participants?SessionID=" + pmacoreSessionID;
+	public static String registerParticipantForSession(String pmaControlURL, String pmaCoreUsername,
+			Integer pmaControlSessionID, PmaSessionRole pmaControlRole, String pmaCoreSessionID) throws Exception {
+		if (isParticipantInSession(pmaControlURL, pmaCoreUsername, pmaControlSessionID, pmaCoreSessionID)) {
+			throw new Exception("PMA.core user " + pmaCoreUsername
+					+ " is ALREADY registered in PMA.control training session " + pmaControlSessionID);
+		}
 //		Map<String, String> data = new HashMap<String, String>() {{
 //			put("UserName", pmacoreUsername);
 //			put("Role", String.valueOf(pmacontrolRole.ordinal()));
 //			put("InteractionMode", String.valueOf(pmacontrolInteractionMode.ordinal() + 1));
 //		}};
 		try {
+			String url = Core.join(pmaControlURL, "api/Sessions/") + pmaControlSessionID.toString()
+					+ "/Participants?SessionID=" + pmaCoreSessionID;
 			URL urlResource = new URL(url);
 			HttpURLConnection con;
 			if (url.startsWith("https")) {
@@ -332,15 +338,16 @@ public class Control {
 			con.setRequestProperty("Content-Type", "application/json");
 			con.setUseCaches(false);
 			con.setDoOutput(true);
-			String data = "{ \"UserName\": \"" + pmacoreUsername + "\", \"Role\": \""
-					+ String.valueOf(pmacontrolRole.ordinal()) + "\" }"; // default interaction mode = Locked
+			String data = "{ \"UserName\": \"" + pmaCoreUsername + "\", \"Role\": \"" + pmaControlRole.ordinal()
+					+ "\" }"; // default interaction mode = Locked
 			// + ", \"InteractionMode\": \"" +
 			// String.valueOf(pmacontrolInteractionMode.ordinal() + 1) + "\" }";
 			OutputStream os = con.getOutputStream();
 			os.write(data.getBytes("UTF-8"));
 			os.close();
 			String jsonString = Core.getJSONAsStringBuffer(con).toString();
-			System.out.println(jsonString);
+			Core.clearURLCache();
+			return jsonString;
 		} catch (Exception e) {
 			e.printStackTrace();
 			if (logger != null) {
@@ -348,6 +355,65 @@ public class Control {
 				e.printStackTrace(new PrintWriter(sw));
 				logger.severe(sw.toString());
 			}
+			return null;
+		}
+	}
+
+	/**
+	 * This method is used to a ssign an interaction mode to a particpant for a
+	 * given Case Collection within a session
+	 * 
+	 * @param pmaControlURL              PMA.control URL
+	 * @param pmaCoreUsername            PMA.core username
+	 * @param pmaControlSessionID        PMA.control session ID
+	 * @param pmaControlCaseCollectionID Case collection ID
+	 * @param pmaControlInteractionMode  Interaction mode
+	 * @param pmaCoreSessionID           PMA.core session ID
+	 * @return URL connection output in JSON format
+	 * @throws Exception If user is NOT registered in the provided PMA.control
+	 *                   training session
+	 */
+	public static String setParticipantInteractionMode(String pmaControlURL, String pmaCoreUsername,
+			Integer pmaControlSessionID, Integer pmaControlCaseCollectionID, String pmaControlInteractionMode,
+			String pmaCoreSessionID) throws Exception {
+
+		if (!isParticipantInSession(pmaControlURL, pmaCoreUsername, pmaControlSessionID, pmaCoreSessionID)) {
+			throw new Exception("PMA.core user " + pmaCoreUsername
+					+ " is NOT registered in PMA.control training session " + pmaControlSessionID);
+		}
+		try {
+			String url = Core.join(pmaControlURL, "api/Sessions/") + pmaControlSessionID + "/InteractionMode?SessionID="
+					+ pmaCoreSessionID;
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("POST");
+			con.setRequestProperty("Content-Type", "application/json");
+			con.setUseCaches(false);
+			con.setDoOutput(true);
+			String data = "{ \"UserName\": \"" + pmaCoreUsername + "\", " + " \"CaseCollectionId\": \""
+					+ pmaControlCaseCollectionID + "\", " + "\"InteractionMode\": \"" + pmaControlInteractionMode
+					+ "\" }"; // default interaction mode = Locked
+			// + ", \"InteractionMode\": \"" +
+			// String.valueOf(pmacontrolInteractionMode.ordinal() + 1) + "\" }";
+			OutputStream os = con.getOutputStream();
+			os.write(data.getBytes("UTF-8"));
+			os.close();
+			String jsonString = Core.getJSONAsStringBuffer(con).toString();
+			Core.clearURLCache();
+			return jsonString;
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
+			}
+			return null;
 		}
 	}
 
