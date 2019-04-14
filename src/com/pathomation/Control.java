@@ -28,11 +28,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class Control {
 
-	enum PmaSessionRole {
+	public enum PmaSessionRole {
 		SUPERVISOR, TRAINEE, OBSERVER
 	}
 
-	enum PmaInteractionMode {
+	public enum PmaInteractionMode {
 		LOCKED, TEST_ACTIVE, REVIEW, CONSENSUS_VIEW, BROWSE, BOARD, CONSENSUS_SCORE_EDIT, SELF_REVIEW, SELF_TEST,
 		HIDDEN, CLINICAL_INFORMATION_EDIT
 	}
@@ -114,9 +114,8 @@ public class Control {
 		JSONArray collections = session.getJSONArray("CaseCollections");
 		for (int i = 0; i < collections.length(); i++) {
 			JSONObject collection = collections.optJSONObject(i);
-			((Map<Integer, Map<String, String>>) sessionData.get("CaseCollections")).put(
-					collection.optInt("CaseCollectionId"),
-					new HashMap<String, String>() {
+			((Map<Integer, Map<String, String>>) sessionData.get("CaseCollections"))
+					.put(collection.optInt("CaseCollectionId"), new HashMap<String, String>() {
 						{
 							put("Title", collection.optString("Title"));
 							put("Url", collection.optString("Url"));
@@ -337,8 +336,11 @@ public class Control {
 			con.setRequestProperty("Content-Type", "application/json");
 			con.setUseCaches(false);
 			con.setDoOutput(true);
-			String data = "{ \"UserName\": \"" + pmaCoreUsername + "\", \"Role\": \"" + pmaControlRole.ordinal()
-					+ "\" }"; // default interaction mode = Locked
+			String data = "{ \"UserName\": \"" + pmaCoreUsername + "\", \"Role\": \"" + pmaControlRole + "\" }"; // default
+																													// interaction
+																													// mode
+																													// =
+																													// Locked
 			// + ", \"InteractionMode\": \"" +
 			// String.valueOf(pmacontrolInteractionMode.ordinal() + 1) + "\" }";
 			OutputStream os = con.getOutputStream();
@@ -373,7 +375,65 @@ public class Control {
 	 *                   training session
 	 */
 	public static String setParticipantInteractionMode(String pmaControlURL, String pmaCoreUsername,
-			Integer pmaControlSessionID, Integer pmaControlCaseCollectionID, String pmaControlInteractionMode,
+			Integer pmaControlSessionID, Integer pmaControlCaseCollectionID,
+			PmaInteractionMode pmaControlInteractionMode, String pmaCoreSessionID) throws Exception {
+
+		if (!isParticipantInSession(pmaControlURL, pmaCoreUsername, pmaControlSessionID, pmaCoreSessionID)) {
+			throw new Exception("PMA.core user " + pmaCoreUsername
+					+ " is NOT registered in PMA.control training session " + pmaControlSessionID);
+		}
+		try {
+			String url = Core.join(pmaControlURL, "api/Sessions/") + pmaControlSessionID + "/InteractionMode?SessionID="
+					+ pmaCoreSessionID;
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("POST");
+			con.setRequestProperty("Content-Type", "application/json");
+			con.setUseCaches(false);
+			con.setDoOutput(true);
+			String data = "{ \"UserName\": \"" + pmaCoreUsername + "\", " + " \"CaseCollectionId\": \""
+					+ pmaControlCaseCollectionID + "\", " + "\"InteractionMode\": \"" + pmaControlInteractionMode
+					+ "\" }"; // default interaction mode = Locked
+			// + ", \"InteractionMode\": \"" +
+			// String.valueOf(pmacontrolInteractionMode.ordinal() + 1) + "\" }";
+			OutputStream os = con.getOutputStream();
+			os.write(data.getBytes("UTF-8"));
+			os.close();
+			String jsonString = Core.getJSONAsStringBuffer(con).toString();
+			Core.clearURLCache();
+			return jsonString;
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
+			}
+			return null;
+		}
+	}
+
+	/**
+	 * This method is an overload of previous one. We created to add the possibility
+	 * to assign an interaction mode outside the defined enum values
+	 * 
+	 * @param pmaControlURL              PMA.control URL
+	 * @param pmaCoreUsername            PMA.core username
+	 * @param pmaControlSessionID        PMA.control session ID
+	 * @param pmaControlCaseCollectionID Case collection ID
+	 * @param pmaControlInteractionMode  Interaction mode
+	 * @param pmaCoreSessionID           PMA.core session ID
+	 * @return URL connection output in JSON format
+	 * @throws Exception If user is NOT registered in the provided PMA.control
+	 *                   training session
+	 */
+	public static String setParticipantInteractionMode(String pmaControlURL, String pmaCoreUsername,
+			Integer pmaControlSessionID, Integer pmaControlCaseCollectionID, Integer pmaControlInteractionMode,
 			String pmaCoreSessionID) throws Exception {
 
 		if (!isParticipantInSession(pmaControlURL, pmaCoreUsername, pmaControlSessionID, pmaCoreSessionID)) {
@@ -529,7 +589,6 @@ public class Control {
 			return null;
 		}
 	}
-
 
 	/**
 	 * This method is used to retrieve case collections (possibly filtered by
