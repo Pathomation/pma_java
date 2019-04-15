@@ -210,21 +210,27 @@ public class Control {
 	 * @param pmaCoreSessionID    PMA.core session ID
 	 * @return Map of participants in a particular session
 	 */
-	public static Map<String, String> getSessionParticipants(String pmaControlURL, Integer pmaControlSessionID,
+	public static Map<String, JSONObject> getSessionParticipants(String pmaControlURL, Integer pmaControlSessionID,
 			String pmaCoreSessionID) {
-		JSONArray fullSessions = getSessions(pmaControlURL, pmaCoreSessionID);
-		Map<String, String> userMap = new HashMap<>();
-		for (int i = 0; i < fullSessions.length(); i++) {
-			JSONObject session = fullSessions.optJSONObject(i);
-			if (session.optInt("Id") == pmaControlSessionID) {
-				JSONArray participants = session.optJSONArray("Participants");
-				for (int j = 0; j < participants.length(); j++) {
-					JSONObject participant = participants.optJSONObject(j);
-					userMap.put(participant.optString("User"), participant.optString("Role"));
+		String url = Core.join(pmaControlURL, "api/Sessions/" + pmaControlSessionID + "/Participants?sessionID=" + Core.pmaQ(pmaCoreSessionID));
+		try {
+			String jsonString = Core.httpGet(url, "application/json");
+			JSONArray sessionParticipants = Core.getJSONArrayResponse(jsonString);
+			Map<String, JSONObject> participants = new HashMap<>();
+			for (int i = 0; i < sessionParticipants.length(); i++) {
+				JSONObject sessionParticipant = sessionParticipants.optJSONObject(i);
+				participants.put(sessionParticipant.optString("User"), sessionParticipant);		
 				}
+			return participants;
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				logger.severe(sw.toString());
 			}
+			return null;
 		}
-		return userMap;
 	}
 
 	/**
@@ -240,7 +246,7 @@ public class Control {
 	 */
 	public static Boolean isParticipantInSession(String pmaControlURL, String pmaCoreUsername,
 			Integer pmaControlSessionID, String pmaCoreSessionID) {
-		Map<String, String> allParticipants = getSessionParticipants(pmaControlURL, pmaControlSessionID,
+		Map<String, JSONObject> allParticipants = getSessionParticipants(pmaControlURL, pmaControlSessionID,
 				pmaCoreSessionID);
 		return allParticipants.containsKey(pmaCoreUsername);
 	}
@@ -270,30 +276,26 @@ public class Control {
 
 	/**
 	 * This method is used to get all participants registered across all sessions,
-	 * include the Role they play
+	 * including the Role they play
 	 * 
 	 * @param pmaControlURL    PMA.control URL
 	 * @param pmaCoreSessionID PMA.core session ID
-	 * @return Map of all participants registered across all sessions, include the
+	 * @return Map of all participants registered across all sessions, including the
 	 *         Role they play
 	 */
-	@SuppressWarnings("unchecked")
-	public static Map<String, Object> getAllParticipants(String pmaControlURL, String pmaCoreSessionID) {
+	public static Map<String, Map<Integer, String>> getAllParticipants(String pmaControlURL, String pmaCoreSessionID) {
 		JSONArray fullSessions = getSessions(pmaControlURL, pmaCoreSessionID);
-		Map<String, Object> userMap = new HashMap<>();
+		Map<String, Map<Integer, String>> userMap = new HashMap<>();
 		for (int i = 0; i < fullSessions.length(); i++) {
 			JSONObject session = fullSessions.optJSONObject(i);
 			Map<String, Object> sMap = formatSessionProperly(session);
 			JSONArray participants = session.optJSONArray("Participants");
 			for (int j = 0; j < participants.length(); j++) {
-				JSONObject participant = participants.optJSONObject(j);
-				if (!userMap.containsKey(participant.getString("User"))) {
-					userMap.put(participant.getString("User"), new HashMap<Integer, Map<String, Object>>());
+				String participant = participants.optString(j);
+				if (!userMap.containsKey(participant)) {
+					userMap.put(participant, new HashMap<Integer, String>());
 				}
-				((Map<Integer, Map<String, Object>>) userMap.get(participant.getString("User")))
-						.put(session.optInt("Id"), sMap);
-				((Map<Integer, Map<String, Object>>) userMap.get(participant.getString("User")))
-						.get(session.optInt("Id")).put("Role", participant.getString("Role"));
+				((Map<Integer, String>) userMap.get(participant)).put((int) sMap.get("Id"), sMap.get("Title").toString());
 			}
 		}
 		return userMap;
