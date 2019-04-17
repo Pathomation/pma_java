@@ -59,7 +59,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.51
+ * @version 2.0.0.52
  */
 public class Core {
 	private static Map<String, Object> pmaSessions = new HashMap<String, Object>();
@@ -676,19 +676,21 @@ public class Core {
 	 *                value(""), password for PMA.core instance
 	 *                </p>
 	 * @return session's ID if session was created successfully, otherwise null
+	 * @throws Exception If target instance isn't a PMA.core instance
 	 */
-	public static String adminConnect(String... varargs) {
+	public static String adminConnect(String... varargs) throws Exception {
 		// setting the default values when arguments' values are omitted
 		String pmaCoreURL = varargs.length > 0 ? varargs[0] : pmaCoreLiteURL;
 		String pmaCoreUsername = varargs.length > 1 ? varargs[1] : "";
 		String pmaCorePassword = varargs.length > 2 ? varargs[2] : "";
 		// Attempt to connect to PMA.core instance; success results in a SessionID
+		// only success if the user has administrative status
 		if (pmaCoreURL.equals(pmaCoreLiteURL)) {
 			if (isLite()) {
-				// no point authenticating localhost / PMA.core.lite
-				return pmaCoreLiteSessionID;
+				throw new Exception("PMA.core.lite found running, but doesn't support an administrative back-end");
 			} else {
-				return null;
+				throw new Exception(
+						"PMA.core.lite not found, and besides; it doesn't support an administrative back-end anyway");
 			}
 		}
 		// purposefully DON'T use helper function apiUrl() here:
@@ -702,23 +704,17 @@ public class Core {
 			url = url.concat("&password=").concat(pmaQ(pmaCorePassword));
 		}
 		try {
-			URL urlResource = new URL(url);
-			HttpURLConnection con;
-			if (url.startsWith("https")) {
-				con = (HttpsURLConnection) urlResource.openConnection();
-			} else {
-				con = (HttpURLConnection) urlResource.openConnection();
-			}
-			con.setRequestMethod("GET");
-			String jsonString = getJSONAsStringBuffer(con).toString();
+			String jsonString = Core.httpGet(url, "application/json");
 			if (isJSONObject(jsonString)) {
 				JSONObject jsonResponse = getJSONResponse(jsonString);
 				if (jsonResponse.getBoolean("Success")) {
-					String sessionID = jsonResponse.getString("SessionId");
-					pmaSessions.put(sessionID, pmaCoreURL);
-					pmaSlideInfos.put(sessionID, new HashMap<String, Object>());
-					pmaAmountOfDataDownloaded.put(sessionID, jsonResponse.length());
-					return sessionID;
+					String adminSessionID = jsonResponse.getString("SessionId");
+					pmaSessions.put(adminSessionID, pmaCoreURL);
+					if (!pmaSlideInfos.containsKey(adminSessionID)) {
+						pmaSlideInfos.put(adminSessionID, new HashMap<String, Object>());
+					}
+					pmaAmountOfDataDownloaded.put(adminSessionID, jsonResponse.length());
+					return adminSessionID;
 				} else {
 					return null;
 				}
