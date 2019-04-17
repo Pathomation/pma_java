@@ -152,7 +152,7 @@ public class Control {
 //	}
 
 	/**
-	 * This method is used to Retrieve a dictionary with currently defined training
+	 * This method is used to retrieve a dictionary with currently defined training
 	 * sessions in PMA.control. The resulting dictionary use the session's
 	 * identifier as the dictionary key, and therefore this method is easier to
 	 * quickly retrieve and represent session-related data.
@@ -319,11 +319,6 @@ public class Control {
 			throw new Exception("PMA.core user " + pmaCoreUsername
 					+ " is ALREADY registered in PMA.control training session " + pmaControlSessionID);
 		}
-//		Map<String, String> data = new HashMap<String, String>() {{
-//			put("UserName", pmacoreUsername);
-//			put("Role", String.valueOf(pmacontrolRole.ordinal()));
-//			put("InteractionMode", String.valueOf(pmacontrolInteractionMode.ordinal() + 1));
-//		}};
 		try {
 			String url = Core.join(pmaControlURL, "api/Sessions/") + pmaControlSessionID.toString()
 					+ "/Participants?SessionID=" + pmaCoreSessionID;
@@ -552,7 +547,7 @@ public class Control {
 
 		for (int i = 0; i < all.length(); i++) {
 			JSONObject el = all.optJSONObject(i);
-			if (keyword.toLowerCase().equals(el.optString("Title").toLowerCase())) {
+			if (el.optString("Title").toLowerCase().contains(keyword.toLowerCase())) {
 				return formatSessionProperly(el);
 			}
 		}
@@ -622,17 +617,17 @@ public class Control {
 	 * 
 	 * @param pmaControlURL    URL for PMA.Control
 	 * @param pmaCoreSessionID PMA.core session ID
-	 * @param caseCollection   The case collection's title
+	 * @param caseCollectionTitle   The case collection's title
 	 * @return The case collection in json object format
 	 */
 	public static JSONObject getCaseCollectionByTitle(String pmaControlURL, String pmaCoreSessionID,
-			String caseCollection) {
+			String caseCollectionTitle) {
 		JSONArray caseCollections = getCaseCollections(pmaControlURL, pmaCoreSessionID);
 		if (caseCollections == null) {
 			return null;
 		} else {
 			for (int i = 0; i < caseCollections.length(); i++) {
-				if (caseCollections.optJSONObject(i).get("Title").toString().equals(caseCollection)) {
+				if (caseCollections.optJSONObject(i).get("Title").toString().equals(caseCollectionTitle)) {
 					return caseCollections.optJSONObject(i);
 				}
 			}
