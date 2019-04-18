@@ -162,8 +162,8 @@ public class Control {
 	 * @param pmaCoreSessionID    PMA.core session ID
 	 * @return Map of data related to registred session IDs
 	 */
-	public static Map<Integer, Map<String, Object>> getTrainingSessions(String pmaControlURL, Integer pmaControlProjectID,
-			String pmaCoreSessionID) {
+	public static Map<Integer, Map<String, Object>> getTrainingSessions(String pmaControlURL,
+			Integer pmaControlProjectID, String pmaCoreSessionID) {
 		JSONArray fullTrainingSessions = getTrainingSessions(pmaControlURL, pmaCoreSessionID);
 		Map<Integer, Map<String, Object>> newTrainingSessionMap = new HashMap<>();
 		for (int i = 0; i < fullTrainingSessions.length(); i++) {
@@ -178,9 +178,9 @@ public class Control {
 	/**
 	 * This method is used to get sessions for a certain participant
 	 * 
-	 * @param pmaControlURL    URL for PMA.Control
-	 * @param participantUsername  PMA.core username
-	 * @param pmaCoreSessionID PMA.core session ID
+	 * @param pmaControlURL       URL for PMA.Control
+	 * @param participantUsername PMA.core username
+	 * @param pmaCoreSessionID    PMA.core session ID
 	 * @return Map of sessions for a certain participant
 	 */
 	public static Map<Integer, Map<String, Object>> getTrainingSessionsForParticipant(String pmaControlURL,
@@ -209,17 +209,18 @@ public class Control {
 	 * @param pmaCoreSessionID    PMA.core session ID
 	 * @return Map of participants in a particular session
 	 */
-	public static Map<String, JSONObject> getTrainingSessionParticipants(String pmaControlURL, Integer pmaControlSessionID,
-			String pmaCoreSessionID) {
-		String url = Core.join(pmaControlURL, "api/Sessions/" + pmaControlSessionID + "/Participants?sessionID=" + Core.pmaQ(pmaCoreSessionID));
+	public static Map<String, JSONObject> getTrainingSessionParticipants(String pmaControlURL,
+			Integer pmaControlSessionID, String pmaCoreSessionID) {
+		String url = Core.join(pmaControlURL,
+				"api/Sessions/" + pmaControlSessionID + "/Participants?sessionID=" + Core.pmaQ(pmaCoreSessionID));
 		try {
 			String jsonString = Core.httpGet(url, "application/json");
 			JSONArray sessionParticipants = Core.getJSONArrayResponse(jsonString);
 			Map<String, JSONObject> participants = new HashMap<>();
 			for (int i = 0; i < sessionParticipants.length(); i++) {
 				JSONObject sessionParticipant = sessionParticipants.optJSONObject(i);
-				participants.put(sessionParticipant.optString("User"), sessionParticipant);		
-				}
+				participants.put(sessionParticipant.optString("User"), sessionParticipant);
+			}
 			return participants;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -237,7 +238,7 @@ public class Control {
 	 * session
 	 * 
 	 * @param pmaControlURL       URL for PMA.Control
-	 * @param participantUsername     PMA.core username
+	 * @param participantUsername PMA.core username
 	 * @param pmaControlSessionID Training session ID
 	 * @param pmaCoreSessionID    PMA.core session ID
 	 * @return True if a specific user participates in a specific session, false
@@ -253,24 +254,39 @@ public class Control {
 	/**
 	 * This method is used to construct the session URL
 	 * 
-	 * @param pmaControlURL       URL for PMA.Control
-	 * @param pmaControlSessionID Training session ID
-	 * @param pmaControlCase      Case name
-	 * @param pmaCoreSessionID    PMA.core session ID
-	 * @return Session's URL
+	 * @param pmaControlCase Case name
+	 * @throws Exception
 	 */
-	public static String getSessionURL(String pmaControlURL, Integer pmaControlSessionID, String pmaControlCase,
-			String pmaCoreSessionID) {
-		if (pmaControlCase == null) {
-			return Core.join(pmaControlURL, "training/training/") + pmaControlSessionID + "?SessionID="
-					+ pmaCoreSessionID;
-		} else if (pmaControlCase.matches("^[0-9]*$")) {
-			return Core.join(pmaControlURL, "training/training/") + pmaControlSessionID + "?SessionID="
-					+ pmaCoreSessionID;
+
+	/**
+	 * 
+	 * @param pmaControlURL              URL for PMA.Control
+	 * @param participantSessionID       The participant's session ID to allow for
+	 *                                   eventual impersonation
+	 * @param participantUsername        participant username
+	 * @param pmaControlSessionID        Training session ID
+	 * @param pmaControlCaseCollectionID Case collection ID
+	 * @param pmaCoreSessionID           PMA.core session ID, the administrative
+	 *                                   session ID to verify that the participant
+	 *                                   is registered for the training session
+	 * @return Session's URL
+	 * @throws Exception If participantUsername isn't registred for this session
+	 */
+	@SuppressWarnings("unchecked")
+	public static String getTrainingSessionURL(String pmaControlURL, String participantSessionID,
+			String participantUsername, Integer pmaControlSessionID, Integer pmaControlCaseCollectionID,
+			String pmaCoreSessionID) throws Exception {
+		if (isParticipantInTrainingSession(pmaControlURL, participantUsername, pmaControlSessionID, pmaCoreSessionID)) {
+			for (Entry<Integer, Map<String, String>> entry : ((Map<Integer, Map<String, String>>) getTrainingSession(
+					pmaControlURL, pmaControlSessionID, pmaCoreSessionID).get("CaseCollections")).entrySet()) {
+				if (entry.getKey() == pmaControlCaseCollectionID) {
+					return entry.getValue().get("Url").toString() + "?sessionID=" + participantSessionID;
+				}
+			}
 		} else {
-			return Core.join(pmaControlURL, "training/training/") + pmaControlSessionID + "?SessionID="
-					+ pmaCoreSessionID;
+			throw new Exception("Participant " + participantUsername + " is not registered for this session");
 		}
+		return null;
 	}
 
 	/**
@@ -292,17 +308,19 @@ public class Control {
 				if (!userMap.containsKey(participant)) {
 					userMap.put(participant, new HashMap<Integer, String>());
 				}
-				((Map<Integer, String>) userMap.get(participant)).put((int) sMap.get("Id"), sMap.get("Title").toString());
+				((Map<Integer, String>) userMap.get(participant)).put((int) sMap.get("Id"),
+						sMap.get("Title").toString());
 			}
 		}
 		return userMap;
 	}
 
 	/**
-	 * This method is used to register a participant for a session, assign a specific role
+	 * This method is used to register a participant for a session, assign a
+	 * specific role
 	 * 
 	 * @param pmaControlURL       PMA.control URL
-	 * @param participantUsername     PMA.core username
+	 * @param participantUsername PMA.core username
 	 * @param pmaControlSessionID Training session ID
 	 * @param pmaControlRole      Role
 	 * @param pmaCoreSessionID    PMA.core session ID
@@ -311,7 +329,8 @@ public class Control {
 	 *                   training session
 	 */
 	public static String registerParticipantForTrainingSession(String pmaControlURL, String participantUsername,
-			Integer pmaControlSessionID, PmaTrainingSessionRole pmaControlRole, String pmaCoreSessionID) throws Exception {
+			Integer pmaControlSessionID, PmaTrainingSessionRole pmaControlRole, String pmaCoreSessionID)
+			throws Exception {
 		if (isParticipantInTrainingSession(pmaControlURL, participantUsername, pmaControlSessionID, pmaCoreSessionID)) {
 			throw new Exception("PMA.core user " + participantUsername
 					+ " is ALREADY registered in PMA.control training session " + pmaControlSessionID);
@@ -331,10 +350,10 @@ public class Control {
 			con.setUseCaches(false);
 			con.setDoOutput(true);
 			String data = "{ \"UserName\": \"" + participantUsername + "\", \"Role\": \"" + pmaControlRole + "\" }"; // default
-																													// interaction
-																													// mode
-																													// =
-																													// Locked
+																														// interaction
+																														// mode
+																														// =
+																														// Locked
 			// + ", \"InteractionMode\": \"" +
 			// String.valueOf(pmacontrolInteractionMode.ordinal() + 1) + "\" }";
 			OutputStream os = con.getOutputStream();
@@ -359,7 +378,7 @@ public class Control {
 	 * given Case Collection within a training session
 	 * 
 	 * @param pmaControlURL              PMA.control URL
-	 * @param participantUsername            PMA.core username
+	 * @param participantUsername        PMA.core username
 	 * @param pmaControlSessionID        Training session ID
 	 * @param pmaControlCaseCollectionID Case collection ID
 	 * @param pmaControlInteractionMode  Interaction mode
@@ -372,7 +391,8 @@ public class Control {
 			Integer pmaControlSessionID, Integer pmaControlCaseCollectionID,
 			PmaInteractionMode pmaControlInteractionMode, String pmaCoreSessionID) throws Exception {
 
-		if (!isParticipantInTrainingSession(pmaControlURL, participantUsername, pmaControlSessionID, pmaCoreSessionID)) {
+		if (!isParticipantInTrainingSession(pmaControlURL, participantUsername, pmaControlSessionID,
+				pmaCoreSessionID)) {
 			throw new Exception("PMA.core user " + participantUsername
 					+ " is NOT registered in PMA.control training session " + pmaControlSessionID);
 		}
@@ -417,7 +437,7 @@ public class Control {
 	 * to assign an interaction mode outside the defined enum values
 	 * 
 	 * @param pmaControlURL              PMA.control URL
-	 * @param participantUsername            PMA.core username
+	 * @param participantUsername        PMA.core username
 	 * @param pmaControlSessionID        Training session ID
 	 * @param pmaControlCaseCollectionID Case collection ID
 	 * @param pmaControlInteractionMode  Interaction mode
@@ -430,7 +450,8 @@ public class Control {
 			Integer pmaControlSessionID, Integer pmaControlCaseCollectionID, Integer pmaControlInteractionMode,
 			String pmaCoreSessionID) throws Exception {
 
-		if (!isParticipantInTrainingSession(pmaControlURL, participantUsername, pmaControlSessionID, pmaCoreSessionID)) {
+		if (!isParticipantInTrainingSession(pmaControlURL, participantUsername, pmaControlSessionID,
+				pmaCoreSessionID)) {
 			throw new Exception("PMA.core user " + participantUsername
 					+ " is NOT registered in PMA.control training session " + pmaControlSessionID);
 		}
@@ -528,15 +549,18 @@ public class Control {
 			return null;
 		}
 	}
-	
+
 	/**
-	 * This method is used to get the first (training) session with ID = pmaControlSessionID
+	 * This method is used to get the first (training) session with ID =
+	 * pmaControlSessionID
+	 * 
 	 * @param pmaControlURL       URL for PMA.Control
 	 * @param pmaControlSessionID Training session's ID
 	 * @param pmaCoreSessionID    PMA.core session ID
 	 * @return First training session with ID = pmacontrolSessionID
 	 */
-	public static Map<String, Object> getTrainingSession(String pmaControlURL, Integer pmaControlSessionID, String pmaCoreSessionID) {
+	public static Map<String, Object> getTrainingSession(String pmaControlURL, Integer pmaControlSessionID,
+			String pmaCoreSessionID) {
 		JSONArray allTrainingSessions = getTrainingSessions(pmaControlURL, pmaCoreSessionID);
 		for (int i = 0; i < allTrainingSessions.length(); i++) {
 			JSONObject el = allTrainingSessions.optJSONObject(i);
@@ -558,7 +582,8 @@ public class Control {
 	 * @return Map of the first (training) session whose title matches the search
 	 *         criteria
 	 */
-	public static Map<String, Object> searchTrainingSession(String pmaControlURL, String keyword, String pmaCoreSessionID) {
+	public static Map<String, Object> searchTrainingSession(String pmaControlURL, String keyword,
+			String pmaCoreSessionID) {
 		JSONArray all = getTrainingSessions(pmaControlURL, pmaCoreSessionID);
 
 		for (int i = 0; i < all.length(); i++) {
@@ -631,9 +656,9 @@ public class Control {
 	/**
 	 * This method is used to get a case collection by its title
 	 * 
-	 * @param pmaControlURL    URL for PMA.Control
-	 * @param pmaCoreSessionID PMA.core session ID
-	 * @param caseCollectionTitle   The case collection's title
+	 * @param pmaControlURL       URL for PMA.Control
+	 * @param pmaCoreSessionID    PMA.core session ID
+	 * @param caseCollectionTitle The case collection's title
 	 * @return The case collection in json object format
 	 */
 	public static JSONObject getCaseCollectionByTitle(String pmaControlURL, String pmaCoreSessionID,
@@ -750,7 +775,8 @@ public class Control {
 	 * @return List of summarized maps of the project's sessions in ID, Title format
 	 */
 	@SuppressWarnings("serial")
-	private static List<Map<Integer, String>> formatProjectEmbeddedTrainingSessionsProperly(JSONArray originalProjectSessions) {
+	private static List<Map<Integer, String>> formatProjectEmbeddedTrainingSessionsProperly(
+			JSONArray originalProjectSessions) {
 		List<Map<Integer, String>> listMap = new ArrayList<>();
 		for (int i = 0; i < originalProjectSessions.length(); i++) {
 			JSONObject jsonObject = originalProjectSessions.optJSONObject(i);
@@ -857,7 +883,8 @@ public class Control {
 					Map<String, Object> project = new ObjectMapper()
 							.readerFor(new TypeReference<Map<String, Object>>() {
 							}).readValue(prj.toString());
-					project.put("Sessions", formatProjectEmbeddedTrainingSessionsProperly(prj.optJSONArray("Sessions")));
+					project.put("Sessions",
+							formatProjectEmbeddedTrainingSessionsProperly(prj.optJSONArray("Sessions")));
 					// now integrate case collection information
 					// we get the case collections belonging to the project (via the title)
 					JSONArray collections = getCaseCollections(pmaControlURL, pmaCoreSessionID, prj.getString("Title"));
