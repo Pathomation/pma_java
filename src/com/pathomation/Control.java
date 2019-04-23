@@ -337,7 +337,7 @@ public class Control {
 		}
 		try {
 			String url = Core.join(pmaControlURL, "api/Sessions/") + pmaControlSessionID.toString()
-					+ "/Participants?SessionID=" + pmaCoreSessionID;
+					+ "/AddParticipant?SessionID=" + pmaCoreSessionID;
 			URL urlResource = new URL(url);
 			HttpURLConnection con;
 			if (url.startsWith("https")) {
