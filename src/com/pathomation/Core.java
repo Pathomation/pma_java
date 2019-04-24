@@ -43,7 +43,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
@@ -59,14 +58,29 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.56
+ * @version 2.0.0.57
  */
 public class Core {
+	/**
+	 * So afterwards we can look up what username actually belongs to a sessions
+	 */
 	private static Map<String, Object> pmaSessions = new HashMap<String, Object>();
+	/**
+	 * So afterwards we can determine the PMA.core URL to connect to for a given
+	 * SessionID
+	 */
+	private static Map<String, Object> pmaUsernames = new HashMap<>();
+	/**
+	 * A caching mechanism for slide information; obsolete and should be improved
+	 * through httpGet()
+	 */
 	private static Map<String, Object> pmaSlideInfos = new HashMap<String, Object>();
 	private static final String pmaCoreLiteURL = "http://localhost:54001/";
 	private static final String pmaCoreLiteSessionID = "SDK.Java";
 	private static Boolean pmaUseCacheWhenRetrievingTiles = true;
+	/**
+	 * Keep track of how much data was downloaded
+	 */
 	@SuppressWarnings("serial")
 	private static Map<String, Integer> pmaAmountOfDataDownloaded = new HashMap<String, Integer>() {
 		{
@@ -611,43 +625,43 @@ public class Core {
 		// purposefully DON'T use helper function apiUrl() here:
 		// why? Because apiUrl() takes session information into account (which we
 		// don't have yet)
-		String url = join(pmaCoreURL, "api/xml/authenticate?caller=SDK.Java");
+		String url = join(pmaCoreURL, "api/json/authenticate?caller=SDK.Java");
 		if (!pmaCoreUsername.equals("")) {
 			url = url.concat("&username=").concat(pmaQ(pmaCoreUsername));
 		}
 		if (!pmaCorePassword.equals("")) {
 			url = url.concat("&password=").concat(pmaQ(pmaCorePassword));
 		}
-		String contents;
-		Document dom;
 		try {
-			contents = urlReader(url);
-			dom = domParser(contents);
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("GET");
+			String jsonString = getJSONAsStringBuffer(con).toString();
+			String sessionID = null;
+			if (isJSONObject(jsonString)) {
+				JSONObject jsonResponse = getJSONResponse(jsonString);
+				if (!jsonResponse.getString("Success").toLowerCase().equals("true")) {
+					return null;
+				} else {
+					sessionID = jsonResponse.getString("SessionId");
+					pmaUsernames.put(sessionID, pmaCoreUsername);
+					pmaSessions.put(sessionID, pmaCoreURL);
+					if (!pmaSlideInfos.containsKey(sessionID)) {
+						pmaSlideInfos.put(sessionID, new HashMap<String, Object>());
+					}
+					pmaAmountOfDataDownloaded.put(sessionID, jsonResponse.length());
+					return sessionID;
+				}
+			} else {
+				return null;
+			}
 		} catch (Exception e) {
 			// Something went wrong; unable to communicate with specified endpoint
-			e.printStackTrace();
-			if (logger != null) {
-				StringWriter sw = new StringWriter();
-				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
-			}
-			return null;
-		}
-		try {
-			Element loginResult = (Element) dom.getChildNodes().item(0);
-			Node succ = loginResult.getElementsByTagName("Success").item(0);
-			String sessionID;
-			if (succ.getFirstChild().getNodeValue().toLowerCase().equals("false")) {
-				sessionID = null;
-			} else {
-				sessionID = loginResult.getElementsByTagName("SessionId").item(0).getFirstChild().getNodeValue()
-						.toString();
-				pmaSessions.put(sessionID, pmaCoreURL);
-				pmaSlideInfos.put(sessionID, new HashMap<String, Object>());
-				pmaAmountOfDataDownloaded.put(sessionID, contents.length());
-			}
-			return sessionID;
-		} catch (Exception e) {
 			e.printStackTrace();
 			if (logger != null) {
 				StringWriter sw = new StringWriter();
@@ -710,6 +724,7 @@ public class Core {
 				if (jsonResponse.getBoolean("Success")) {
 					String adminSessionID = jsonResponse.getString("SessionId");
 					pmaSessions.put(adminSessionID, pmaCoreURL);
+					pmaUsernames.put(adminSessionID, pmaCoreUsername);
 					if (!pmaSlideInfos.containsKey(adminSessionID)) {
 						pmaSlideInfos.put(adminSessionID, new HashMap<String, Object>());
 					}
