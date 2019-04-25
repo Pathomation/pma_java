@@ -51,9 +51,9 @@ public class Control {
 		// Get version info from PMA.control instance running at pmacontrolURL
 		// why? because GetVersionInfo can be invoked WITHOUT a valid SessionID;
 		// apiUrl() takes session information into account
-		String url = Core.join(pmaControlURL, "api/version");
+		String url = PMA.join(pmaControlURL, "api/version");
 		try {
-			String jsonString = Core.httpGet(url, "application/json");
+			String jsonString = PMA.httpGet(url, "application/json");
 			// we remove ""
 			return jsonString.substring(1, jsonString.length() - 1);
 		} catch (Exception e) {
@@ -76,10 +76,10 @@ public class Control {
 	 * @return List of registred sessions
 	 */
 	private static JSONArray getTrainingSessions(String pmaControlURL, String pmaCoreSessionID) {
-		String url = Core.join(pmaControlURL, "api/Sessions?sessionID=" + Core.pmaQ(pmaCoreSessionID));
+		String url = PMA.join(pmaControlURL, "api/Sessions?sessionID=" + PMA.pmaQ(pmaCoreSessionID));
 		try {
-			String jsonString = Core.httpGet(url, "application/json");
-			JSONArray jsonResponse = Core.getJSONArrayResponse(jsonString);
+			String jsonString = PMA.httpGet(url, "application/json");
+			JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
 			return jsonResponse;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -211,11 +211,11 @@ public class Control {
 	 */
 	public static Map<String, JSONObject> getTrainingSessionParticipants(String pmaControlURL,
 			Integer pmaControlSessionID, String pmaCoreSessionID) {
-		String url = Core.join(pmaControlURL,
-				"api/Sessions/" + pmaControlSessionID + "/Participants?sessionID=" + Core.pmaQ(pmaCoreSessionID));
+		String url = PMA.join(pmaControlURL,
+				"api/Sessions/" + pmaControlSessionID + "/Participants?sessionID=" + PMA.pmaQ(pmaCoreSessionID));
 		try {
-			String jsonString = Core.httpGet(url, "application/json");
-			JSONArray sessionParticipants = Core.getJSONArrayResponse(jsonString);
+			String jsonString = PMA.httpGet(url, "application/json");
+			JSONArray sessionParticipants = PMA.getJSONArrayResponse(jsonString);
 			Map<String, JSONObject> participants = new HashMap<>();
 			for (int i = 0; i < sessionParticipants.length(); i++) {
 				JSONObject sessionParticipant = sessionParticipants.optJSONObject(i);
@@ -336,7 +336,7 @@ public class Control {
 					+ " is ALREADY registered in PMA.control training session " + pmaControlSessionID);
 		}
 		try {
-			String url = Core.join(pmaControlURL, "api/Sessions/") + pmaControlSessionID.toString()
+			String url = PMA.join(pmaControlURL, "api/Sessions/") + pmaControlSessionID.toString()
 					+ "/AddParticipant?SessionID=" + pmaCoreSessionID;
 			URL urlResource = new URL(url);
 			HttpURLConnection con;
@@ -359,8 +359,8 @@ public class Control {
 			OutputStream os = con.getOutputStream();
 			os.write(data.getBytes("UTF-8"));
 			os.close();
-			String jsonString = Core.getJSONAsStringBuffer(con).toString();
-			Core.clearURLCache();
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
+			PMA.clearURLCache();
 			return jsonString;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -397,7 +397,7 @@ public class Control {
 					+ " is NOT registered in PMA.control training session " + pmaControlSessionID);
 		}
 		try {
-			String url = Core.join(pmaControlURL, "api/Sessions/") + pmaControlSessionID + "/InteractionMode?SessionID="
+			String url = PMA.join(pmaControlURL, "api/Sessions/") + pmaControlSessionID + "/InteractionMode?SessionID="
 					+ pmaCoreSessionID;
 			URL urlResource = new URL(url);
 			HttpURLConnection con;
@@ -418,8 +418,8 @@ public class Control {
 			OutputStream os = con.getOutputStream();
 			os.write(data.getBytes("UTF-8"));
 			os.close();
-			String jsonString = Core.getJSONAsStringBuffer(con).toString();
-			Core.clearURLCache();
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
+			PMA.clearURLCache();
 			return jsonString;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -456,7 +456,7 @@ public class Control {
 					+ " is NOT registered in PMA.control training session " + pmaControlSessionID);
 		}
 		try {
-			String url = Core.join(pmaControlURL, "api/Sessions/") + pmaControlSessionID + "/InteractionMode?SessionID="
+			String url = PMA.join(pmaControlURL, "api/Sessions/") + pmaControlSessionID + "/InteractionMode?SessionID="
 					+ pmaCoreSessionID;
 			URL urlResource = new URL(url);
 			HttpURLConnection con;
@@ -477,8 +477,8 @@ public class Control {
 			OutputStream os = con.getOutputStream();
 			os.write(data.getBytes("UTF-8"));
 			os.close();
-			String jsonString = Core.getJSONAsStringBuffer(con).toString();
-			Core.clearURLCache();
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
+			PMA.clearURLCache();
 			return jsonString;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -611,11 +611,11 @@ public class Control {
 	private static JSONArray getCaseCollections(String pmaControlURL, String pmaCoreSessionID, String... varargs) {
 		// setting the default value when argument's value is omitted
 		String project = ((varargs.length > 0) && (varargs[0] != null)) ? varargs[0] : "";
-		String url = Core.join(pmaControlURL, "api/CaseCollections?sessionID=" + Core.pmaQ(pmaCoreSessionID)
-				+ ((project.length() > 0) ? ("&project=" + Core.pmaQ(project)) : ""));
+		String url = PMA.join(pmaControlURL, "api/CaseCollections?sessionID=" + PMA.pmaQ(pmaCoreSessionID)
+				+ ((project.length() > 0) ? ("&project=" + PMA.pmaQ(project)) : ""));
 		try {
-			String jsonString = Core.httpGet(url, "application/json");
-			JSONArray jsonResponse = Core.getJSONArrayResponse(jsonString);
+			String jsonString = PMA.httpGet(url, "application/json");
+			JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
 			return jsonResponse;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -798,10 +798,10 @@ public class Control {
 	 * @return Array of projects
 	 */
 	private static JSONArray getProjects(String pmaControlURL, String pmaCoreSessionID) {
-		String url = Core.join(pmaControlURL, "api/Projects?sessionID=" + Core.pmaQ(pmaCoreSessionID));
+		String url = PMA.join(pmaControlURL, "api/Projects?sessionID=" + PMA.pmaQ(pmaCoreSessionID));
 		try {
-			String jsonString = Core.httpGet(url, "application/json");
-			JSONArray jsonResponse = Core.getJSONArrayResponse(jsonString);
+			String jsonString = PMA.httpGet(url, "application/json");
+			JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
 			return jsonResponse;
 		} catch (Exception e) {
 			e.printStackTrace();

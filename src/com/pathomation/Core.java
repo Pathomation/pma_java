@@ -1,23 +1,12 @@
-/**
- 
- */
 package com.pathomation;
 
 import java.awt.Image;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.io.StringReader;
 import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
-import java.net.URLEncoder;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,25 +15,18 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import javax.imageio.ImageIO;
 import javax.net.ssl.HttpsURLConnection;
-import javax.swing.filechooser.FileSystemView;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.IOUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -58,7 +40,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.57
+ * @version 2.0.0.58
  */
 public class Core {
 	/**
@@ -87,13 +69,51 @@ public class Core {
 			put(pmaCoreLiteSessionID, 0);
 		}
 	};
-	// for logging purposes
-	public static Logger logger = null;
-	// To store the Disk labels
-	private static Map<String, String> diskLabels = new HashMap<String, String>();
+
 	// Object Mapper for Jackson library
 	private static ObjectMapper objectMapper = new ObjectMapper();
-	private static Map<String, String> urlContent = new HashMap<>();
+
+	/**
+	 * @return the pmaSessions
+	 */
+	public static Map<String, Object> getPmaSessions() {
+		return pmaSessions;
+	}
+
+	/**
+	 * @return the pmaUsernames
+	 */
+	public static Map<String, Object> getPmaUsernames() {
+		return pmaUsernames;
+	}
+
+	/**
+	 * @return the pmaSlideInfos
+	 */
+	public static Map<String, Object> getPmaSlideInfos() {
+		return pmaSlideInfos;
+	}
+
+	/**
+	 * @return the pmaCoreLiteURL
+	 */
+	public static String getPmaCoreLiteURL() {
+		return pmaCoreLiteURL;
+	}
+
+	/**
+	 * @return the pmaCoreLiteSessionID
+	 */
+	public static String getPmaCoreLiteSessionID() {
+		return pmaCoreLiteSessionID;
+	}
+
+	/**
+	 * @return the pmaAmountOfDataDownloaded
+	 */
+	public static Map<String, Integer> getPmaAmountOfDataDownloaded() {
+		return pmaAmountOfDataDownloaded;
+	}
 
 	/**
 	 * This method is used to get the session's ID
@@ -159,7 +179,7 @@ public class Core {
 	 * @return Url related to the session's ID
 	 * @throws Exception if sessionID is invalid
 	 */
-	private static String pmaUrl(String... varargs) throws Exception {
+	public static String pmaUrl(String... varargs) throws Exception {
 		// setting the default value when argument's value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		sessionID = sessionId(sessionID);
@@ -178,60 +198,11 @@ public class Core {
 				}
 				return url;
 			} else {
-				if (logger != null) {
-					logger.severe("Invalid sessionID:" + sessionID);
+				if (PMA.logger != null) {
+					PMA.logger.severe("Invalid sessionID:" + sessionID);
 				}
 				throw new Exception("Invalid sessionID:" + sessionID);
 			}
-		}
-	}
-
-	/**
-	 * This method is used to retrieve HTML Code from URL
-	 * 
-	 * @param url to get HTML code from
-	 * @return HTML code generated from the url argument
-	 */
-	public static String urlReader(String url) {
-		try {
-			URL urlResource = new URL(url);
-			URLConnection con = urlResource.openConnection();
-			InputStream in = con.getInputStream();
-			String encoding = con.getContentEncoding();
-			encoding = encoding == null ? "UTF-8" : encoding;
-			return IOUtils.toString(in, encoding);
-		} catch (Exception e) {
-			e.printStackTrace();
-			if (logger != null) {
-				StringWriter sw = new StringWriter();
-				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
-			}
-			return null;
-		}
-	}
-
-	/**
-	 * This method is used to parse a XML content
-	 * 
-	 * @param s XML content to parse
-	 * @return Document parsed XML
-	 */
-	public static Document domParser(String s) {
-		try {
-			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-			DocumentBuilder documentBuilder = factory.newDocumentBuilder();
-			InputSource inputStream = new InputSource();
-			inputStream.setCharacterStream(new StringReader(s));
-			return documentBuilder.parse(inputStream);
-		} catch (Exception e) {
-			e.printStackTrace();
-			if (logger != null) {
-				StringWriter sw = new StringWriter();
-				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
-			}
-			return null;
 		}
 	}
 
@@ -249,19 +220,19 @@ public class Core {
 	private static Boolean pmaIsLite(String... varargs) {
 		// setting the default value when argument's value is omitted
 		String pmaCoreURL = varargs.length > 0 ? varargs[0] : pmaCoreLiteURL;
-		String url = join(pmaCoreURL, "api/xml/IsLite");
+		String url = PMA.join(pmaCoreURL, "api/xml/IsLite");
 		String contents = "";
 		try {
-			contents = urlReader(url);
-			return domParser(contents).getChildNodes().item(0).getChildNodes().item(0).getNodeValue().toLowerCase()
+			contents = PMA.urlReader(url);
+			return PMA.domParser(contents).getChildNodes().item(0).getChildNodes().item(0).getNodeValue().toLowerCase()
 					.toString().equals("true");
 		} catch (Exception e) {
 			// this happens when NO instance of PMA.core is detected
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -289,8 +260,8 @@ public class Core {
 		Boolean xml = true;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof String) && varargs[0] != null) {
-				if (logger != null) {
-					logger.severe("apiUrl() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("apiUrl() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -298,8 +269,8 @@ public class Core {
 		}
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof Boolean) && varargs[1] != null) {
-				if (logger != null) {
-					logger.severe("apiUrl() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("apiUrl() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -311,10 +282,10 @@ public class Core {
 			url = pmaUrl(sessionID);
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			url = null;
 		}
@@ -324,216 +295,9 @@ public class Core {
 		}
 		// remember, _pma_url is guaranteed to return a URL that ends with "/"
 		if (xml) {
-			return join(url, "api/xml/");
+			return PMA.join(url, "api/xml/");
 		} else {
-			return join(url, "api/json/");
-		}
-	}
-
-	/**
-	 * This method is used to define which content will be received "XML" or "Json"
-	 * for "Admin" Web service calls
-	 * 
-	 * @param varargs Array of optional arguments
-	 *                <p>
-	 *                sessionID : First optional argument(String), default
-	 *                value(null), session's ID
-	 *                </p>
-	 *                <p>
-	 *                xml : Second optional argument(Boolean), default value(true),
-	 *                define if method will return XML or Json content
-	 *                </p>
-	 * @return Adds sequence to the url to specify which content to be received (XML
-	 *         or Json)
-	 */
-	private static String adminUrl(Object... varargs) {
-		// setting the default values when arguments' values are omitted
-		String sessionID = null;
-		Boolean xml = true;
-		if (varargs.length > 0) {
-			if (!(varargs[0] instanceof String) && varargs[0] != null) {
-				if (logger != null) {
-					logger.severe("adminUrl() : Illegal argument");
-				}
-				throw new IllegalArgumentException("...");
-			}
-			sessionID = (String) varargs[0];
-		}
-		if (varargs.length > 1) {
-			if (!(varargs[1] instanceof Boolean) && varargs[1] != null) {
-				if (logger != null) {
-					logger.severe("adminUrl() : Illegal argument");
-				}
-				throw new IllegalArgumentException("...");
-			}
-			xml = (Boolean) varargs[1];
-		}
-		// let's get the base URL first for the specified session
-		String url;
-		try {
-			url = pmaUrl(sessionID);
-		} catch (Exception e) {
-			e.printStackTrace();
-			if (logger != null) {
-				StringWriter sw = new StringWriter();
-				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
-			}
-			url = null;
-		}
-		if (url == null) {
-			// sort of a hopeless situation; there is no URL to refer to
-			return null;
-		}
-		// remember, _pma_url is guaranteed to return a URL that ends with "/"
-		if (xml) {
-			return join(url, "admin/xml/");
-		} else {
-			return join(url, "admin/json/");
-		}
-	}
-
-	/**
-	 * This method is used to get a list of the values of "String" tags of a XML
-	 * document
-	 * 
-	 * @param root    XML document
-	 * @param varargs Array of optional arguments
-	 *                <p>
-	 *                limit : First optional argument(int), default value(0),
-	 *                defines a limit
-	 *                </p>
-	 * @return Values' list of tags named "string" in a XML document
-	 */
-	private static List<String> xmlToStringArray(Document root, Integer... varargs) {
-		// setting the default value when argument's value is omitted
-		int limit = varargs.length > 0 ? varargs[0] : 0;
-		NodeList eLs = root.getElementsByTagName("string");
-		List<String> l = new ArrayList<>();
-		if (limit > 0) {
-			for (int i = 0; i < limit; i++) {
-				l.add(eLs.item(i).getFirstChild().getNodeValue());
-			}
-		} else {
-			for (int i = 0; i < eLs.getLength(); i++) {
-				l.add(eLs.item(i).getFirstChild().getNodeValue());
-			}
-		}
-		return l;
-	}
-
-	/**
-	 * This method is an overload of method xmlToStringArray to cope with "root"
-	 * argument as an "Element" instead of a "Document"
-	 * 
-	 * @param root    XML document
-	 * @param varargs Array of optional arguments
-	 *                <p>
-	 *                limit : First optional argument(int), default value(0),
-	 *                defines a limit
-	 *                </p>
-	 * @return Values' list of tags named "string" in a XML document
-	 */
-	private static List<String> xmlToStringArray(Element root, Integer... varargs) {
-		// setting the default value when argument's value is omitted
-		int limit = varargs.length > 0 ? varargs[0] : 0;
-		NodeList eLs = root.getElementsByTagName("string");
-		List<String> l = new ArrayList<>();
-		if (limit > 0) {
-			for (int i = 0; i < limit; i++) {
-				l.add(eLs.item(i).getFirstChild().getNodeValue());
-			}
-		} else {
-			for (int i = 0; i < eLs.getLength(); i++) {
-				l.add(eLs.item(i).getFirstChild().getNodeValue());
-			}
-		}
-		return l;
-	}
-
-	/**
-	 * This method is used to cache requested URLs
-	 * 
-	 * @param url      URL to request
-	 * @param property Header value
-	 * @return Data returned following a request to a specific URL
-	 */
-	public static String httpGet(String url, String property) {
-		if (!urlContent.containsKey(url)) {
-			try {
-				URL urlResource = new URL(url);
-				HttpURLConnection con;
-				if (url.startsWith("https")) {
-					con = (HttpsURLConnection) urlResource.openConnection();
-				} else {
-					con = (HttpURLConnection) urlResource.openConnection();
-				}
-				con.setRequestMethod("GET");
-				con.setRequestProperty("Accept", property);
-				urlContent.put(url, Core.getJSONAsStringBuffer(con).toString());
-			} catch (Exception e) {
-				e.printStackTrace();
-				if (logger != null) {
-					StringWriter sw = new StringWriter();
-					e.printStackTrace(new PrintWriter(sw));
-					logger.severe(sw.toString());
-				}
-				return null;
-			}
-		}
-		return urlContent.get(url).toString();
-	}
-
-	/**
-	 * This method is used to clear the URLs cache
-	 */
-	public static void clearURLCache() {
-		urlContent = new HashMap<>();
-	}
-
-	/**
-	 * This method is used to concatenate a couple of Strings while replacing "\\"
-	 * by "/"
-	 * 
-	 * @param varargs Array of String optional arguments, each argument is a string
-	 *                to be concatenated
-	 * @return Concatenation of a couple of String while making sure the first
-	 *         string always ends with "/"
-	 */
-	public static String join(String... varargs) {
-		String joinString = "";
-		for (String ss : varargs) {
-			if (!joinString.endsWith("/") && (!joinString.equals(""))) {
-				joinString = joinString.concat("/");
-			}
-			if (ss != null) {
-				joinString = joinString.concat(ss);
-			}
-		}
-		return joinString;
-	}
-
-	/**
-	 * This method is used to encode a String to be compatible as a url
-	 * 
-	 * @param arg string to be encoded
-	 * @return Encoded String to be compatible as a url
-	 */
-	public static String pmaQ(String arg) {
-		if (arg == null) {
-			return "";
-		} else {
-			try {
-				return URLEncoder.encode(arg, "UTF-8").replace("+", "%20");
-			} catch (Exception e) {
-				e.printStackTrace();
-				if (logger != null) {
-					StringWriter sw = new StringWriter();
-					e.printStackTrace(new PrintWriter(sw));
-					logger.severe(sw.toString());
-				}
-				return "";
-			}
+			return PMA.join(url, "api/json/");
 		}
 	}
 
@@ -572,18 +336,18 @@ public class Core {
 		// purposefully DON'T use helper function apiUrl() here:
 		// why? because GetVersionInfo can be invoked WITHOUT a valid SessionID;
 		// apiUrl() takes session information into account
-		String url = join(pmaCoreURL, "api/xml/GetVersionInfo");
+		String url = PMA.join(pmaCoreURL, "api/xml/GetVersionInfo");
 		String contents = "";
 		try {
-			contents = urlReader(url);
-			return domParser(contents).getChildNodes().item(0).getChildNodes().item(0).getNodeValue().toString();
+			contents = PMA.urlReader(url);
+			return PMA.domParser(contents).getChildNodes().item(0).getChildNodes().item(0).getNodeValue().toString();
 		} catch (Exception e) {
 			// this happens when NO instance of PMA.core is detected
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -625,12 +389,12 @@ public class Core {
 		// purposefully DON'T use helper function apiUrl() here:
 		// why? Because apiUrl() takes session information into account (which we
 		// don't have yet)
-		String url = join(pmaCoreURL, "api/json/authenticate?caller=SDK.Java");
+		String url = PMA.join(pmaCoreURL, "api/json/authenticate?caller=SDK.Java");
 		if (!pmaCoreUsername.equals("")) {
-			url = url.concat("&username=").concat(pmaQ(pmaCoreUsername));
+			url = url.concat("&username=").concat(PMA.pmaQ(pmaCoreUsername));
 		}
 		if (!pmaCorePassword.equals("")) {
-			url = url.concat("&password=").concat(pmaQ(pmaCorePassword));
+			url = url.concat("&password=").concat(PMA.pmaQ(pmaCorePassword));
 		}
 		try {
 			URL urlResource = new URL(url);
@@ -641,10 +405,10 @@ public class Core {
 				con = (HttpURLConnection) urlResource.openConnection();
 			}
 			con.setRequestMethod("GET");
-			String jsonString = getJSONAsStringBuffer(con).toString();
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
 			String sessionID = null;
-			if (isJSONObject(jsonString)) {
-				JSONObject jsonResponse = getJSONResponse(jsonString);
+			if (PMA.isJSONObject(jsonString)) {
+				JSONObject jsonResponse = PMA.getJSONResponse(jsonString);
 				if (!jsonResponse.getString("Success").toLowerCase().equals("true")) {
 					return null;
 				} else {
@@ -663,85 +427,10 @@ public class Core {
 		} catch (Exception e) {
 			// Something went wrong; unable to communicate with specified endpoint
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
-			}
-			return null;
-		}
-	}
-
-	/**
-	 * This method is used to authenticate &amp; connect as an admin to a PMA.core
-	 * instance using admin credentials
-	 *
-	 * @param varargs Array of optional arguments
-	 *                <p>
-	 *                pmacoreURL : First optional argument(String), default
-	 *                value(Class field pmaCoreLiteURL), url of PMA.core instance
-	 *                </p>
-	 *                <p>
-	 *                pmacoreUsername : Second optional argument(String), default
-	 *                value(""), username for PMA.core instance
-	 *                </p>
-	 *                <p>
-	 *                pmacorePassword : Third optional argument(String), default
-	 *                value(""), password for PMA.core instance
-	 *                </p>
-	 * @return session's ID if session was created successfully, otherwise null
-	 * @throws Exception If target instance isn't a PMA.core instance
-	 */
-	public static String adminConnect(String... varargs) throws Exception {
-		// setting the default values when arguments' values are omitted
-		String pmaCoreURL = varargs.length > 0 ? varargs[0] : pmaCoreLiteURL;
-		String pmaCoreUsername = varargs.length > 1 ? varargs[1] : "";
-		String pmaCorePassword = varargs.length > 2 ? varargs[2] : "";
-		// Attempt to connect to PMA.core instance; success results in a SessionID
-		// only success if the user has administrative status
-		if (pmaCoreURL.equals(pmaCoreLiteURL)) {
-			if (isLite()) {
-				throw new Exception("PMA.core.lite found running, but doesn't support an administrative back-end");
-			} else {
-				throw new Exception(
-						"PMA.core.lite not found, and besides; it doesn't support an administrative back-end anyway");
-			}
-		}
-		// purposefully DON'T use helper function apiUrl() here:
-		// why? Because apiUrl() takes session information into account (which we
-		// don't have yet)
-		String url = join(pmaCoreURL, "admin/json/AdminAuthenticate?caller=SDK.Java");
-		if (!pmaCoreUsername.equals("")) {
-			url = url.concat("&username=").concat(pmaQ(pmaCoreUsername));
-		}
-		if (!pmaCorePassword.equals("")) {
-			url = url.concat("&password=").concat(pmaQ(pmaCorePassword));
-		}
-		try {
-			String jsonString = Core.httpGet(url, "application/json");
-			if (isJSONObject(jsonString)) {
-				JSONObject jsonResponse = getJSONResponse(jsonString);
-				if (jsonResponse.getBoolean("Success")) {
-					String adminSessionID = jsonResponse.getString("SessionId");
-					pmaSessions.put(adminSessionID, pmaCoreURL);
-					pmaUsernames.put(adminSessionID, pmaCoreUsername);
-					if (!pmaSlideInfos.containsKey(adminSessionID)) {
-						pmaSlideInfos.put(adminSessionID, new HashMap<String, Object>());
-					}
-					pmaAmountOfDataDownloaded.put(adminSessionID, jsonResponse.length());
-					return adminSessionID;
-				} else {
-					return null;
-				}
-			} else {
-				return null;
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			if (logger != null) {
-				StringWriter sw = new StringWriter();
-				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -764,8 +453,8 @@ public class Core {
 		// Disconnect from a PMA.core instance; return True if session exists; return
 		// False if session didn't exist (anymore)
 		sessionID = sessionId(sessionID);
-		String url = apiUrl(sessionID) + "DeAuthenticate?sessionID=" + pmaQ((sessionID));
-		String contents = urlReader(url);
+		String url = apiUrl(sessionID) + "DeAuthenticate?sessionID=" + PMA.pmaQ((sessionID));
+		String contents = PMA.urlReader(url);
 		pmaAmountOfDataDownloaded.put(sessionID, pmaAmountOfDataDownloaded.get(sessionID) + contents.length());
 		if (pmaSessions.size() > 0) {
 			// yes we do! This means that when there's a PMA.core active session AND
@@ -777,24 +466,6 @@ public class Core {
 		} else {
 			return false;
 		}
-	}
-
-	/**
-	 * Getter for Class field pmaCoreLiteSessionID
-	 * 
-	 * @return value of Class field pmaCoreLiteSessionID
-	 */
-	public static String getPmaCoreLiteSessionID() {
-		return pmaCoreLiteSessionID;
-	}
-
-	/**
-	 * Getter for Class field pmaCoreLiteURL
-	 * 
-	 * @return value of Class field pmaCoreLiteURL
-	 */
-	public static String getPmaCoreLiteUrl() {
-		return pmaCoreLiteURL;
 	}
 
 	/**
@@ -814,7 +485,7 @@ public class Core {
 		// setting the default value when argument's value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		sessionID = sessionId(sessionID);
-		String url = apiUrl(sessionID, false) + "Ping?sessionID=" + pmaQ(sessionID);
+		String url = apiUrl(sessionID, false) + "Ping?sessionID=" + PMA.pmaQ(sessionID);
 		try {
 			URL urlResource = new URL(url);
 			HttpURLConnection con;
@@ -825,14 +496,14 @@ public class Core {
 			}
 			con.setRequestMethod("GET");
 			con.setRequestProperty("Accept", "application/json");
-			String jsonString = Core.getJSONAsStringBuffer(con).toString();
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
 			return jsonString.equals("true") ? true : false;
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return false;
 		}
@@ -853,54 +524,11 @@ public class Core {
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Return a list of root-directories available to sessionID
 		sessionID = sessionId(sessionID);
-		String url = apiUrl(sessionID) + "GetRootDirectories?sessionID=" + pmaQ(sessionID);
-		String contents = urlReader(url);
+		String url = apiUrl(sessionID) + "GetRootDirectories?sessionID=" + PMA.pmaQ(sessionID);
+		String contents = PMA.urlReader(url);
 		pmaAmountOfDataDownloaded.put(sessionID, pmaAmountOfDataDownloaded.get(sessionID) + contents.length());
-		Document dom = domParser(contents);
-		return xmlToStringArray((Element) dom.getFirstChild());
-	}
-
-	/**
-	 * This method is used to create a new directory on PMA.core
-	 * 
-	 * @param sessionID a session ID
-	 * @param path      path to create the new directory in
-	 * @return true if directory was created successfully, false otherwise
-	 */
-	public static boolean createDirectory(String sessionID, String path) {
-		try {
-			// we only create folders on PMA.core
-			if (isLite(pmaUrl(sessionID))) {
-				return false;
-			} else {
-				String url = adminUrl(sessionID, false) + "CreateDirectory";
-				URL urlResource = new URL(url);
-				HttpURLConnection con;
-				if (url.startsWith("https")) {
-					con = (HttpsURLConnection) urlResource.openConnection();
-				} else {
-					con = (HttpURLConnection) urlResource.openConnection();
-				}
-				con.setRequestMethod("POST");
-				con.setRequestProperty("Content-Type", "application/json");
-				con.setUseCaches(false);
-				con.setDoOutput(true);
-				String input = "{ \"sessionID\": \"" + sessionID + "\", \"path\": \"" + path + "\" }";
-				OutputStream os = con.getOutputStream();
-				os.write(input.getBytes("UTF-8"));
-				os.close();
-				String jsonString = Core.getJSONAsStringBuffer(con).toString();
-				return jsonString.equals("true") ? true : false;
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			if (logger != null) {
-				StringWriter sw = new StringWriter();
-				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
-			}
-			return false;
-		}
+		Document dom = PMA.domParser(contents);
+		return PMA.xmlToStringArray((Element) dom.getFirstChild());
 	}
 
 	/**
@@ -935,8 +563,8 @@ public class Core {
 		String booleanOrInteger = "";
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof String) && varargs[0] != null) {
-				if (logger != null) {
-					logger.severe("getDirectories() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getDirectories() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -944,8 +572,8 @@ public class Core {
 		}
 		if (varargs.length > 1) {
 			if ((!(varargs[1] instanceof Integer) && !(varargs[1] instanceof Boolean)) && (varargs[1] != null)) {
-				if (logger != null) {
-					logger.severe("getDirectories() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getDirectories() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -963,8 +591,8 @@ public class Core {
 		// Return a list of sub-directories available to sessionID in the startDir
 		// directory
 		sessionID = sessionId(sessionID);
-		String url = apiUrl(sessionID, false) + "GetDirectories?sessionID=" + pmaQ(sessionID) + "&path="
-				+ pmaQ(startDir);
+		String url = apiUrl(sessionID, false) + "GetDirectories?sessionID=" + PMA.pmaQ(sessionID) + "&path="
+				+ PMA.pmaQ(startDir);
 		try {
 			URL urlResource = new URL(url);
 			HttpURLConnection con;
@@ -974,16 +602,16 @@ public class Core {
 				con = (HttpURLConnection) urlResource.openConnection();
 			}
 			con.setRequestMethod("GET");
-			String jsonString = getJSONAsStringBuffer(con).toString();
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
 			List<String> dirs;
-			if (isJSONObject(jsonString)) {
-				JSONObject jsonResponse = getJSONResponse(jsonString);
+			if (PMA.isJSONObject(jsonString)) {
+				JSONObject jsonResponse = PMA.getJSONResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				if (jsonResponse.has("Code")) {
-					if (logger != null) {
-						logger.severe("get_directories to " + startDir + " resulted in: " + jsonResponse.get("Message")
-								+ " (keep in mind that startDir is case sensitive!)");
+					if (PMA.logger != null) {
+						PMA.logger.severe("get_directories to " + startDir + " resulted in: "
+								+ jsonResponse.get("Message") + " (keep in mind that startDir is case sensitive!)");
 					}
 					throw new Exception("get_directories to " + startDir + " resulted in: "
 							+ jsonResponse.get("Message") + " (keep in mind that startDir is case sensitive!)");
@@ -998,7 +626,7 @@ public class Core {
 					return null;
 				}
 			} else {
-				JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+				JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				dirs = new ArrayList<>();
@@ -1023,10 +651,10 @@ public class Core {
 
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -1108,8 +736,8 @@ public class Core {
 		Integer integerRecursive = 0;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof String) && varargs[0] != null) {
-				if (logger != null) {
-					logger.severe("getSlides() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getSlides() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -1117,8 +745,8 @@ public class Core {
 		}
 		if (varargs.length > 1) {
 			if ((!(varargs[1] instanceof Integer) && !(varargs[1] instanceof Boolean)) && (varargs[1] != null)) {
-				if (logger != null) {
-					logger.severe("getSlides() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getSlides() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -1138,7 +766,8 @@ public class Core {
 		if (startDir.startsWith("/")) {
 			startDir = startDir.substring(1);
 		}
-		String url = apiUrl(sessionID, false) + "GetFiles?sessionID=" + pmaQ(sessionID) + "&path=" + pmaQ(startDir);
+		String url = apiUrl(sessionID, false) + "GetFiles?sessionID=" + PMA.pmaQ(sessionID) + "&path="
+				+ PMA.pmaQ(startDir);
 		try {
 			URL urlResource = new URL(url);
 			HttpURLConnection con;
@@ -1148,15 +777,15 @@ public class Core {
 				con = (HttpURLConnection) urlResource.openConnection();
 			}
 			con.setRequestMethod("GET");
-			String jsonString = getJSONAsStringBuffer(con).toString();
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
 			List<String> slides;
-			if (isJSONObject(jsonString)) {
-				JSONObject jsonResponse = getJSONResponse(jsonString);
+			if (PMA.isJSONObject(jsonString)) {
+				JSONObject jsonResponse = PMA.getJSONResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				if (jsonResponse.has("Code")) {
-					if (logger != null) {
-						logger.severe("get_slides from " + startDir + " resulted in: " + jsonResponse.get("Message")
+					if (PMA.logger != null) {
+						PMA.logger.severe("get_slides from " + startDir + " resulted in: " + jsonResponse.get("Message")
 								+ " (keep in mind that startDir is case sensitive!)");
 					}
 					throw new Exception("get_slides from " + startDir + " resulted in: " + jsonResponse.get("Message")
@@ -1172,7 +801,7 @@ public class Core {
 					return null;
 				}
 			} else {
-				JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+				JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				slides = new ArrayList<>();
@@ -1196,10 +825,10 @@ public class Core {
 			return slides;
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -1244,11 +873,11 @@ public class Core {
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Get the UID for a specific slide
 		sessionID = sessionId(sessionID);
-		String url = apiUrl(sessionID) + "GetUID?sessionID=" + pmaQ(sessionID) + "&path=" + pmaQ(slideRef);
-		String contents = urlReader(url);
+		String url = apiUrl(sessionID) + "GetUID?sessionID=" + PMA.pmaQ(sessionID) + "&path=" + PMA.pmaQ(slideRef);
+		String contents = PMA.urlReader(url);
 		pmaAmountOfDataDownloaded.put(sessionID, pmaAmountOfDataDownloaded.get(sessionID) + contents.length());
-		Document dom = domParser(contents);
-		return xmlToStringArray(dom).get(0);
+		Document dom = PMA.domParser(contents);
+		return PMA.xmlToStringArray(dom).get(0);
 	}
 
 	/**
@@ -1273,8 +902,8 @@ public class Core {
 		String sessionID = null;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof Boolean) && varargs[0] != null) {
-				if (logger != null) {
-					logger.severe("getFingerPrint() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getFingerPrint() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -1282,8 +911,8 @@ public class Core {
 		}
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof String) && varargs[1] != null) {
-				if (logger != null) {
-					logger.severe("getFingerPrint() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getFingerPrint() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -1292,8 +921,8 @@ public class Core {
 		// Get the fingerprint for a specific slide
 		sessionID = sessionId(sessionID);
 		String fingerprint;
-		String url = apiUrl(sessionID, false) + "GetFingerprint?sessionID=" + pmaQ(sessionID) + "&strict="
-				+ pmaQ(strict.toString()) + "&pathOrUid=" + pmaQ(slideRef);
+		String url = apiUrl(sessionID, false) + "GetFingerprint?sessionID=" + PMA.pmaQ(sessionID) + "&strict="
+				+ PMA.pmaQ(strict.toString()) + "&pathOrUid=" + PMA.pmaQ(slideRef);
 		try {
 			URL urlResource = new URL(url);
 			HttpURLConnection con;
@@ -1303,15 +932,15 @@ public class Core {
 				con = (HttpURLConnection) urlResource.openConnection();
 			}
 			con.setRequestMethod("GET");
-			String jsonString = getJSONAsStringBuffer(con).toString();
-			if (isJSONObject(jsonString)) {
-				JSONObject jsonResponse = getJSONResponse(jsonString);
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
+			if (PMA.isJSONObject(jsonString)) {
+				JSONObject jsonResponse = PMA.getJSONResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				if (jsonResponse.has("Code")) {
-					if (logger != null) {
-						logger.severe("get_fingerprint on " + slideRef + " resulted in: " + jsonResponse.get("Message")
-								+ " (keep in mind that slideRef is case sensitive!)");
+					if (PMA.logger != null) {
+						PMA.logger.severe("get_fingerprint on " + slideRef + " resulted in: "
+								+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
 					}
 					throw new Exception("get_fingerprint on " + slideRef + " resulted in: "
 							+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
@@ -1325,10 +954,10 @@ public class Core {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -1344,15 +973,6 @@ public class Core {
 		// Getting information about your Session (under construction)
 		System.out.println("Under construction");
 		return "Under construction";
-	}
-
-	/**
-	 * This method is a getter for class field pmaSessions
-	 * 
-	 * @return Value of class field pmaSessions
-	 */
-	public static Map<String, Object> sessions() {
-		return pmaSessions;
 	}
 
 	/**
@@ -1388,88 +1008,6 @@ public class Core {
 	}
 
 	/**
-	 * This method is used to create a StringBuffer from a connection URL
-	 * 
-	 * @param con http connection URL to retrieve JSON from
-	 * @return string buffer created from the connection URL
-	 */
-	public static StringBuffer getJSONAsStringBuffer(HttpURLConnection con) {
-		try {
-			BufferedReader in;
-			if (Integer.toString(con.getResponseCode()).startsWith("2")) {
-				in = new BufferedReader(new InputStreamReader(con.getInputStream(), "UTF-8"));
-			} else {
-				in = new BufferedReader(new InputStreamReader(con.getErrorStream()));
-			}
-			String inputline;
-			StringBuffer response = new StringBuffer();
-			while ((inputline = in.readLine()) != null) {
-				response.append(inputline);
-			}
-			in.close();
-			return response;
-		} catch (Exception e) {
-			e.printStackTrace();
-			if (logger != null) {
-				StringWriter sw = new StringWriter();
-				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
-			}
-			return null;
-		}
-	}
-
-	/**
-	 * This method is used to check if a json returned is an object
-	 * 
-	 * @param value json in String format
-	 * @return True if it's a JSONObject, false otherwise
-	 */
-	public static Boolean isJSONObject(String value) {
-		if (value.startsWith("{")) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-
-	/**
-	 * This method is used to check if a json returned is an array
-	 * 
-	 * @param value json in String format
-	 * @return True if it's a JSONObject, false otherwise
-	 */
-	public static Boolean isJSONArray(String value) {
-		if (value.startsWith("[")) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-
-	/**
-	 * This method is used to create a json Object out of a string
-	 * 
-	 * @param value json in String format
-	 * @return Creates a Json object from a string
-	 */
-	public static JSONObject getJSONResponse(String value) {
-		JSONObject jsonResponse = new JSONObject(value.toString());
-		return jsonResponse;
-	}
-
-	/**
-	 * This method is used to creates a json Array out of a string
-	 * 
-	 * @param value json in String format
-	 * @return Creates a Json array from a string
-	 */
-	public static JSONArray getJSONArrayResponse(String value) {
-		JSONArray jsonResponse = new JSONArray(value);
-		return jsonResponse;
-	}
-
-	/**
 	 * This method is used to get a raw image in the form of nested maps
 	 * 
 	 * @param slideRef slide's path or UID
@@ -1491,8 +1029,8 @@ public class Core {
 		}
 		if (!((Map<String, Object>) pmaSlideInfos.get(sessionID)).containsKey(slideRef)) {
 			try {
-				String url = apiUrl(sessionID, false) + "GetImageInfo?SessionID=" + pmaQ(sessionID) + "&pathOrUid="
-						+ pmaQ(slideRef);
+				String url = apiUrl(sessionID, false) + "GetImageInfo?SessionID=" + PMA.pmaQ(sessionID) + "&pathOrUid="
+						+ PMA.pmaQ(slideRef);
 				URL urlResource = new URL(url);
 				HttpURLConnection con;
 				if (url.startsWith("https")) {
@@ -1501,15 +1039,15 @@ public class Core {
 					con = (HttpURLConnection) urlResource.openConnection();
 				}
 				con.setRequestMethod("GET");
-				String jsonString = getJSONAsStringBuffer(con).toString();
-				if (isJSONObject(jsonString)) {
-					JSONObject jsonResponse = getJSONResponse(jsonString);
+				String jsonString = PMA.getJSONAsStringBuffer(con).toString();
+				if (PMA.isJSONObject(jsonString)) {
+					JSONObject jsonResponse = PMA.getJSONResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					if (jsonResponse.has("Code")) {
-						if (logger != null) {
-							logger.severe("ImageInfo to " + slideRef + " resulted in: " + jsonResponse.get("Message")
-									+ " (keep in mind that slideRef is case sensitive!)");
+						if (PMA.logger != null) {
+							PMA.logger.severe("ImageInfo to " + slideRef + " resulted in: "
+									+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
 						}
 						throw new Exception("ImageInfo to " + slideRef + " resulted in: " + jsonResponse.get("Message")
 								+ " (keep in mind that slideRef is case sensitive!)");
@@ -1542,10 +1080,10 @@ public class Core {
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
-				if (logger != null) {
+				if (PMA.logger != null) {
 					StringWriter sw = new StringWriter();
 					e.printStackTrace(new PrintWriter(sw));
-					logger.severe(sw.toString());
+					PMA.logger.severe(sw.toString());
 				}
 				return null;
 			}
@@ -1601,14 +1139,14 @@ public class Core {
 				OutputStream os = con.getOutputStream();
 				os.write(input.getBytes("UTF-8"));
 				os.close();
-				String jsonString = getJSONAsStringBuffer(con).toString();
-				if (isJSONObject(jsonString)) {
-					JSONObject jsonResponse = getJSONResponse(jsonString);
+				String jsonString = PMA.getJSONAsStringBuffer(con).toString();
+				if (PMA.isJSONObject(jsonString)) {
+					JSONObject jsonResponse = PMA.getJSONResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					if (jsonResponse.has("Code")) {
-						if (logger != null) {
-							logger.severe("ImageInfos to " + slideRefs.toString() + " resulted in: "
+						if (PMA.logger != null) {
+							PMA.logger.severe("ImageInfos to " + slideRefs.toString() + " resulted in: "
 									+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
 						}
 						throw new Exception("ImageInfos to " + slideRefs.toString() + " resulted in: "
@@ -1631,7 +1169,7 @@ public class Core {
 						return null;
 					}
 				} else {
-					JSONArray jsonArrayResponse = getJSONArrayResponse(jsonString);
+					JSONArray jsonArrayResponse = PMA.getJSONArrayResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonArrayResponse.length());
 					for (int i = 0; i < jsonArrayResponse.length(); i++) {
@@ -1654,10 +1192,10 @@ public class Core {
 				return results;
 			} catch (Exception e) {
 				e.printStackTrace();
-				if (logger != null) {
+				if (PMA.logger != null) {
 					StringWriter sw = new StringWriter();
 					e.printStackTrace(new PrintWriter(sw));
-					logger.severe(sw.toString());
+					PMA.logger.severe(sw.toString());
 				}
 				return null;
 			}
@@ -1699,11 +1237,11 @@ public class Core {
 				System.out.print("Something went wrong consulting the MaxZoomLevel key in info Map; value ="
 						+ info.get("MaxZoomLevel").toString());
 				e.printStackTrace();
-				if (logger != null) {
+				if (PMA.logger != null) {
 					StringWriter sw = new StringWriter();
 					e.printStackTrace(new PrintWriter(sw));
-					logger.severe(sw.toString());
-					logger.severe("Something went wrong consulting the MaxZoomLevel key in info Map; value ="
+					PMA.logger.severe(sw.toString());
+					PMA.logger.severe("Something went wrong consulting the MaxZoomLevel key in info Map; value ="
 							+ info.get("MaxZoomLevel").toString());
 				}
 				return 0;
@@ -1715,11 +1253,11 @@ public class Core {
 				System.out.print("Something went wrong consulting the NumberOfZoomLevels key in info Map; value ="
 						+ info.get("NumberOfZoomLevels").toString());
 				e.printStackTrace();
-				if (logger != null) {
+				if (PMA.logger != null) {
 					StringWriter sw = new StringWriter();
 					e.printStackTrace(new PrintWriter(sw));
-					logger.severe(sw.toString());
-					logger.severe("Something went wrong consulting the NumberOfZoomLevels key in info Map; value ="
+					PMA.logger.severe(sw.toString());
+					PMA.logger.severe("Something went wrong consulting the NumberOfZoomLevels key in info Map; value ="
 							+ info.get("NumberOfZoomLevels").toString());
 				}
 				return 0;
@@ -1751,8 +1289,8 @@ public class Core {
 		Integer minNumberOfTiles = 0;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof String) && varargs[0] != null) {
-				if (logger != null) {
-					logger.severe("getZoomLevelsList() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getZoomLevelsList() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -1760,8 +1298,8 @@ public class Core {
 		}
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof Integer) && varargs[1] != null) {
-				if (logger != null) {
-					logger.severe("getZoomLevelsList() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getZoomLevelsList() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -1803,8 +1341,8 @@ public class Core {
 		Integer minNumberOfTiles = 0;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof String) && varargs[0] != null) {
-				if (logger != null) {
-					logger.severe("getZoomLevelsDict() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getZoomLevelsDict() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -1812,8 +1350,8 @@ public class Core {
 		}
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof Integer) && varargs[1] != null) {
-				if (logger != null) {
-					logger.severe("getZoomLevelsDict() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getZoomLevelsDict() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -1868,8 +1406,8 @@ public class Core {
 		String sessionID = null;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof Integer) && varargs[0] != null) {
-				if (logger != null) {
-					logger.severe("getZoomLevelsDict() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getZoomLevelsDict() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -1877,8 +1415,8 @@ public class Core {
 		}
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof String) && varargs[1] != null) {
-				if (logger != null) {
-					logger.severe("getZoomLevelsDict() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getZoomLevelsDict() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -1929,8 +1467,8 @@ public class Core {
 		String sessionID = null;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof Integer) && varargs[0] != null) {
-				if (logger != null) {
-					logger.severe("getPixelDimensions() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getPixelDimensions() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -1938,8 +1476,8 @@ public class Core {
 		}
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof String) && varargs[1] != null) {
-				if (logger != null) {
-					logger.severe("getPixelDimensions() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getPixelDimensions() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -1984,8 +1522,8 @@ public class Core {
 		String sessionID = null;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof Integer) && varargs[0] != null) {
-				if (logger != null) {
-					logger.severe("getNumberOfTiles() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getNumberOfTiles() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -1993,8 +1531,8 @@ public class Core {
 		}
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof String) && varargs[1] != null) {
-				if (logger != null) {
-					logger.severe("getNumberOfTiles() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getNumberOfTiles() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2183,8 +1721,8 @@ public class Core {
 		String sessionID = null;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof Integer) && varargs[0] != null) {
-				if (logger != null) {
-					logger.severe("getMagnification() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getMagnification() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2192,8 +1730,8 @@ public class Core {
 		}
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof Boolean) && varargs[1] != null) {
-				if (logger != null) {
-					logger.severe("getMagnification() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getMagnification() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2201,8 +1739,8 @@ public class Core {
 		}
 		if (varargs.length > 2) {
 			if (!(varargs[2] instanceof String) && varargs[2] != null) {
-				if (logger != null) {
-					logger.severe("getMagnification() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getMagnification() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2244,14 +1782,15 @@ public class Core {
 		}
 		String url;
 		try {
-			url = pmaUrl(sessionID) + "barcode" + "?SessionID=" + pmaQ(sessionID) + "&pathOrUid=" + pmaQ(slideRef);
+			url = pmaUrl(sessionID) + "barcode" + "?SessionID=" + PMA.pmaQ(sessionID) + "&pathOrUid="
+					+ PMA.pmaQ(slideRef);
 			return url;
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -2286,10 +1825,10 @@ public class Core {
 			return img;
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -2316,8 +1855,8 @@ public class Core {
 			slideRef = slideRef.substring(1);
 		}
 		String barcode;
-		String url = apiUrl(sessionID, false) + "GetBarcodeText?sessionID=" + pmaQ(sessionID) + "&pathOrUid="
-				+ pmaQ(slideRef);
+		String url = apiUrl(sessionID, false) + "GetBarcodeText?sessionID=" + PMA.pmaQ(sessionID) + "&pathOrUid="
+				+ PMA.pmaQ(slideRef);
 		try {
 			URL urlResource = new URL(url);
 			HttpURLConnection con;
@@ -2327,15 +1866,15 @@ public class Core {
 				con = (HttpURLConnection) urlResource.openConnection();
 			}
 			con.setRequestMethod("GET");
-			String jsonString = getJSONAsStringBuffer(con).toString();
-			if (isJSONObject(jsonString)) {
-				JSONObject jsonResponse = getJSONResponse(jsonString);
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
+			if (PMA.isJSONObject(jsonString)) {
+				JSONObject jsonResponse = PMA.getJSONResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				if (jsonResponse.has("Code")) {
-					if (logger != null) {
-						logger.severe("get_barcode_text on " + slideRef + " resulted in: " + jsonResponse.get("Message")
-								+ " (keep in mind that slideRef is case sensitive!)");
+					if (PMA.logger != null) {
+						PMA.logger.severe("get_barcode_text on " + slideRef + " resulted in: "
+								+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
 					}
 					throw new Exception("get_barcode_text on " + slideRef + " resulted in: "
 							+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
@@ -2349,10 +1888,10 @@ public class Core {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -2405,10 +1944,10 @@ public class Core {
 			return img;
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -2442,8 +1981,8 @@ public class Core {
 		Integer width = 0;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof String) && varargs[0] != null) {
-				if (logger != null) {
-					logger.severe("getThumbnailUrl() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getThumbnailUrl() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2451,8 +1990,8 @@ public class Core {
 		}
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof Integer) && varargs[1] != null) {
-				if (logger != null) {
-					logger.severe("getThumbnailUrl() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getThumbnailUrl() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2460,8 +1999,8 @@ public class Core {
 		}
 		if (varargs.length > 2) {
 			if (!(varargs[2] instanceof Integer) && varargs[2] != null) {
-				if (logger != null) {
-					logger.severe("getThumbnailUrl() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getThumbnailUrl() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2474,15 +2013,16 @@ public class Core {
 		}
 		String url;
 		try {
-			url = pmaUrl(sessionID) + "thumbnail" + "?SessionID=" + pmaQ(sessionID) + "&pathOrUid=" + pmaQ(slideRef)
-					+ ((height > 0) ? "&h=" + height.toString() : "") + ((width > 0) ? "&w=" + width.toString() : "");
+			url = pmaUrl(sessionID) + "thumbnail" + "?SessionID=" + PMA.pmaQ(sessionID) + "&pathOrUid="
+					+ PMA.pmaQ(slideRef) + ((height > 0) ? "&h=" + height.toString() : "")
+					+ ((width > 0) ? "&w=" + width.toString() : "");
 			return url;
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -2516,8 +2056,8 @@ public class Core {
 		Integer width = 0;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof String) && varargs[0] != null) {
-				if (logger != null) {
-					logger.severe("getThumbnailImage() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getThumbnailImage() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2525,8 +2065,8 @@ public class Core {
 		}
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof Integer) && varargs[1] != null) {
-				if (logger != null) {
-					logger.severe("getThumbnailImage() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getThumbnailImage() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2534,8 +2074,8 @@ public class Core {
 		}
 		if (varargs.length > 2) {
 			if (!(varargs[2] instanceof Integer) && varargs[2] != null) {
-				if (logger != null) {
-					logger.severe("getThumbnailImage() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getThumbnailImage() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2556,10 +2096,10 @@ public class Core {
 			return img;
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -2613,8 +2153,8 @@ public class Core {
 		Integer quality = 100;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof Integer) && varargs[0] != null) {
-				if (logger != null) {
-					logger.severe("getTile() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getTile() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2622,8 +2162,8 @@ public class Core {
 		}
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof Integer) && varargs[1] != null) {
-				if (logger != null) {
-					logger.severe("getTile() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getTile() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2631,8 +2171,8 @@ public class Core {
 		}
 		if (varargs.length > 2) {
 			if (!(varargs[2] instanceof Integer) && varargs[2] != null) {
-				if (logger != null) {
-					logger.severe("getTile() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getTile() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2640,8 +2180,8 @@ public class Core {
 		}
 		if (varargs.length > 3) {
 			if (!(varargs[3] instanceof Integer) && varargs[3] != null) {
-				if (logger != null) {
-					logger.severe("getTile() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getTile() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2649,8 +2189,8 @@ public class Core {
 		}
 		if (varargs.length > 4) {
 			if (!(varargs[4] instanceof String) && varargs[4] != null) {
-				if (logger != null) {
-					logger.severe("getTile() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getTile() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2658,8 +2198,8 @@ public class Core {
 		}
 		if (varargs.length > 5) {
 			if (!(varargs[5] instanceof String) && varargs[5] != null) {
-				if (logger != null) {
-					logger.severe("getTile() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getTile() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2667,8 +2207,8 @@ public class Core {
 		}
 		if (varargs.length > 6) {
 			if (!(varargs[6] instanceof Integer) && varargs[6] != null) {
-				if (logger != null) {
-					logger.severe("getTile() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getTile() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2689,15 +2229,15 @@ public class Core {
 		String url;
 		url = pmaUrl(sessionID);
 		if (url == null) {
-			if (logger != null) {
-				logger.severe("Unable to determine the PMA.core instance belonging to " + sessionID);
+			if (PMA.logger != null) {
+				PMA.logger.severe("Unable to determine the PMA.core instance belonging to " + sessionID);
 			}
 			throw new Exception("Unable to determine the PMA.core instance belonging to " + sessionID);
 		}
-		url = "tile" + "?SessionID=" + pmaQ(sessionID) + "&channels=" + pmaQ("0") + "&layer=" + zStack.toString()
-				+ "&timeframe=" + pmaQ("0") + "&layer=" + pmaQ("0") + "&pathOrUid=" + pmaQ(slideRef) + "&x="
-				+ x.toString() + "&y=" + y.toString() + "&z=" + zoomLevel.toString() + "&format=" + pmaQ(format)
-				+ "&quality=" + pmaQ(quality.toString()) + "&cache="
+		url = "tile" + "?SessionID=" + PMA.pmaQ(sessionID) + "&channels=" + PMA.pmaQ("0") + "&layer="
+				+ zStack.toString() + "&timeframe=" + PMA.pmaQ("0") + "&layer=" + PMA.pmaQ("0") + "&pathOrUid="
+				+ PMA.pmaQ(slideRef) + "&x=" + x.toString() + "&y=" + y.toString() + "&z=" + zoomLevel.toString()
+				+ "&format=" + PMA.pmaQ(format) + "&quality=" + PMA.pmaQ(quality.toString()) + "&cache="
 				+ pmaUseCacheWhenRetrievingTiles.toString().toLowerCase();
 		try {
 			URL urlResource = new URL(url);
@@ -2708,10 +2248,10 @@ public class Core {
 			return img;
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -2775,8 +2315,8 @@ public class Core {
 		Integer quality = 100;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof Integer) && varargs[0] != null) {
-				if (logger != null) {
-					logger.severe("getTiles() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getTiles() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2784,8 +2324,8 @@ public class Core {
 		}
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof Integer) && varargs[1] != null) {
-				if (logger != null) {
-					logger.severe("getTiles() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getTiles() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2793,8 +2333,8 @@ public class Core {
 		}
 		if (varargs.length > 2) {
 			if (!(varargs[2] instanceof Integer) && varargs[2] != null) {
-				if (logger != null) {
-					logger.severe("getTiles() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getTiles() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2802,8 +2342,8 @@ public class Core {
 		}
 		if (varargs.length > 3) {
 			if (!(varargs[3] instanceof Integer) && varargs[3] != null) {
-				if (logger != null) {
-					logger.severe("getTiles() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getTiles() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2811,8 +2351,8 @@ public class Core {
 		}
 		if (varargs.length > 4) {
 			if (!(varargs[4] instanceof Integer) && varargs[4] != null) {
-				if (logger != null) {
-					logger.severe("getTiles() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getTiles() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2820,8 +2360,8 @@ public class Core {
 		}
 		if (varargs.length > 5) {
 			if (!(varargs[5] instanceof Integer) && varargs[5] != null) {
-				if (logger != null) {
-					logger.severe("getTiles() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getTiles() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2829,8 +2369,8 @@ public class Core {
 		}
 		if (varargs.length > 6) {
 			if (!(varargs[6] instanceof String) && varargs[6] != null) {
-				if (logger != null) {
-					logger.severe("getTiles() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getTiles() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2838,8 +2378,8 @@ public class Core {
 		}
 		if (varargs.length > 7) {
 			if (!(varargs[7] instanceof String) && varargs[7] != null) {
-				if (logger != null) {
-					logger.severe("getTiles() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getTiles() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2847,8 +2387,8 @@ public class Core {
 		}
 		if (varargs.length > 8) {
 			if (!(varargs[8] instanceof Integer) && varargs[8] != null) {
-				if (logger != null) {
-					logger.severe("getTiles() : Illegal argument");
+				if (PMA.logger != null) {
+					PMA.logger.severe("getTiles() : Illegal argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2904,10 +2444,10 @@ public class Core {
 					return getTile(varSlideRef, x, y, varZoomLevel, varZStack, varSessionID, varFormat, varQualty);
 				} catch (Exception e) {
 					e.printStackTrace();
-					if (logger != null) {
+					if (PMA.logger != null) {
 						StringWriter sw = new StringWriter();
 						e.printStackTrace(new PrintWriter(sw));
-						logger.severe(sw.toString());
+						PMA.logger.severe(sw.toString());
 					}
 					return null;
 				}
@@ -2935,8 +2475,8 @@ public class Core {
 		if (slideRef.startsWith("/")) {
 			slideRef = slideRef.substring(1);
 		}
-		String url = apiUrl(sessionID, false) + "GetFormSubmissions?sessionID=" + pmaQ(sessionID) + "&pathOrUids="
-				+ pmaQ(slideRef);
+		String url = apiUrl(sessionID, false) + "GetFormSubmissions?sessionID=" + PMA.pmaQ(sessionID) + "&pathOrUids="
+				+ PMA.pmaQ(slideRef);
 		Map<String, String> forms = new HashMap<>();
 		Map<String, String> allForms = getAvailableForms(slideRef, sessionID);
 		try {
@@ -2948,15 +2488,15 @@ public class Core {
 				con = (HttpURLConnection) urlResource.openConnection();
 			}
 			con.setRequestMethod("GET");
-			String jsonString = getJSONAsStringBuffer(con).toString();
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
 			if (jsonString != null && jsonString.length() > 0) {
-				if (isJSONObject(jsonString)) {
-					JSONObject jsonResponse = getJSONResponse(jsonString);
+				if (PMA.isJSONObject(jsonString)) {
+					JSONObject jsonResponse = PMA.getJSONResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					if (jsonResponse.has("Code")) {
-						if (logger != null) {
-							logger.severe("getSubmittedForms on  " + slideRef + " resulted in: "
+						if (PMA.logger != null) {
+							PMA.logger.severe("getSubmittedForms on  " + slideRef + " resulted in: "
 									+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
 						}
 						throw new Exception("getSubmittedForms on  " + slideRef + " resulted in: "
@@ -2965,7 +2505,7 @@ public class Core {
 						forms = null;
 					}
 				} else {
-					JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+					JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					for (int i = 0; i < jsonResponse.length(); i++) {
@@ -2984,10 +2524,10 @@ public class Core {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -3014,8 +2554,8 @@ public class Core {
 			slideRef = slideRef.substring(1);
 		}
 		JSONArray data; // new HashMap<>();
-		String url = apiUrl(sessionID, false) + "GetFormSubmissions?sessionID=" + pmaQ(sessionID) + "&pathOrUids="
-				+ pmaQ(slideRef);
+		String url = apiUrl(sessionID, false) + "GetFormSubmissions?sessionID=" + PMA.pmaQ(sessionID) + "&pathOrUids="
+				+ PMA.pmaQ(slideRef);
 		try {
 			URL urlResource = new URL(url);
 			HttpURLConnection con;
@@ -3025,15 +2565,15 @@ public class Core {
 				con = (HttpURLConnection) urlResource.openConnection();
 			}
 			con.setRequestMethod("GET");
-			String jsonString = getJSONAsStringBuffer(con).toString();
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
 			if (jsonString != null && jsonString.length() > 0) {
-				if (isJSONObject(jsonString)) {
-					JSONObject jsonResponse = getJSONResponse(jsonString);
+				if (PMA.isJSONObject(jsonString)) {
+					JSONObject jsonResponse = PMA.getJSONResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					if (jsonResponse.has("Code")) {
-						if (logger != null) {
-							logger.severe("getSubmittedFormData on  " + slideRef + " resulted in: "
+						if (PMA.logger != null) {
+							PMA.logger.severe("getSubmittedFormData on  " + slideRef + " resulted in: "
 									+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
 						}
 						throw new Exception("getSubmittedFormData on  " + slideRef + " resulted in: "
@@ -3042,7 +2582,7 @@ public class Core {
 						data = null;
 					}
 				} else {
-					JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+					JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					data = jsonResponse;
@@ -3054,10 +2594,10 @@ public class Core {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -3087,7 +2627,7 @@ public class Core {
 		}
 		sessionID = sessionId(sessionID);
 		Map<String, String> formDef = new HashMap<>();
-		String url = apiUrl(sessionID, false) + "GetFormDefinitions?sessionID=" + pmaQ(sessionID);
+		String url = apiUrl(sessionID, false) + "GetFormDefinitions?sessionID=" + PMA.pmaQ(sessionID);
 		try {
 			URL urlResource = new URL(url);
 			HttpURLConnection con;
@@ -3097,22 +2637,22 @@ public class Core {
 				con = (HttpURLConnection) urlResource.openConnection();
 			}
 			con.setRequestMethod("GET");
-			String jsonString = getJSONAsStringBuffer(con).toString();
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
 			if (jsonString != null && jsonString.length() > 0) {
-				if (isJSONObject(jsonString)) {
-					JSONObject jsonResponse = getJSONResponse(jsonString);
+				if (PMA.isJSONObject(jsonString)) {
+					JSONObject jsonResponse = PMA.getJSONResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					if (jsonResponse.has("Code")) {
-						if (logger != null) {
-							logger.severe("" + jsonResponse.get("Message") + "");
+						if (PMA.logger != null) {
+							PMA.logger.severe("" + jsonResponse.get("Message") + "");
 						}
 						throw new Exception("" + jsonResponse.get("Message") + "");
 					} else {
 						formDef = null;
 					}
 				} else {
-					JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+					JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					for (int i = 0; i < jsonResponse.length(); i++) {
@@ -3132,10 +2672,10 @@ public class Core {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -3173,9 +2713,9 @@ public class Core {
 			}
 			String dir = FilenameUtils.getFullPath(slideRef).substring(0,
 					FilenameUtils.getFullPath(slideRef).length() - 1);
-			url = apiUrl(sessionID, false) + "GetForms?sessionID=" + pmaQ(sessionID) + "&path=" + pmaQ(dir);
+			url = apiUrl(sessionID, false) + "GetForms?sessionID=" + PMA.pmaQ(sessionID) + "&path=" + PMA.pmaQ(dir);
 		} else {
-			url = apiUrl(sessionID, false) + "GetForms?sessionID=" + pmaQ(sessionID);
+			url = apiUrl(sessionID, false) + "GetForms?sessionID=" + PMA.pmaQ(sessionID);
 		}
 		try {
 			URL urlResource = new URL(url);
@@ -3186,15 +2726,15 @@ public class Core {
 				con = (HttpURLConnection) urlResource.openConnection();
 			}
 			con.setRequestMethod("GET");
-			String jsonString = getJSONAsStringBuffer(con).toString();
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
 			if (jsonString != null && jsonString.length() > 0) {
-				if (isJSONObject(jsonString)) {
-					JSONObject jsonResponse = getJSONResponse(jsonString);
+				if (PMA.isJSONObject(jsonString)) {
+					JSONObject jsonResponse = PMA.getJSONResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					if (jsonResponse.has("Code")) {
-						if (logger != null) {
-							logger.severe("getAvailableForms on  " + slideRef + " resulted in: "
+						if (PMA.logger != null) {
+							PMA.logger.severe("getAvailableForms on  " + slideRef + " resulted in: "
 									+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
 						}
 						throw new Exception("getAvailableForms on  " + slideRef + " resulted in: "
@@ -3203,7 +2743,7 @@ public class Core {
 						forms = null;
 					}
 				} else {
-					JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+					JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					for (int i = 0; i < jsonResponse.length(); i++) {
@@ -3216,10 +2756,10 @@ public class Core {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -3268,8 +2808,8 @@ public class Core {
 		// String dir = FilenameUtils.getFullPath(slideRef).substring(0,
 		// FilenameUtils.getFullPath(slideRef).length() - 1);
 		JSONArray data;
-		String url = apiUrl(sessionID, false) + "GetAnnotations?sessionID=" + pmaQ(sessionID) + "&pathOrUid="
-				+ pmaQ(slideRef);
+		String url = apiUrl(sessionID, false) + "GetAnnotations?sessionID=" + PMA.pmaQ(sessionID) + "&pathOrUid="
+				+ PMA.pmaQ(slideRef);
 		try {
 			URL urlResource = new URL(url);
 			HttpURLConnection con;
@@ -3279,15 +2819,15 @@ public class Core {
 				con = (HttpURLConnection) urlResource.openConnection();
 			}
 			con.setRequestMethod("GET");
-			String jsonString = getJSONAsStringBuffer(con).toString();
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
 			if (jsonString != null && jsonString.length() > 0) {
-				if (isJSONObject(jsonString)) {
-					JSONObject jsonResponse = getJSONResponse(jsonString);
+				if (PMA.isJSONObject(jsonString)) {
+					JSONObject jsonResponse = PMA.getJSONResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					if (jsonResponse.has("Code")) {
-						if (logger != null) {
-							logger.severe("getAnnotations() on  " + slideRef + " resulted in: "
+						if (PMA.logger != null) {
+							PMA.logger.severe("getAnnotations() on  " + slideRef + " resulted in: "
 									+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
 						}
 						throw new Exception("getAnnotations() on  " + slideRef + " resulted in: "
@@ -3296,7 +2836,7 @@ public class Core {
 						data = null;
 					}
 				} else {
-					JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+					JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					data = jsonResponse;
@@ -3306,10 +2846,10 @@ public class Core {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -3345,28 +2885,30 @@ public class Core {
 		}
 		String url;
 		if (sessionID == pmaCoreLiteSessionID) {
-			url = "http://free.pathomation.com/pma-view-lite/?path=" + pmaQ(slideRef);
+			url = "http://free.pathomation.com/pma-view-lite/?path=" + PMA.pmaQ(slideRef);
 		} else {
 			url = pmaUrl(sessionID);
 			if (url == null) {
-				if (logger != null) {
-					logger.severe("Unable to determine the PMA.core instance belonging to " + sessionID);
+				if (PMA.logger != null) {
+					PMA.logger.severe("Unable to determine the PMA.core instance belonging to " + sessionID);
 				}
 				throw new Exception("Unable to determine the PMA.core instance belonging to " + sessionID);
 			}
-			url = "viewer/index.htm" + "?sessionID=" + pmaQ(sessionID) + "^&pathOrUid=" + pmaQ(slideRef); // note the ^&
-																											// to escape
-																											// a regular
-																											// &
+			url = "viewer/index.htm" + "?sessionID=" + PMA.pmaQ(sessionID) + "^&pathOrUid=" + PMA.pmaQ(slideRef); // note
+																													// the
+																													// ^&
+			// to escape
+			// a regular
+			// &
 		}
 		try {
 			Runtime.getRuntime().exec(osCmd + url);
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 		}
 	}
@@ -3393,8 +2935,8 @@ public class Core {
 		if (slideRef.startsWith("/")) {
 			slideRef = slideRef.substring(1);
 		}
-		String url = apiUrl(sessionID, false) + "EnumerateAllFilesForSlide?sessionID=" + pmaQ(sessionID) + "&pathOrUid="
-				+ pmaQ(slideRef);
+		String url = apiUrl(sessionID, false) + "EnumerateAllFilesForSlide?sessionID=" + PMA.pmaQ(sessionID)
+				+ "&pathOrUid=" + PMA.pmaQ(slideRef);
 		try {
 			URL urlResource = new URL(url);
 			HttpURLConnection con;
@@ -3404,14 +2946,14 @@ public class Core {
 				con = (HttpURLConnection) urlResource.openConnection();
 			}
 			con.setRequestMethod("GET");
-			String jsonString = getJSONAsStringBuffer(con).toString();
-			if (isJSONObject(jsonString)) {
-				JSONObject jsonResponse = getJSONResponse(jsonString);
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
+			if (PMA.isJSONObject(jsonString)) {
+				JSONObject jsonResponse = PMA.getJSONResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				if (jsonResponse.has("Code")) {
-					if (logger != null) {
-						logger.severe("get_slides from " + slideRef + " resulted in: " + jsonResponse.get("Message")
+					if (PMA.logger != null) {
+						PMA.logger.severe("get_slides from " + slideRef + " resulted in: " + jsonResponse.get("Message")
 								+ " (keep in mind that slideRef is case sensitive!)");
 					}
 					throw new Exception("get_slides from " + slideRef + " resulted in: " + jsonResponse.get("Message")
@@ -3427,7 +2969,7 @@ public class Core {
 					return null;
 				}
 			} else {
-				JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+				JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				List<String> files = new ArrayList<>();
@@ -3439,10 +2981,10 @@ public class Core {
 
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -3471,8 +3013,8 @@ public class Core {
 		if (slideRef.startsWith("/")) {
 			slideRef = slideRef.substring(1);
 		}
-		String url = apiUrl(sessionID, false) + "GetFilenames?sessionID=" + pmaQ(sessionID) + "&pathOrUid="
-				+ pmaQ(slideRef);
+		String url = apiUrl(sessionID, false) + "GetFilenames?sessionID=" + PMA.pmaQ(sessionID) + "&pathOrUid="
+				+ PMA.pmaQ(slideRef);
 		try {
 			URL urlResource = new URL(url);
 			HttpURLConnection con;
@@ -3482,9 +3024,9 @@ public class Core {
 				con = (HttpURLConnection) urlResource.openConnection();
 			}
 			con.setRequestMethod("GET");
-			String jsonString = getJSONAsStringBuffer(con).toString();
-			if (isJSONArray(jsonString)) {
-				JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
+			if (PMA.isJSONArray(jsonString)) {
+				JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				List<Map<String, String>> result = new ArrayList<>();
@@ -3500,90 +3042,20 @@ public class Core {
 				}
 				return result;
 			} else {
-				if (logger != null) {
-					logger.severe("enumerateFilesForSlidePMACore() : Failure to get related files");
+				if (PMA.logger != null) {
+					PMA.logger.severe("enumerateFilesForSlidePMACore() : Failure to get related files");
 				}
 				return null;
 			}
 
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
 	}
-
-	/**
-	 * This method is used to remove the drive name from a path returned by pma_java
-	 * SDK why is this needed : for PMA.core(.lite) the path sent should include the
-	 * drive name (if not blank) and the paths returned also include the drive name
-	 * e.g. "Primary Disk (C:)/samples" it's necessary to remove drive name from the
-	 * path's root to be able to use these paths in file system
-	 * 
-	 * @param lst List of paths (directories, root directories, slides...)
-	 * @return List of paths formatted to remove the Disk label if it exists
-	 */
-	public static List<String> removeDriveName(List<String> lst) {
-		try {
-			for (int i = 0; i < lst.size(); i++) {
-				String ss = lst.get(i);
-				String root = ss.split("/")[0];
-				if (root.matches(".*\\s\\(..\\)")) {
-					if (root.equals(ss)) {
-						ss = root.substring(root.length() - 3, root.length() - 1);
-					} else {
-						ss = root.substring(root.length() - 3, root.length() - 1) + "/"
-								+ ss.substring(root.length() + 1);
-					}
-					lst.set(i, ss);
-				}
-			}
-			return lst;
-		} catch (Exception e) {
-			e.printStackTrace();
-			if (logger != null) {
-				StringWriter sw = new StringWriter();
-				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
-			}
-			return null;
-		}
-	}
-
-	/**
-	 * This method is used to add the drive name to a path before sending it to
-	 * pma_java SDK why is this needed? : for PMA.core(.lite) the path sent should
-	 * include the drive name (if not blank) and the paths returned also include the
-	 * drive name e.g. "Primary Disk (C:)/samples" it's necessary to add drive name
-	 * to the path's root to be able to make a valid request to PMA.core(.lite)
-	 * 
-	 * @param value path to be formatted
-	 * @return Path formatted to include the Disk label if it doesn't exist
-	 */
-	public static String createPathWithLabel(String value) {
-		Path path = Paths.get(value);
-		String root = path.getRoot().toString();
-		String displayName;
-		// if the label is already stored, no need to fetch it again
-		// this operation is specially slow!
-		if (diskLabels != null && diskLabels.containsKey(root)) {
-			displayName = diskLabels.get(root).toString();
-		} else {
-			displayName = FileSystemView.getFileSystemView().getSystemDisplayName(new File(root));
-			diskLabels.put(root, displayName);
-		}
-		// "Local Disk (x:)" refers to a blank disk name but Windows add the default
-		// label "Local Disk"
-		// we need to omit this case since for it PMA.core(.lite) would require a drive
-		// letter instead of a drive name + letter
-		if (displayName.matches(".*\\s\\(..\\)") && !displayName.matches("Local\\sDisk\\s\\(..\\)")) {
-			value = displayName + "/" + value.substring(root.length());
-		}
-		return value;
-	}
-
 }
