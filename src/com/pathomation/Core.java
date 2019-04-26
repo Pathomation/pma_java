@@ -40,7 +40,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.58
+ * @version 2.0.0.59
  */
 public class Core {
 	/**
@@ -70,7 +70,9 @@ public class Core {
 		}
 	};
 
-	// Object Mapper for Jackson library
+	/**
+	 * Object Mapper for Jackson library
+	 */
 	private static ObjectMapper objectMapper = new ObjectMapper();
 
 	/**

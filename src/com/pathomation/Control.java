@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.logging.Logger;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -37,9 +36,6 @@ public class Control {
 		HIDDEN, CLINICAL_INFORMATION_EDIT
 	}
 
-	// for logging purposes
-	public static Logger logger = null;
-
 	/**
 	 * This method is used to get version info from PMA.control instance running at
 	 * pmacontrolURL
@@ -58,10 +54,10 @@ public class Control {
 			return jsonString.substring(1, jsonString.length() - 1);
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -83,10 +79,10 @@ public class Control {
 			return jsonResponse;
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -224,10 +220,10 @@ public class Control {
 			return participants;
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -364,10 +360,10 @@ public class Control {
 			return jsonString;
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -423,10 +419,10 @@ public class Control {
 			return jsonString;
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -482,10 +478,10 @@ public class Control {
 			return jsonString;
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -507,10 +503,10 @@ public class Control {
 					getTrainingSessionTitlesDict(pmaControlURL, pmaControlProjectID, pmaCoreSessionID).values());
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -541,10 +537,10 @@ public class Control {
 			return map;
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -619,10 +615,10 @@ public class Control {
 			return jsonResponse;
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -644,10 +640,10 @@ public class Control {
 					getCaseCollectionTitlesDict(pmaControlURL, pmaControlProjectID, pmaCoreSessionID).values());
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -702,10 +698,10 @@ public class Control {
 			return map;
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -805,10 +801,10 @@ public class Control {
 			return jsonResponse;
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -827,10 +823,10 @@ public class Control {
 			return new ArrayList<String>(getProjectTitlesDict(pmaControlURL, pmaCoreSessionID).values());
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -854,10 +850,10 @@ public class Control {
 			return map;
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
@@ -903,10 +899,10 @@ public class Control {
 			return null;
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (logger != null) {
+			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				logger.severe(sw.toString());
+				PMA.logger.severe(sw.toString());
 			}
 			return null;
 		}
