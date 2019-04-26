@@ -315,7 +315,7 @@ public class PMA {
 	 * @param value json in String format
 	 * @return Creates a Json object from a string
 	 */
-	public static JSONObject getJSONResponse(String value) {
+	public static JSONObject getJSONObjectResponse(String value) {
 		JSONObject jsonResponse = new JSONObject(value.toString());
 		return jsonResponse;
 	}

@@ -40,7 +40,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.59
+ * @version 2.0.0.60
  */
 public class Core {
 	/**
@@ -410,8 +410,8 @@ public class Core {
 			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
 			String sessionID = null;
 			if (PMA.isJSONObject(jsonString)) {
-				JSONObject jsonResponse = PMA.getJSONResponse(jsonString);
-				if (!jsonResponse.getString("Success").toLowerCase().equals("true")) {
+				JSONObject jsonResponse = PMA.getJSONObjectResponse(jsonString);
+				if (!jsonResponse.get("Success").toString().toLowerCase().equals("true")) {
 					return null;
 				} else {
 					sessionID = jsonResponse.getString("SessionId");
@@ -607,7 +607,7 @@ public class Core {
 			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
 			List<String> dirs;
 			if (PMA.isJSONObject(jsonString)) {
-				JSONObject jsonResponse = PMA.getJSONResponse(jsonString);
+				JSONObject jsonResponse = PMA.getJSONObjectResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				if (jsonResponse.has("Code")) {
@@ -782,7 +782,7 @@ public class Core {
 			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
 			List<String> slides;
 			if (PMA.isJSONObject(jsonString)) {
-				JSONObject jsonResponse = PMA.getJSONResponse(jsonString);
+				JSONObject jsonResponse = PMA.getJSONObjectResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				if (jsonResponse.has("Code")) {
@@ -936,7 +936,7 @@ public class Core {
 			con.setRequestMethod("GET");
 			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
 			if (PMA.isJSONObject(jsonString)) {
-				JSONObject jsonResponse = PMA.getJSONResponse(jsonString);
+				JSONObject jsonResponse = PMA.getJSONObjectResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				if (jsonResponse.has("Code")) {
@@ -1043,7 +1043,7 @@ public class Core {
 				con.setRequestMethod("GET");
 				String jsonString = PMA.getJSONAsStringBuffer(con).toString();
 				if (PMA.isJSONObject(jsonString)) {
-					JSONObject jsonResponse = PMA.getJSONResponse(jsonString);
+					JSONObject jsonResponse = PMA.getJSONObjectResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					if (jsonResponse.has("Code")) {
@@ -1143,7 +1143,7 @@ public class Core {
 				os.close();
 				String jsonString = PMA.getJSONAsStringBuffer(con).toString();
 				if (PMA.isJSONObject(jsonString)) {
-					JSONObject jsonResponse = PMA.getJSONResponse(jsonString);
+					JSONObject jsonResponse = PMA.getJSONObjectResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					if (jsonResponse.has("Code")) {
@@ -1870,7 +1870,7 @@ public class Core {
 			con.setRequestMethod("GET");
 			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
 			if (PMA.isJSONObject(jsonString)) {
-				JSONObject jsonResponse = PMA.getJSONResponse(jsonString);
+				JSONObject jsonResponse = PMA.getJSONObjectResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				if (jsonResponse.has("Code")) {
@@ -2493,7 +2493,7 @@ public class Core {
 			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
 			if (jsonString != null && jsonString.length() > 0) {
 				if (PMA.isJSONObject(jsonString)) {
-					JSONObject jsonResponse = PMA.getJSONResponse(jsonString);
+					JSONObject jsonResponse = PMA.getJSONObjectResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					if (jsonResponse.has("Code")) {
@@ -2570,7 +2570,7 @@ public class Core {
 			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
 			if (jsonString != null && jsonString.length() > 0) {
 				if (PMA.isJSONObject(jsonString)) {
-					JSONObject jsonResponse = PMA.getJSONResponse(jsonString);
+					JSONObject jsonResponse = PMA.getJSONObjectResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					if (jsonResponse.has("Code")) {
@@ -2642,7 +2642,7 @@ public class Core {
 			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
 			if (jsonString != null && jsonString.length() > 0) {
 				if (PMA.isJSONObject(jsonString)) {
-					JSONObject jsonResponse = PMA.getJSONResponse(jsonString);
+					JSONObject jsonResponse = PMA.getJSONObjectResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					if (jsonResponse.has("Code")) {
@@ -2731,7 +2731,7 @@ public class Core {
 			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
 			if (jsonString != null && jsonString.length() > 0) {
 				if (PMA.isJSONObject(jsonString)) {
-					JSONObject jsonResponse = PMA.getJSONResponse(jsonString);
+					JSONObject jsonResponse = PMA.getJSONObjectResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					if (jsonResponse.has("Code")) {
@@ -2824,7 +2824,7 @@ public class Core {
 			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
 			if (jsonString != null && jsonString.length() > 0) {
 				if (PMA.isJSONObject(jsonString)) {
-					JSONObject jsonResponse = PMA.getJSONResponse(jsonString);
+					JSONObject jsonResponse = PMA.getJSONObjectResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					if (jsonResponse.has("Code")) {
@@ -2950,7 +2950,7 @@ public class Core {
 			con.setRequestMethod("GET");
 			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
 			if (PMA.isJSONObject(jsonString)) {
-				JSONObject jsonResponse = PMA.getJSONResponse(jsonString);
+				JSONObject jsonResponse = PMA.getJSONObjectResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				if (jsonResponse.has("Code")) {
