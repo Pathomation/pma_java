@@ -42,7 +42,6 @@ public class PMA {
 
 	private static Map<String, String> urlContent = new HashMap<>();
 	private static boolean debug = false;
-	// To store the Disk labels
 	/**
 	 * Cache mechanism to store the disk names on end user's side (To interact with
 	 * PMA.start, paths should include the disk names if they are modified from

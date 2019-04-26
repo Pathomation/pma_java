@@ -159,6 +159,22 @@ public class CoreAdmin {
 	}
 
 	/**
+	 * This method is used to disconnect an admin session from a PMA.core instance
+	 * 
+	 * @param varargs Array of optional arguments
+	 *                <p>
+	 *                sessionID : First optional argument(String), default
+	 *                value(null), session's ID
+	 *                </p>
+	 * @return True if successfully disconnected, false otherwise
+	 */
+	public static boolean adminDisconnect(String... varargs) {
+		// setting the default value when argument's value is omitted
+		String admsessionID = varargs.length > 0 ? varargs[0] : null;
+		return Core.disconnect(admsessionID);
+	}
+
+	/**
 	 * This method is used to create a new directory on PMA.core
 	 * 
 	 * @param sessionID a session ID
