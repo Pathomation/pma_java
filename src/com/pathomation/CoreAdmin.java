@@ -131,8 +131,8 @@ public class CoreAdmin {
 		try {
 			String jsonString = PMA.httpGet(url, "application/json");
 			if (PMA.isJSONObject(jsonString)) {
-				JSONObject jsonResponse = PMA.getJSONResponse(jsonString);
-				if (jsonResponse.getBoolean("Success")) {
+				JSONObject jsonResponse = PMA.getJSONObjectResponse(jsonString);
+				if (jsonResponse.get("Success").toString().toLowerCase().equals("true")) {
 					String adminSessionID = jsonResponse.getString("SessionId");
 					Core.getPmaSessions().put(adminSessionID, pmaCoreURL);
 					Core.getPmaUsernames().put(adminSessionID, pmaCoreUsername);
