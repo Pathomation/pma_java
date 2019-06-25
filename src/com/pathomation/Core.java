@@ -40,7 +40,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.61
+ * @version 2.0.0.62
  */
 public class Core {
 	/**
@@ -1069,8 +1069,10 @@ public class Core {
 						// we store the map created for both the slide name & the UID
 						((Map<String, Object>) pmaSlideInfos.get(sessionID)).put(jsonResponse.getString("Filename"),
 								jsonMap);
-						((Map<String, Object>) pmaSlideInfos.get(sessionID)).put(jsonResponse.getString("UID"),
-								jsonMap);
+						if (!sessionID.equals(pmaCoreLiteSessionID)) {
+							((Map<String, Object>) pmaSlideInfos.get(sessionID)).put(jsonResponse.getString("UID"),
+									jsonMap);
+						}
 					}
 				} else {
 					// JSONArray jsonResponse = getJSONArrayResponse(jsonString);
@@ -1182,8 +1184,10 @@ public class Core {
 						// we store the map created for both the slide name & the UID
 						((Map<String, Object>) pmaSlideInfos.get(sessionID))
 								.put(jsonArrayResponse.getJSONObject(i).getString("Filename"), jsonMap);
-						((Map<String, Object>) pmaSlideInfos.get(sessionID))
-								.put(jsonArrayResponse.getJSONObject(i).getString("UID"), jsonMap);
+						if (!sessionID.equals(pmaCoreLiteSessionID)) {
+							((Map<String, Object>) pmaSlideInfos.get(sessionID))
+									.put(jsonArrayResponse.getJSONObject(i).getString("UID"), jsonMap);
+						}
 					}
 				}
 				Map<String, Map<String, Object>> results = new HashMap<String, Map<String, Object>>();
