@@ -40,7 +40,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.60
+ * @version 2.0.0.61
  */
 public class Core {
 	/**
@@ -1060,8 +1060,8 @@ public class Core {
 						// we store the map created for both the slide name & the UID
 						((Map<String, Object>) pmaSlideInfos.get(sessionID))
 								.put(jsonResponse.getJSONObject("d").optString("Filename"), jsonMap);
-						((Map<String, Object>) pmaSlideInfos.get(sessionID))
-								.put(jsonResponse.getJSONObject("d").optString("UID"), jsonMap);
+//						((Map<String, Object>) pmaSlideInfos.get(sessionID))
+//								.put(jsonResponse.getJSONObject("d").optString("UID"), jsonMap);
 					} else {
 						// we convert the Json object to a Map<String, Object>
 						Map<String, Object> jsonMap = objectMapper.readerFor(new TypeReference<Map<String, Object>>() {
@@ -1164,8 +1164,8 @@ public class Core {
 							// we store the map created for both the slide name & the UID
 							((Map<String, Object>) pmaSlideInfos.get(sessionID))
 									.put(jsonArrayResponse.getJSONObject(i).getString("Filename"), jsonMap);
-							((Map<String, Object>) pmaSlideInfos.get(sessionID))
-									.put(jsonArrayResponse.getJSONObject(i).getString("UID"), jsonMap);
+//							((Map<String, Object>) pmaSlideInfos.get(sessionID))
+//									.put(jsonArrayResponse.getJSONObject(i).getString("UID"), jsonMap);
 						}
 					} else {
 						return null;
