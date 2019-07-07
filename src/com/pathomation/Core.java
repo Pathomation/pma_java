@@ -40,7 +40,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.62
+ * @version 2.0.0.63
  */
 public class Core {
 	/**
@@ -51,7 +51,7 @@ public class Core {
 	 * So afterwards we can determine the PMA.core URL to connect to for a given
 	 * SessionID
 	 */
-	private static Map<String, Object> pmaUsernames = new HashMap<>();
+	private static Map<String, String> pmaUsernames = new HashMap<>();
 	/**
 	 * A caching mechanism for slide information; obsolete and should be improved
 	 * through httpGet()
@@ -85,7 +85,7 @@ public class Core {
 	/**
 	 * @return the pmaUsernames
 	 */
-	public static Map<String, Object> getPmaUsernames() {
+	public static Map<String, String> getPmaUsernames() {
 		return pmaUsernames;
 	}
 
@@ -967,14 +967,37 @@ public class Core {
 	}
 
 	/**
-	 * This method is under construction
+	 * This method is used to get information about a session
 	 * 
 	 * @return Information about session (Under construction)
 	 */
-	public static String whoAmI() {
+	public static Map<String, String> whoAmI(String sessionID) {
 		// Getting information about your Session (under construction)
-		System.out.println("Under construction");
-		return "Under construction";
+		sessionID = sessionId(sessionID);
+		Map<String, String> retval = null;
+		if (sessionID.equals(pmaCoreLiteSessionID)) {
+			retval = new HashMap<>();
+			retval.put("sessionID", pmaCoreLiteSessionID);
+			retval.put("username", null);
+			retval.put("url", pmaCoreLiteURL);
+			retval.put("amountOfDataDownloaded", pmaAmountOfDataDownloaded.get(pmaCoreLiteSessionID).toString());
+		} else if (sessionID != null) {
+			retval = new HashMap<>();
+			retval.put("sessionID", sessionID);
+			retval.put("username", pmaUsernames.get(sessionID));
+			retval.put("amountOfDataDownloaded", pmaAmountOfDataDownloaded.get(sessionID).toString());
+			try {
+				retval.put("url", pmaUrl(sessionID));
+			} catch (Exception e) {
+				if (PMA.logger != null) {
+					StringWriter sw = new StringWriter();
+					e.printStackTrace(new PrintWriter(sw));
+					PMA.logger.severe(sw.toString());
+				}
+			}
+		}
+
+		return retval;
 	}
 
 	/**
@@ -2920,8 +2943,7 @@ public class Core {
 	}
 
 	/**
-	 * This method is used to get sub-directories available to sessionID in the
-	 * start directory for PMA.start ONLY
+	 * This method is used to map of files related to a slide
 	 * 
 	 * @param slideRef slide's path or UID
 	 * @param varargs  Array of optional arguments
@@ -2929,7 +2951,101 @@ public class Core {
 	 *                 sessionID : First optional argument(String), default
 	 *                 value(null), session's ID
 	 *                 </p>
-	 * @return List of all files related to a selected slide
+	 * @return Map of all files related to a slide
+	 */
+	@SuppressWarnings("serial")
+	public static Map<String, Map<String, String>> getFilesForSlide(String slideRef, String... varargs) {
+		// setting the default value when argument's value is omitted
+		String sessionID = varargs.length > 0 ? varargs[0] : null;
+		// Obtain all files actually associated with a specific slide
+		// This is most relevant with slides that are defined by multiple files, like
+		// MRXS or VSI
+		sessionID = sessionId(sessionID);
+		if (slideRef.startsWith("/")) {
+			slideRef = slideRef.substring(1);
+		}
+		String url;
+		if (sessionID == pmaCoreLiteSessionID) {
+			url = apiUrl(sessionID, false) + "EnumerateAllFilesForSlide?sessionID=" + PMA.pmaQ(sessionID)
+					+ "&pathOrUid=" + PMA.pmaQ(slideRef);
+		} else {
+			url = apiUrl(sessionID, false) + "GetFilenames?sessionID=" + PMA.pmaQ(sessionID) + "&pathOrUid="
+					+ PMA.pmaQ(slideRef);
+		}
+		try {
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("GET");
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
+			JSONArray resultsArray;
+			if (PMA.isJSONObject(jsonString)) {
+				JSONObject jsonResponse = PMA.getJSONObjectResponse(jsonString);
+				pmaAmountOfDataDownloaded.put(sessionID,
+						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
+				if (jsonResponse.has("Code")) {
+					if (PMA.logger != null) {
+						PMA.logger.severe("getFilesForSlide on " + slideRef + " resulted in: "
+								+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
+					}
+					throw new Exception("getFilesForSlide on " + slideRef + " resulted in: "
+							+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
+				} else if (jsonResponse.has("d")) {
+					resultsArray = jsonResponse.getJSONArray("d");
+				} else {
+					return null;
+				}
+			} else {
+				resultsArray = PMA.getJSONArrayResponse(jsonString);
+				pmaAmountOfDataDownloaded.put(sessionID,
+						pmaAmountOfDataDownloaded.get(sessionID) + resultsArray.length());
+			}
+			Map<String, Map<String, String>> result = new HashMap<>();
+			for (int i = 0; i < resultsArray.length(); i++) {
+				final int finalI = i;
+				if (sessionID == pmaCoreLiteSessionID) {
+					result.put(resultsArray.getString(i), new HashMap<String, String>() {
+						{
+							put("Size", "0");
+							put("LastModified", null);
+						}
+					});
+				} else {
+					result.put(resultsArray.getJSONObject(finalI).getString("Path"), new HashMap<String, String>() {
+						{
+							put("Size", String.valueOf(resultsArray.getJSONObject(finalI).getLong("Size")));
+							put("LastModified", resultsArray.getJSONObject(finalI).getString("LastModified"));
+						}
+					});
+				}
+			}
+			return result;
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (PMA.logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				PMA.logger.severe(sw.toString());
+			}
+			return null;
+		}
+	}
+
+	/**
+	 * This method is used to get list of files related to a slide for PMA.start
+	 * ONLY
+	 * 
+	 * @param slideRef slide's path or UID
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return List of all files related to a selected slide for PMA.start ONLY
 	 */
 	public static List<String> enumerateFilesForSlide(String slideRef, String... varargs) {
 		// setting the default value when argument's value is omitted
@@ -2959,11 +3075,11 @@ public class Core {
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				if (jsonResponse.has("Code")) {
 					if (PMA.logger != null) {
-						PMA.logger.severe("get_slides from " + slideRef + " resulted in: " + jsonResponse.get("Message")
-								+ " (keep in mind that slideRef is case sensitive!)");
+						PMA.logger.severe("enumerateFilesForSlide on " + slideRef + " resulted in: "
+								+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
 					}
-					throw new Exception("get_slides from " + slideRef + " resulted in: " + jsonResponse.get("Message")
-							+ " (keep in mind that slideRef is case sensitive!)");
+					throw new Exception("enumerateFilesForSlide on " + slideRef + " resulted in: "
+							+ jsonResponse.get("Message") + " (keep in mind that slideRef is case sensitive!)");
 				} else if (jsonResponse.has("d")) {
 					JSONArray array = jsonResponse.getJSONArray("d");
 					List<String> files = new ArrayList<>();
@@ -2997,8 +3113,7 @@ public class Core {
 	}
 
 	/**
-	 * This method is used to get sub-directories available to sessionID in the
-	 * start directory for PMA.core ONLY
+	 * This method is used to get list of files related to a slide for PMA.core ONLY
 	 * 
 	 * @param slideRef slide's path or UID
 	 * @param varargs  Array of optional arguments
@@ -3006,7 +3121,7 @@ public class Core {
 	 *                 sessionID : First optional argument(String), default
 	 *                 value(null), session's ID
 	 *                 </p>
-	 * @return List of all files related to a selected slide
+	 * @return List of all files related to a selected slide for PMA.core ONLY
 	 */
 	@SuppressWarnings("serial")
 	public static List<Map<String, String>> enumerateFilesForSlidePMACore(String slideRef, String... varargs) {
