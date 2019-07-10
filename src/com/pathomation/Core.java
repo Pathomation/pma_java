@@ -40,7 +40,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.64
+ * @version 2.0.0.65
  */
 public class Core {
 	/**
@@ -115,6 +115,25 @@ public class Core {
 	 */
 	public static Map<String, Integer> getPmaAmountOfDataDownloaded() {
 		return pmaAmountOfDataDownloaded;
+	}
+
+	/**
+	 * This method is used to determine whether Core module runs in debugging mode
+	 * or not. When in debugging mode (flag = true), extra output is produced when
+	 * certain conditions in the code are not met
+	 * 
+	 * @param flag Debugging mode (activated or deactivated)
+	 */
+	private static void setDebugFlag(boolean flag) {
+		PMA.debug = flag;
+		if (flag) {
+			System.out.println(
+					"Debug flag enabled. You will receive extra feedback and messages from the Java SDK (like this one)");
+			if (PMA.logger != null) {
+				PMA.logger.severe(
+						"Debug flag enabled. You will receive extra feedback and messages from the Java SDK (like this one)");
+			}
+		}
 	}
 
 	/**
@@ -209,8 +228,15 @@ public class Core {
 	}
 
 	/**
-	 * This method is used to check if an instance of PMA.core is running (by
-	 * checking the existence of value "true" in a XML file)
+	 * This method is used to check to see if PMA.core.lite (server component of
+	 * PMA.start) is running at a given endpoint. if pmaCoreURL is omitted, default
+	 * check is to see if PMA.start is effectively running at localhost (defined by
+	 * pmaCoreLiteURL). note that PMA.start may not be running, while it is actually
+	 * installed. This method doesn't detect whether PMA.start is installed; merely
+	 * whether it's running! if pmaCoreURL is specified, then the method checks if
+	 * there's an instance of PMA.start (results in True), PMA.core (results in
+	 * False) or nothing (at least not a Pathomation software platform component) at
+	 * all (results in None)
 	 * 
 	 * @param varargs Array of optional arguments
 	 *                <p>
@@ -304,8 +330,15 @@ public class Core {
 	}
 
 	/**
-	 * This method is used to check if there is a PMA.core.lite or PMA.core instance
-	 * running
+	 * checks to see if PMA.core.lite (server component of PMA.start) is running at
+	 * a given endpoint. if pmaCoreURL is omitted, default check is to see if
+	 * PMA.start is effectively running at localhost (defined by pmaCoreLiteURL).
+	 * note that PMA.start may not be running, while it is actually installed. This
+	 * method doesn't detect whether PMA.start is installed; merely whether it's
+	 * running! if pmaCoreURL is specified, then the method checks if there's an
+	 * instance of PMA.start (results in True), PMA.core (results in False) or
+	 * nothing (at least not a Pathomation software platform component) at all
+	 * (results in None)
 	 * 
 	 * @param varargs Array of optional arguments
 	 *                <p>
@@ -683,8 +716,19 @@ public class Core {
 		if ((startDir == null) || (startDir.equals(""))) {
 			startDir = "/";
 		}
-		List<String> slides = getSlides(startDir, sessionID);
-		if (slides.size() > 0) {
+		List<String> slides = null;
+		try {
+			slides = getSlides(startDir, sessionID);
+		} catch (Exception e) {
+			if (PMA.debug) {
+				System.out.println("Unable to examine " + startDir);
+				if (PMA.logger != null) {
+					PMA.logger.severe("Unable to examine " + startDir);
+				}
+			}
+			return null;
+		}
+		if ((slides != null) && (slides.size() > 0)) {
 			return startDir;
 		} else {
 			if (startDir.equals("/")) {
@@ -695,15 +739,29 @@ public class Core {
 					}
 				}
 			} else {
-				for (String dir : getDirectories(startDir, sessionID)) {
-					String nonEmptyDir = getFirstNonEmptyDirectory(dir, sessionID);
-					if (nonEmptyDir != null) {
-						return nonEmptyDir;
+				boolean success = true;
+				List<String> dirs = null;
+				try {
+					dirs = getDirectories(startDir, sessionID);
+				} catch (Exception e) {
+					System.out.println("Unable to examine " + startDir);
+					if (PMA.logger != null) {
+						PMA.logger.severe(
+								"Debug flag enabled. You will receive extra feedback and messages from the Java SDK (like this one)");
+					}
+					success = false;
+				}
+				if (success) {
+					for (String dir : dirs) {
+						String nonEmptyDir = getFirstNonEmptyDirectory(dir, sessionID);
+						if (nonEmptyDir != null) {
+							return nonEmptyDir;
+						}
 					}
 				}
 			}
+			return null;
 		}
-		return null;
 	}
 
 	/**
@@ -869,12 +927,27 @@ public class Core {
 	 *                 value(null), session's ID
 	 *                 </p>
 	 * @return UID for a defined slide's path
+	 * @throws Exception if PMA.core not found
 	 */
-	public static String getUid(String slideRef, String... varargs) {
+	public static String getUid(String slideRef, String... varargs) throws Exception {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Get the UID for a specific slide
 		sessionID = sessionId(sessionID);
+		if (sessionID.equals(pmaCoreLiteSessionID)) {
+			if (isLite()) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("PMA.core.lite found running, but doesn't support UID generation. For advanced anonymization, please upgrade to PMA.core.");
+				}
+				throw new Exception("PMA.core.lite found running, but doesn't support UID generation. For advanced anonymization, please upgrade to PMA.core.");
+
+			} else {
+				if (PMA.logger != null) {
+					PMA.logger.severe("PMA.core.lite not found, and besides; it doesn't support UID generation. For advanced anonymization, please upgrade to PMA.core.");
+				}
+				throw new Exception("PMA.core.lite not found, and besides; it doesn't support UID generation. For advanced anonymization, please upgrade to PMA.core.");
+			}
+		}
 		String url = apiUrl(sessionID) + "GetUID?sessionID=" + PMA.pmaQ(sessionID) + "&path=" + PMA.pmaQ(slideRef);
 		String contents = PMA.urlReader(url);
 		pmaAmountOfDataDownloaded.put(sessionID, pmaAmountOfDataDownloaded.get(sessionID) + contents.length());
@@ -969,10 +1042,17 @@ public class Core {
 	/**
 	 * This method is used to get information about a session
 	 * 
-	 * @return Information about session (Under construction)
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return Information about a session
 	 */
-	public static Map<String, String> whoAmI(String sessionID) {
-		// Getting information about your Session (under construction)
+	public static Map<String, String> whoAmI(String... varargs) {
+		// setting the default value when arguments' value is omitted
+		String sessionID = varargs.length > 0 ? varargs[0] : null;
+		// Getting information about your Session
 		sessionID = sessionId(sessionID);
 		Map<String, String> retval = null;
 		if (sessionID.equals(pmaCoreLiteSessionID)) {
