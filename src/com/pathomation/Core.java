@@ -40,7 +40,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.67
+ * @version 2.0.0.68
  */
 public class Core {
 	/**
@@ -754,7 +754,9 @@ public class Core {
 					PMA.logger.severe("Unable to examine " + startDir);
 				}
 			}
-			return null;
+			if (!startDir.equals("/")) {
+				return null;
+			}
 		}
 		if ((slides != null) && (slides.size() > 0)) {
 			return startDir;
@@ -993,43 +995,19 @@ public class Core {
 	 * @param slideRef slide's path
 	 * @param varargs  Array of optional arguments
 	 *                 <p>
-	 *                 strict : First optional argument(Boolean), default
-	 *                 value(false), loose fingerprint if false, strict fingerprint
-	 *                 if true
-	 *                 </p>
-	 *                 <p>
-	 *                 sessionID : Second optional argument(String), default
+	 *                 sessionID : First optional argument(String), default
 	 *                 value(null), session's ID
 	 *                 </p>
 	 * @return Fingerprint of the slide
 	 */
-	public static String getFingerPrint(String slideRef, Object... varargs) {
-		// Get the fingerprint for a specific slide
-		Boolean strict = false;
-		String sessionID = null;
-		if (varargs.length > 0) {
-			if (!(varargs[0] instanceof Boolean) && varargs[0] != null) {
-				if (PMA.logger != null) {
-					PMA.logger.severe("getFingerPrint() : Illegal argument");
-				}
-				throw new IllegalArgumentException("...");
-			}
-			strict = (Boolean) varargs[0];
-		}
-		if (varargs.length > 1) {
-			if (!(varargs[1] instanceof String) && varargs[1] != null) {
-				if (PMA.logger != null) {
-					PMA.logger.severe("getFingerPrint() : Illegal argument");
-				}
-				throw new IllegalArgumentException("...");
-			}
-			sessionID = (String) varargs[1];
-		}
+	public static String getFingerPrint(String slideRef, String... varargs) {
+		// setting the default value when arguments' value is omitted
+		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Get the fingerprint for a specific slide
 		sessionID = sessionId(sessionID);
 		String fingerprint;
-		String url = apiUrl(sessionID, false) + "GetFingerprint?sessionID=" + PMA.pmaQ(sessionID) + "&strict="
-				+ PMA.pmaQ(strict.toString()) + "&pathOrUid=" + PMA.pmaQ(slideRef);
+		String url = apiUrl(sessionID, false) + "GetFingerprint?sessionID=" + PMA.pmaQ(sessionID) + "&pathOrUid="
+				+ PMA.pmaQ(slideRef);
 		try {
 			URL urlResource = new URL(url);
 			HttpURLConnection con;
