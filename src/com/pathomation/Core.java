@@ -40,7 +40,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.66
+ * @version 2.0.0.67
  */
 public class Core {
 	/**
@@ -371,13 +371,38 @@ public class Core {
 		// purposefully DON'T use helper function apiUrl() here:
 		// why? because GetVersionInfo can be invoked WITHOUT a valid SessionID;
 		// apiUrl() takes session information into account
-		String url = PMA.join(pmaCoreURL, "api/xml/GetVersionInfo");
-		String contents = "";
+		String url = PMA.join(pmaCoreURL, "api/json/GetVersionInfo");
+		String version = null;
+		if (PMA.debug) {
+			System.out.println(url);
+		}
 		try {
-			contents = PMA.urlReader(url);
-			return PMA.domParser(contents).getChildNodes().item(0).getChildNodes().item(0).getNodeValue().toString();
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("GET");
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
+			if (PMA.isJSONObject(jsonString)) {
+				JSONObject jsonResponse = PMA.getJSONObjectResponse(jsonString);
+				if (jsonResponse.has("Code")) {
+					if (PMA.logger != null) {
+						PMA.logger.severe("getVersionInfo failed : " + jsonResponse.get("Message"));
+					}
+					throw new Exception("getVersionInfo failed : " + jsonResponse.get("Message"));
+				} else if (jsonResponse.has("d")) {
+					version = jsonResponse.getString("d");
+				} else {
+					return null;
+				}
+			} else {
+				version = jsonString;
+			}
+			return version;
 		} catch (Exception e) {
-			// this happens when NO instance of PMA.core is detected
 			e.printStackTrace();
 			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
@@ -628,6 +653,9 @@ public class Core {
 		sessionID = sessionId(sessionID);
 		String url = apiUrl(sessionID, false) + "GetDirectories?sessionID=" + PMA.pmaQ(sessionID) + "&path="
 				+ PMA.pmaQ(startDir);
+		if (PMA.debug) {
+			System.out.println(url);
+		}
 		try {
 			URL urlResource = new URL(url);
 			HttpURLConnection con;
@@ -937,15 +965,19 @@ public class Core {
 		if (sessionID.equals(pmaCoreLiteSessionID)) {
 			if (isLite()) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("PMA.core.lite found running, but doesn't support UID generation. For advanced anonymization, please upgrade to PMA.core.");
+					PMA.logger.severe(
+							"PMA.core.lite found running, but doesn't support UID generation. For advanced anonymization, please upgrade to PMA.core.");
 				}
-				throw new Exception("PMA.core.lite found running, but doesn't support UID generation. For advanced anonymization, please upgrade to PMA.core.");
+				throw new Exception(
+						"PMA.core.lite found running, but doesn't support UID generation. For advanced anonymization, please upgrade to PMA.core.");
 
 			} else {
 				if (PMA.logger != null) {
-					PMA.logger.severe("PMA.core.lite not found, and besides; it doesn't support UID generation. For advanced anonymization, please upgrade to PMA.core.");
+					PMA.logger.severe(
+							"PMA.core.lite not found, and besides; it doesn't support UID generation. For advanced anonymization, please upgrade to PMA.core.");
 				}
-				throw new Exception("PMA.core.lite not found, and besides; it doesn't support UID generation. For advanced anonymization, please upgrade to PMA.core.");
+				throw new Exception(
+						"PMA.core.lite not found, and besides; it doesn't support UID generation. For advanced anonymization, please upgrade to PMA.core.");
 			}
 		}
 		String url = apiUrl(sessionID) + "GetUID?sessionID=" + PMA.pmaQ(sessionID) + "&path=" + PMA.pmaQ(slideRef);
@@ -1042,11 +1074,11 @@ public class Core {
 	/**
 	 * This method is used to get information about a session
 	 * 
-	 * @param varargs  Array of optional arguments
-	 *                 <p>
-	 *                 sessionID : First optional argument(String), default
-	 *                 value(null), session's ID
-	 *                 </p>
+	 * @param varargs Array of optional arguments
+	 *                <p>
+	 *                sessionID : First optional argument(String), default
+	 *                value(null), session's ID
+	 *                </p>
 	 * @return Information about a session
 	 */
 	public static Map<String, String> whoAmI(String... varargs) {
