@@ -7,7 +7,7 @@ package com.pathomation;
  *
  */
 public class View {
-
+	
 	/**
 	 * This method is used to get PMA.view version
 	 * 

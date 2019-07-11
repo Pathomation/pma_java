@@ -141,6 +141,15 @@ public class PMA {
 	public static void clearURLCache() {
 		urlContent = new HashMap<>();
 	}
+	
+	/**
+	 * This method is used to determine whether Core module runs in debugging mode or not.
+	 * When in debugging mode (flag = true), extra output is produced when certain conditions in the code are not met
+	 * @param flag Debugging mode (activated or deactivated)
+	 */
+	public static void setDebugFlag(Boolean flag) {
+		debug = flag;
+	}
 
 	/**
 	 * This method is used to retrieve HTML Code from URL
