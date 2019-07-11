@@ -40,7 +40,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.68
+ * @version 2.0.0.69
  */
 public class Core {
 	/**
@@ -367,7 +367,8 @@ public class Core {
 	public static String getVersionInfo(String... varargs) {
 		// setting the default value when argument's value is omitted
 		String pmaCoreURL = varargs.length > 0 ? varargs[0] : pmaCoreLiteURL;
-		// Get version info from PMA.core instance running at pmacoreURL
+		// Get version info from PMA.core instance running at pmacoreURL.
+		// Return null if PMA.core not found running at pmacoreURL endpoint
 		// purposefully DON'T use helper function apiUrl() here:
 		// why? because GetVersionInfo can be invoked WITHOUT a valid SessionID;
 		// apiUrl() takes session information into account
@@ -3019,6 +3020,9 @@ public class Core {
 			// to escape
 			// a regular
 			// &
+			if (PMA.debug) {
+				System.out.println(url);
+			}
 		}
 		try {
 			Runtime.getRuntime().exec(osCmd + url);

@@ -84,6 +84,50 @@ public class CoreAdmin {
 	}
 
 	/**
+	 * This method is under construction
+	 * @param varargs Array of optional arguments
+	 *                <p>
+	 *                method : First optional argument(String), default
+	 *                value(""), method
+	 *                </p>
+	 *                <p>
+	 *                url : Second optional argument(String), default value(null),
+	 *                url
+	 *                </p>
+	 *                <p>
+	 *                session : Third optional argument(String), default value(null),
+	 *                Session ID
+	 *                </p>
+	 * @throws Exception If something goes wrong
+	 */
+	public static void checkForPMAStart(String... varargs) throws Exception {
+		// setting the default values when arguments' values are omitted
+		String method = varargs.length > 0 ? varargs[0] : "";
+		String url = varargs.length > 1 ? varargs[1] : null;
+		String session = varargs.length > 2 ? varargs[2] : null;
+		if (Core.getPmaCoreLiteSessionID().equals(session)) {
+			if (PMA.logger != null) {
+				PMA.logger.severe("PMA.start doesn't support " + method);
+			}
+			throw new Exception("PMA.start doesn't support " + method);
+		} else if (url.equals(Core.getPmaCoreLiteSessionID())) {
+			if (Core.isLite()) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("PMA.core.lite found running, but doesn't support an administrative back-end");
+				}
+				throw new Exception("PMA.core.lite found running, but doesn't support an administrative back-end");
+			} else {
+				if (PMA.logger != null) {
+					PMA.logger.severe(
+							"PMA.core.lite not found, and besides; it doesn't support an administrative back-end anyway");
+				}
+				throw new Exception(
+						"PMA.core.lite not found, and besides; it doesn't support an administrative back-end anyway");
+			}
+		}
+	}
+
+	/**
 	 * This method is used to authenticate &amp; connect as an admin to a PMA.core
 	 * instance using admin credentials
 	 *
@@ -106,47 +150,42 @@ public class CoreAdmin {
 	public static String adminConnect(String... varargs) throws Exception {
 		// setting the default values when arguments' values are omitted
 		String pmaCoreURL = varargs.length > 0 ? varargs[0] : Core.getPmaCoreLiteURL();
-		String pmaCoreUsername = varargs.length > 1 ? varargs[1] : "";
-		String pmaCorePassword = varargs.length > 2 ? varargs[2] : "";
+		String pmaCoreAdmUsername = varargs.length > 1 ? varargs[1] : "";
+		String pmaCoreAdmPassword = varargs.length > 2 ? varargs[2] : "";
 		// Attempt to connect to PMA.core instance; success results in a SessionID
 		// only success if the user has administrative status
-		if (pmaCoreURL.equals(Core.getPmaCoreLiteURL())) {
-			if (Core.isLite()) {
-				throw new Exception("PMA.core.lite found running, but doesn't support an administrative back-end");
-			} else {
-				throw new Exception(
-						"PMA.core.lite not found, and besides; it doesn't support an administrative back-end anyway");
-			}
-		}
+		checkForPMAStart("adminConnect", pmaCoreURL);
+		
 		// purposefully DON'T use helper function apiUrl() here:
 		// why? Because apiUrl() takes session information into account (which we
 		// don't have yet)
 		String url = PMA.join(pmaCoreURL, "admin/json/AdminAuthenticate?caller=SDK.Java");
-		if (!pmaCoreUsername.equals("")) {
-			url = url.concat("&username=").concat(PMA.pmaQ(pmaCoreUsername));
+		if (!pmaCoreAdmUsername.equals("")) {
+			url = url.concat("&username=").concat(PMA.pmaQ(pmaCoreAdmUsername));
 		}
-		if (!pmaCorePassword.equals("")) {
-			url = url.concat("&password=").concat(PMA.pmaQ(pmaCorePassword));
+		if (!pmaCoreAdmPassword.equals("")) {
+			url = url.concat("&password=").concat(PMA.pmaQ(pmaCoreAdmPassword));
 		}
 		try {
 			String jsonString = PMA.httpGet(url, "application/json");
+			String admSessionID;
 			if (PMA.isJSONObject(jsonString)) {
-				JSONObject jsonResponse = PMA.getJSONObjectResponse(jsonString);
-				if (jsonResponse.get("Success").toString().toLowerCase().equals("true")) {
-					String adminSessionID = jsonResponse.getString("SessionId");
-					Core.getPmaSessions().put(adminSessionID, pmaCoreURL);
-					Core.getPmaUsernames().put(adminSessionID, pmaCoreUsername);
-					if (!Core.getPmaSlideInfos().containsKey(adminSessionID)) {
-						Core.getPmaSlideInfos().put(adminSessionID, new HashMap<String, Object>());
+				JSONObject loginResult = PMA.getJSONObjectResponse(jsonString);
+				if (loginResult.get("Success").toString().toLowerCase().equals("true")) {
+					admSessionID = loginResult.getString("SessionId");
+					Core.getPmaSessions().put(admSessionID, pmaCoreURL);
+					Core.getPmaUsernames().put(admSessionID, pmaCoreAdmUsername);
+					if (!Core.getPmaSlideInfos().containsKey(admSessionID)) {
+						Core.getPmaSlideInfos().put(admSessionID, new HashMap<String, Object>());
 					}
-					Core.getPmaAmountOfDataDownloaded().put(adminSessionID, jsonResponse.length());
-					return adminSessionID;
+					Core.getPmaAmountOfDataDownloaded().put(admSessionID, loginResult.length());
 				} else {
-					return null;
+					admSessionID = null;
 				}
 			} else {
-				return null;
+				admSessionID = null;
 			}
+			return admSessionID;
 		} catch (Exception e) {
 			e.printStackTrace();
 			if (PMA.logger != null) {
@@ -174,6 +213,55 @@ public class CoreAdmin {
 		return Core.disconnect(admsessionID);
 	}
 
+	public static String addUser(String admSessionID, String login, String firstName, String lastName, String email, String pwd, Boolean... varargs) {
+		// setting the default value when argument's value is omitted
+		Boolean canAnnotate = varargs.length > 0 ? varargs[0] : false;
+		Boolean isAdmin = varargs.length > 1 ? varargs[1] : false;
+		Boolean isSuspended = varargs.length > 2 ? varargs[2] : false;
+		System.out.println("Using credentials from " + admSessionID);
+		
+		try {
+			String url = adminUrl(admSessionID, false) + "CreateUser";
+			System.out.println(url);
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("POST");
+			con.setRequestProperty("Content-Type", "application/json");
+			con.setUseCaches(false);
+			con.setDoOutput(true);
+			String input = "{" 
+					+ "\"sessionID\": " + admSessionID + ","
+					+ "\"user\": {"
+					+ "\"Login\": " + login + ","
+					+ "\"FirstName\": " + firstName + ","
+					+ "\"LastName\": " + lastName + ","
+					+ "\"Password\": " + pwd + ","
+					+ "\"Email\": " + email + ","
+					+ "\"Administrator\": " + isAdmin + ","
+					+ "\"CanAnnotate\": " + canAnnotate
+					+ "}"
+					+ "}";
+			OutputStream os = con.getOutputStream();
+			os.write(input.getBytes("UTF-8"));
+			os.close();
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
+			return jsonString;
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (PMA.logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				PMA.logger.severe(sw.toString());
+			}
+			return null;
+		}
+	}
+	
 	/**
 	 * This method is used to create a new directory on PMA.core
 	 * 
