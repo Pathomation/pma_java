@@ -7,7 +7,7 @@ package com.pathomation;
  *
  */
 public class View {
-	
+
 	/**
 	 * This method is used to get PMA.view version
 	 * 
@@ -23,7 +23,9 @@ public class View {
 		String version = "";
 		try {
 			// Are we looking at PMA.view/studio 2.x?
-			System.out.println(url);
+			if (PMA.debug) {
+				System.out.println(url);
+			}
 			// we remove leading/trailing quotes
 			String contents = PMA.urlReader(url).replaceAll("^\"+", "").replaceAll("\"+$", "").replaceAll("^'+", "")
 					.replaceAll("'+$", "");
@@ -35,7 +37,9 @@ public class View {
 		url = PMA.join(pmaViewURL, "viewer/version");
 		try {
 			// Oops, perhaps this is a PMA.view 1.x version
-			System.out.println(url);
+			if (PMA.debug) {
+				System.out.println(url);
+			}
 			// we remove leading/trailing quotes
 			String contents = PMA.urlReader(url).replaceAll("^\"+", "").replaceAll("\"+$", "").replaceAll("^'+", "")
 					.replaceAll("'+$", "");

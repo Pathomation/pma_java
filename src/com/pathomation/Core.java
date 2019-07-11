@@ -40,7 +40,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.69
+ * @version 2.0.0.70
  */
 public class Core {
 	/**
@@ -125,7 +125,7 @@ public class Core {
 	 * @param flag Debugging mode (activated or deactivated)
 	 */
 	private static void setDebugFlag(boolean flag) {
-		PMA.debug = flag;
+		PMA.setDebugFlag(flag);
 		if (flag) {
 			System.out.println(
 					"Debug flag enabled. You will receive extra feedback and messages from the Java SDK (like this one)");
@@ -326,6 +326,38 @@ public class Core {
 			return PMA.join(url, "api/xml/");
 		} else {
 			return PMA.join(url, "api/json/");
+		}
+	}
+	
+	/**
+	 * This method is used to create the query URL for a session ID
+	 * @param varargs Array of optional arguments
+	 *                <p>
+	 *                sessionID : First optional argument(String), default
+	 *                value(null), session's ID
+	 *                </p>	 
+	 * @return Query URL
+	 */
+	public static String queryUrl(String... varargs) {
+		// setting the default value when argument's value is omitted
+		String sessionID = varargs.length > 0 ? varargs[0] : null;
+		// let's get the base URL first for the specified session
+		try {
+		String url = pmaUrl(sessionID);
+		if (url == null) {
+			// sort of a hopeless situation; there is no URL to refer to
+			return null;
+		}
+		// remember, pmaUrl is guaranteed to return a URL that ends with "/"
+		return PMA.join(url, "query/json/");
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (PMA.logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				PMA.logger.severe(sw.toString());
+			}
+			return null;
 		}
 	}
 
@@ -3263,6 +3295,89 @@ public class Core {
 				return null;
 			}
 
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (PMA.logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				PMA.logger.severe(sw.toString());
+			}
+			return null;
+		}
+	}
+	
+	/**
+	 * This method is used to search for slides in a directory that satisfy a
+	 * certain search pattern 
+	 * 
+	 * @param startDir Start directory
+	 * @param pattern Search pattern
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>	 
+	 * @return List of slides in a directory that satisfy a certain search pattern
+	 * @throws Exception If called on PMA.start
+	 */
+	public static List<String> searchSlides(String startDir, String pattern, String... varargs) throws Exception {
+		// setting the default value when argument's value is omitted
+		String sessionID = varargs.length > 0 ? varargs[0] : null;
+		sessionID = sessionId(sessionID);
+		if (sessionID.equals(pmaCoreLiteSessionID)) {
+			if (isLite()) {
+				throw new Exception("PMA.core.lite found running, but doesn't support searching.");
+			} else {
+				throw new Exception("PMA.core.lite not found, and besides; it doesn't support searching.");
+			}
+		}
+		
+		if (startDir.startsWith("/")) {
+			startDir = startDir.substring(1);
+		}
+		String url = queryUrl(sessionID) + "Filename?sessionID=" + PMA.pmaQ(sessionID) + "&path=" + PMA.pmaQ(startDir) + "&pattern=" + PMA.pmaQ(pattern);
+		if (PMA.debug) {
+			System.out.println("url = " + url);
+		}
+		try {
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("GET");
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
+			List<String> files = null;
+			if (PMA.isJSONObject(jsonString)) {
+				JSONObject jsonResponse = PMA.getJSONObjectResponse(jsonString);
+				pmaAmountOfDataDownloaded.put(sessionID,
+						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
+				if (jsonResponse.has("Code")) {
+					if (PMA.logger != null) {
+						PMA.logger.severe("searchSlides resulted in: " + jsonResponse.get("Message"));
+					}
+					throw new Exception("searchSlides resulted in: " + jsonResponse.get("Message"));
+				} else if (jsonResponse.has("d")) {
+					JSONArray array = jsonResponse.getJSONArray("d");
+					files = new ArrayList<>();
+					for (int i = 0; i < array.length(); i++) {
+						files.add(array.optString(i));
+					}
+				} else {
+					files = null;
+				}
+			} else {
+				JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
+				pmaAmountOfDataDownloaded.put(sessionID,
+						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
+				files = new ArrayList<>();
+				for (int i = 0; i < jsonResponse.length(); i++) {
+					files.add(jsonResponse.optString(i));
+				}
+			}
+			return files;
 		} catch (Exception e) {
 			e.printStackTrace();
 			if (PMA.logger != null) {
