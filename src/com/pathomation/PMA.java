@@ -149,6 +149,15 @@ public class PMA {
 	 */
 	public static void setDebugFlag(Boolean flag) {
 		debug = flag;
+		if (flag) {
+			System.out.println(
+					"Debug flag enabled. You will receive extra feedback and messages from the Java SDK (like this one)");
+			if (PMA.logger != null) {
+				PMA.logger.severe(
+						"Debug flag enabled. You will receive extra feedback and messages from the Java SDK (like this one)");
+			}
+		}
+		
 	}
 
 	/**
