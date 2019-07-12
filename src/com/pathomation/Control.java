@@ -37,6 +37,25 @@ public class Control {
 	}
 
 	/**
+	 * This method is used to determine whether the Java SDK runs in debugging mode
+	 * or not. When in debugging mode (flag = true), extra output is produced when
+	 * certain conditions in the code are not met
+	 * 
+	 * @param flag Debugging mode (activated or deactivated)
+	 */
+	public static void setDebugFlag(boolean flag) {
+		PMA.setDebugFlag(flag);
+		if (flag) {
+			System.out.println(
+					"Debug flag enabled. You will receive extra feedback and messages from the Java SDK (like this one)");
+			if (PMA.logger != null) {
+				PMA.logger.severe(
+						"Debug flag enabled. You will receive extra feedback and messages from the Java SDK (like this one)");
+			}
+		}
+	}
+	
+	/**
 	 * This method is used to get version info from PMA.control instance running at
 	 * pmacontrolURL
 	 * 

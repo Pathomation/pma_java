@@ -6,6 +6,8 @@ import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -19,6 +21,25 @@ import org.json.JSONObject;
  *
  */
 public class CoreAdmin {
+
+	/**
+	 * This method is used to determine whether the Java SDK runs in debugging mode
+	 * or not. When in debugging mode (flag = true), extra output is produced when
+	 * certain conditions in the code are not met
+	 * 
+	 * @param flag Debugging mode (activated or deactivated)
+	 */
+	public static void setDebugFlag(boolean flag) {
+		PMA.setDebugFlag(flag);
+		if (flag) {
+			System.out.println(
+					"Debug flag enabled. You will receive extra feedback and messages from the Java SDK (like this one)");
+			if (PMA.logger != null) {
+				PMA.logger.severe(
+						"Debug flag enabled. You will receive extra feedback and messages from the Java SDK (like this one)");
+			}
+		}
+	}
 
 	/**
 	 * This method is used to define which content will be received "XML" or "Json"
@@ -85,18 +106,19 @@ public class CoreAdmin {
 
 	/**
 	 * This method is under construction
+	 * 
 	 * @param varargs Array of optional arguments
 	 *                <p>
-	 *                method : First optional argument(String), default
-	 *                value(""), method
+	 *                method : First optional argument(String), default value(""),
+	 *                method
 	 *                </p>
 	 *                <p>
 	 *                url : Second optional argument(String), default value(null),
 	 *                url
 	 *                </p>
 	 *                <p>
-	 *                session : Third optional argument(String), default value(null),
-	 *                Session ID
+	 *                session : Third optional argument(String), default
+	 *                value(null), Session ID
 	 *                </p>
 	 * @throws Exception If something goes wrong
 	 */
@@ -155,7 +177,7 @@ public class CoreAdmin {
 		// Attempt to connect to PMA.core instance; success results in a SessionID
 		// only success if the user has administrative status
 		checkForPMAStart("adminConnect", pmaCoreURL);
-		
+
 		// purposefully DON'T use helper function apiUrl() here:
 		// why? Because apiUrl() takes session information into account (which we
 		// don't have yet)
@@ -213,13 +235,41 @@ public class CoreAdmin {
 		return Core.disconnect(admsessionID);
 	}
 
-	public static String addUser(String admSessionID, String login, String firstName, String lastName, String email, String pwd, Boolean... varargs) {
+	/**
+	 * This method is used to create a new user on PMA.core
+	 * 
+	 * @param admSessionID admin session ID
+	 * @param login        login
+	 * @param firstName    user's first name
+	 * @param lastName     user's last name
+	 * @param email        user's email
+	 * @param pwd          user's password
+	 * @param varargs      Array of optional arguments
+	 *                     <p>
+	 *                     canAnnotate : First optional argument(Boolean), default
+	 *                     value(false), Defines whether the user can annotate
+	 *                     slides or not
+	 *                     </p>
+	 *                     <p>
+	 *                     isAdmin : Second optional argument(Boolean), default
+	 *                     value(false), Defines whether the user is an
+	 *                     administrator or not
+	 *                     </p>
+	 *                     <p>
+	 *                     isSuspended : Second optional argument(Boolean), default
+	 *                     value(false), Defines whether the user is suspended or
+	 *                     not
+	 *                     </p>
+	 * @return Response code of the corresponding API call
+	 */
+	public static String addUser(String admSessionID, String login, String firstName, String lastName, String email,
+			String pwd, Boolean... varargs) {
 		// setting the default value when argument's value is omitted
 		Boolean canAnnotate = varargs.length > 0 ? varargs[0] : false;
 		Boolean isAdmin = varargs.length > 1 ? varargs[1] : false;
 		Boolean isSuspended = varargs.length > 2 ? varargs[2] : false;
 		System.out.println("Using credentials from " + admSessionID);
-		
+
 		try {
 			String url = adminUrl(admSessionID, false) + "CreateUser";
 			System.out.println(url);
@@ -234,18 +284,10 @@ public class CoreAdmin {
 			con.setRequestProperty("Content-Type", "application/json");
 			con.setUseCaches(false);
 			con.setDoOutput(true);
-			String input = "{" 
-					+ "\"sessionID\": " + admSessionID + ","
-					+ "\"user\": {"
-					+ "\"Login\": " + login + ","
-					+ "\"FirstName\": " + firstName + ","
-					+ "\"LastName\": " + lastName + ","
-					+ "\"Password\": " + pwd + ","
-					+ "\"Email\": " + email + ","
-					+ "\"Administrator\": " + isAdmin + ","
-					+ "\"CanAnnotate\": " + canAnnotate
-					+ "}"
-					+ "}";
+			String input = "{" + "\"sessionID\": " + admSessionID + "," + "\"user\": {" + "\"Login\": " + login + ","
+					+ "\"FirstName\": " + firstName + "," + "\"LastName\": " + lastName + "," + "\"Password\": " + pwd
+					+ "," + "\"Email\": " + email + "," + "\"Administrator\": " + isAdmin + "," + "\"isSuspended\": "
+					+ isSuspended + "," + "\"CanAnnotate\": " + canAnnotate + "}" + "}";
 			OutputStream os = con.getOutputStream();
 			os.write(input.getBytes("UTF-8"));
 			os.close();
@@ -261,7 +303,7 @@ public class CoreAdmin {
 			return null;
 		}
 	}
-	
+
 	/**
 	 * This method is used to create a new directory on PMA.core
 	 * 
@@ -271,7 +313,7 @@ public class CoreAdmin {
 	 */
 	public static boolean createDirectory(String sessionID, String path) {
 		try {
-			// we only create folders on PMA.core
+			// we create folders on PMA.core only
 			if (Core.isLite(Core.pmaUrl(sessionID))) {
 				return false;
 			} else {
@@ -302,6 +344,202 @@ public class CoreAdmin {
 				PMA.logger.severe(sw.toString());
 			}
 			return false;
+		}
+	}
+
+	/**
+	 * This method is used to create an Amazon S3 mounting point. A list of these is
+	 * to be used to supply method create_root_directory()
+	 * 
+	 * @param accessKey  AWS Access key
+	 * @param secretKey  AWS secret key
+	 * @param path       path
+	 * @param instanceId instance ID
+	 * @param varargs    Array of optional arguments
+	 *                   <p>
+	 *                   chunkSize : First optional argument(Integer), default
+	 *                   value(1048576), chunk size
+	 *                   </p>
+	 *                   <p>
+	 *                   serviceUrl : Second optional argument(String), default
+	 *                   value(null), service URL
+	 *                   </p>
+	 * @return Amazon S3 mounting point
+	 */
+	public static String createAmazons3MountingPoint(String accessKey, String secretKey, String path,
+			Integer instanceId, Object... varargs) {
+		// setting the default values when arguments' values are omitted
+		Integer chunkSize = 1048576;
+		String serviceUrl = null;
+		if (varargs.length > 0) {
+			if (!(varargs[0] instanceof Integer) && varargs[0] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("createAmazons3MountingPoint() : Illegal argument");
+				}
+				throw new IllegalArgumentException("...");
+			}
+			chunkSize = (Integer) varargs[0];
+		}
+		if (varargs.length > 1) {
+			if (!(varargs[1] instanceof String) && varargs[1] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("createAmazons3MountingPoint() : Illegal argument");
+				}
+				throw new IllegalArgumentException("...");
+			}
+			serviceUrl = (String) varargs[1];
+		}
+		String s3MountingPoint = "{" + "\"AccessKey\": \"" + accessKey + "\"," + "\"SecretKey\": \"" + secretKey + "\","
+				+ (chunkSize == 1048576 ? "" : "\"ChunkSize\": " + chunkSize + ",") + 
+				(serviceUrl == null ? "" : "\"ServiceUrl\": \"" + serviceUrl + "\",") + 
+				"\"Path\": \"" + path + "\"," + "\"InstanceId\": " + instanceId + "}";
+		return s3MountingPoint;
+	}
+
+	/**
+	 * This method is used to create an FileSystem mounting point. A list of these
+	 * is to be used to supply method create_root_directory()
+	 * 
+	 * @param username   user name
+	 * @param password   password
+	 * @param domainName domain name
+	 * @param path       path
+	 * @param instanceId instance ID
+	 * @return Filesystem mounting point
+	 */
+	public static String createFileSystemMountingPoint(String username, String password, String domainName, String path,
+			Integer instanceId) {
+		String fileSystemMountingPoint = "{" + "\"Username\": \"" + username + "\"," + "\"Password\": \"" + password + "\","
+				+ "\"DomainName\": \"" + domainName + "\"," + "\"Path\": \"" + path + "\"," + "\"InstanceId\": " + instanceId
+				+ "}";
+		return fileSystemMountingPoint;
+	}
+
+	/**
+	 * 
+	 * @param admSessionID Admin session ID
+	 * @param alias        Root directory Alias
+	 * @param varargs      Array of optional arguments
+	 *                     <p>
+	 *                     amazonS3MountingPoints : First optional
+	 *                     argument(List{@literal <}String{@literal >}), default value(null), List of
+	 *                     amazon S3 mounting points
+	 *                     </p>
+	 *                     <p>
+	 *                     fileSystemMountingPoints : Second optional
+	 *                     argument(List{@literal <}String{@literal >}), default value(null), List of file
+	 *                     system mounting points
+	 *                     </p>
+	 *                     <p>
+	 *                     description : Third optional argument(String), default
+	 *                     value("Root dir created through pma_java"), Root
+	 *                     directory description
+	 *                     </p>
+	 *                     <p>
+	 *                     isPublic : Fourth optional argument(Boolean), default
+	 *                     value(false), defines whether the root directory is
+	 *                     public or not
+	 *                     </p>
+	 *                     <p>
+	 *                     isOffline : Fifth optional argument(Boolean), default
+	 *                     value(null), defines whether the root directory is
+	 *                     offline or not
+	 *                     </p>
+	 * @return Response code of the corresponding API call
+	 */
+	@SuppressWarnings("unchecked")
+	public static String createRootDirectory(String admSessionID, String alias, Object... varargs) {
+		// setting the default values when arguments' values are omitted
+		List<String> amazonS3MountingPoints = null;
+		List<String> fileSystemMountingPoints = null;
+		String description = "Root dir created through pma_java";
+		Boolean isPublic = false;
+		Boolean isOffline = false;
+		if (varargs.length > 0) {
+			if (!(varargs[0] instanceof List<?>) && varargs[0] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("createRootDirectory() : Illegal argument");
+				}
+				throw new IllegalArgumentException("...");
+			}
+			amazonS3MountingPoints = (List<String>) varargs[0];
+		}
+		if (varargs.length > 1) {
+			if (!(varargs[1] instanceof List<?>) && varargs[1] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("createRootDirectory() : Illegal argument");
+				}
+				throw new IllegalArgumentException("...");
+			}
+			fileSystemMountingPoints = (List<String>) varargs[1];
+		}
+		if (varargs.length > 2) {
+			if (!(varargs[2] instanceof String) && varargs[2] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("createRootDirectory() : Illegal argument");
+				}
+				throw new IllegalArgumentException("...");
+			}
+			description = (String) varargs[2];
+		}
+		if (varargs.length > 3) {
+			if (!(varargs[3] instanceof Boolean) && varargs[3] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("createRootDirectory() : Illegal argument");
+				}
+				throw new IllegalArgumentException("...");
+			}
+			isPublic = (Boolean) varargs[3];
+		}
+		if (varargs.length > 4) {
+			if (!(varargs[4] instanceof Boolean) && varargs[4] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("createRootDirectory() : Illegal argument");
+				}
+				throw new IllegalArgumentException("...");
+			}
+			isOffline = (Boolean) varargs[4];
+		}
+		try {
+			String url = adminUrl(admSessionID, false) + "CreateRootDirectory";
+			System.out.println(url);
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("POST");
+			con.setRequestProperty("Content-Type", "application/json");
+			con.setUseCaches(false);
+			con.setDoOutput(true);
+			String input = "{" + "\"sessionID\": \"" + admSessionID + "\"," + "\"rootDirectory\": {" + "\"Alias\": \"" + alias
+					+ "\"," + "\"Description\": \"" + description + "\"," + "\"Offline\": " + isOffline + "," + "\"Public\": "
+					+ isPublic;
+
+			if (amazonS3MountingPoints != null) {
+				String amazonS3MountingPointsForJson = amazonS3MountingPoints.stream().collect(Collectors.joining(",", "[", "]"));
+				input += ", \"AmazonS3MountingPoints\" :" + amazonS3MountingPointsForJson;
+			}
+			if (fileSystemMountingPoints != null) {
+				String fileSystemMountingPointsForJson = fileSystemMountingPoints.stream().collect(Collectors.joining(",", "[", "]"));
+				input += ", \"FileSystemMountingPoints\" :" + fileSystemMountingPointsForJson;
+			}
+			input += "}" + "}";
+			OutputStream os = con.getOutputStream();
+			os.write(input.getBytes("UTF-8"));
+			os.close();
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
+			return jsonString;
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (PMA.logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				PMA.logger.severe(sw.toString());
+			}
+			return null;
 		}
 	}
 }

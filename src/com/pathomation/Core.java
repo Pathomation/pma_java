@@ -40,7 +40,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.70
+ * @version 2.0.0.71
  */
 public class Core {
 	/**
@@ -118,13 +118,13 @@ public class Core {
 	}
 
 	/**
-	 * This method is used to determine whether Core module runs in debugging mode
+	 * This method is used to determine whether the Java SDK runs in debugging mode
 	 * or not. When in debugging mode (flag = true), extra output is produced when
 	 * certain conditions in the code are not met
 	 * 
 	 * @param flag Debugging mode (activated or deactivated)
 	 */
-	private static void setDebugFlag(boolean flag) {
+	public static void setDebugFlag(boolean flag) {
 		PMA.setDebugFlag(flag);
 		if (flag) {
 			System.out.println(
@@ -3356,9 +3356,9 @@ public class Core {
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				if (jsonResponse.has("Code")) {
 					if (PMA.logger != null) {
-						PMA.logger.severe("searchSlides resulted in: " + jsonResponse.get("Message"));
+						PMA.logger.severe("searchSlides on " + pattern + " in " + startDir + "resulted in: " + jsonResponse.get("Message") + " (keep in mind that startDir is case sensitive!)");
 					}
-					throw new Exception("searchSlides resulted in: " + jsonResponse.get("Message"));
+					throw new Exception("searchSlides on " + pattern + " in " + startDir + "resulted in: " + jsonResponse.get("Message") + " (keep in mind that startDir is case sensitive!)");
 				} else if (jsonResponse.has("d")) {
 					JSONArray array = jsonResponse.getJSONArray("d");
 					files = new ArrayList<>();
