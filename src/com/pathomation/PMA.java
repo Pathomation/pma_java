@@ -415,6 +415,6 @@ public class PMA {
 		if (displayName.matches(".*\\s\\(..\\)") && !displayName.matches("Local\\sDisk\\s\\(..\\)")) {
 			value = displayName + "/" + value.substring(root.length());
 		}
-		return value;
+		return value.replace("\\", "/");
 	}
 }
