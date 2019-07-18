@@ -340,16 +340,16 @@ public class Control {
 	 * @param pmaControlRole      Role
 	 * @param pmaCoreSessionID    PMA.core session ID
 	 * @return URL connection output in JSON format
-	 * @throws Exception If user is ALREADY registered in the provided PMA.control
-	 *                   training session
 	 */
+//	 * @throws Exception If user is ALREADY registered in the provided PMA.control
+//	 *                   training session	
 	public static String registerParticipantForTrainingSession(String pmaControlURL, String participantUsername,
-			Integer pmaControlSessionID, PmaTrainingSessionRole pmaControlRole, String pmaCoreSessionID)
-			throws Exception {
-		if (isParticipantInTrainingSession(pmaControlURL, participantUsername, pmaControlSessionID, pmaCoreSessionID)) {
-			throw new Exception("PMA.core user " + participantUsername
-					+ " is ALREADY registered in PMA.control training session " + pmaControlSessionID);
-		}
+			Integer pmaControlSessionID, PmaTrainingSessionRole pmaControlRole, String pmaCoreSessionID) {
+//			throws Exception {
+//		if (isParticipantInTrainingSession(pmaControlURL, participantUsername, pmaControlSessionID, pmaCoreSessionID)) {
+//			throw new Exception("PMA.core user " + participantUsername
+//					+ " is ALREADY registered in PMA.control training session " + pmaControlSessionID);
+//		}
 		try {
 			String url = PMA.join(pmaControlURL, "api/Sessions/") + pmaControlSessionID.toString()
 					+ "/AddParticipant?SessionID=" + pmaCoreSessionID;
@@ -374,6 +374,9 @@ public class Control {
 			OutputStream os = con.getOutputStream();
 			os.write(data.getBytes("UTF-8"));
 			os.close();
+			if (PMA.debug) {
+				System.out.println("Posting to " + url);
+			}
 			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
 			PMA.clearURLCache();
 			return jsonString;
@@ -386,6 +389,29 @@ public class Control {
 			}
 			return null;
 		}
+	}
+	
+	/**
+	 * This method is used to register a participant for all sessions in a given project, assigning a specific role
+	 * 
+	 * @param pmaControlURL       PMA.control URL
+	 * @param participantUsername PMA.core username
+	 * @param pmaControlProjectID Project's ID
+	 * @param pmaControlRole      Role
+	 * @param pmaCoreSessionID    PMA.core session ID
+	 * @return List of all sessions in a project that the participant was registered to
+	 */
+	public static List<Integer> registerParticipantsForProject(String pmaControlURL, String participantUsername,
+			Integer pmaControlProjectID, PmaTrainingSessionRole pmaControlRole, String pmaCoreSessionID) {
+		List<Integer> registeredSessions = new ArrayList<>();
+		for (Integer session : getTrainingSessions(pmaControlURL, pmaControlProjectID, pmaCoreSessionID).keySet()) {
+			registerParticipantForTrainingSession(pmaControlURL, participantUsername, session, pmaControlRole, pmaCoreSessionID);
+			registeredSessions.add(session);
+		}
+		if (PMA.debug) {
+			System.out.println(participantUsername + " is now registered in " + registeredSessions);
+		}
+		return registeredSessions;
 	}
 
 	/**
