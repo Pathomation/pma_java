@@ -54,7 +54,7 @@ public class Control {
 			}
 		}
 	}
-	
+
 	/**
 	 * This method is used to get version info from PMA.control instance running at
 	 * pmacontrolURL
@@ -365,7 +365,7 @@ public class Control {
 			con.setUseCaches(false);
 			con.setDoOutput(true);
 			// default interaction mode = Locked
-			String data = "{ \"UserName\": \"" + participantUsername + "\", \"Role\": \"" + pmaControlRole + "\" }"; 
+			String data = "{ \"UserName\": \"" + participantUsername + "\", \"Role\": \"" + pmaControlRole + "\" }";
 			// + ", \"InteractionMode\": \"" +
 			// String.valueOf(pmacontrolInteractionMode.ordinal() + 1) + "\" }";
 			OutputStream os = con.getOutputStream();
@@ -388,28 +388,34 @@ public class Control {
 			return null;
 		}
 	}
-	
+
 	/**
-	 * This method is used to register a participant for all sessions in a given project, assigning a specific role
+	 * This method is used to register a participant for all sessions in a given
+	 * project, assigning a specific role
 	 * 
 	 * @param pmaControlURL       PMA.control URL
 	 * @param participantUsername PMA.core username
 	 * @param pmaControlProjectID Project's ID
 	 * @param pmaControlRole      Role
 	 * @param pmaCoreSessionID    PMA.core session ID
-	 * @param varargs          Array of optional arguments
-	 *                         <p>
-	 *                         pmaControlInteractionMode : First optional argument(PmaInteractionMode), default
-	 *                         value(Locked), interaction mode
-	 *                         </p>
-	 * @return List of all sessions in a project that the participant was registered to
+	 * @param varargs             Array of optional arguments
+	 *                            <p>
+	 *                            pmaControlInteractionMode : First optional
+	 *                            argument(PmaInteractionMode), default
+	 *                            value(Locked), interaction mode
+	 *                            </p>
+	 * @return List of all sessions in a project that the participant was registered
+	 *         to
 	 */
 	public static String registerParticipantsForProject(String pmaControlURL, String participantUsername,
-			Integer pmaControlProjectID, PmaTrainingSessionRole pmaControlRole, String pmaCoreSessionID, PmaInteractionMode...varargs) {
+			Integer pmaControlProjectID, PmaTrainingSessionRole pmaControlRole, String pmaCoreSessionID,
+			PmaInteractionMode... varargs) {
 		// setting the default value when argument's value is omitted
-		PmaInteractionMode pmaControlInteractionMode = ((varargs.length > 0) && (varargs[0] != null)) ? varargs[0] : PmaInteractionMode.LOCKED;		
+		PmaInteractionMode pmaControlInteractionMode = ((varargs.length > 0) && (varargs[0] != null)) ? varargs[0]
+				: PmaInteractionMode.LOCKED;
 		try {
-			String url = PMA.join(pmaControlURL, "api/Projects/") + pmaControlProjectID + "/AddParticipant?SessionID=" + pmaCoreSessionID;
+			String url = PMA.join(pmaControlURL, "api/Projects/") + pmaControlProjectID + "/AddParticipant?SessionID="
+					+ pmaCoreSessionID;
 			URL urlResource = new URL(url);
 			HttpURLConnection con;
 			if (url.startsWith("https")) {
@@ -422,7 +428,8 @@ public class Control {
 			con.setUseCaches(false);
 			con.setDoOutput(true);
 			// default interaction mode = Locked
-			String data = "{ \"UserName\": \"" + participantUsername + "\", \"Role\": \"" + pmaControlRole + "\", \"InteractionMode\": \"" + pmaControlInteractionMode + "\" }"; 
+			String data = "{ \"UserName\": \"" + participantUsername + "\", \"Role\": \"" + pmaControlRole
+					+ "\", \"InteractionMode\": \"" + pmaControlInteractionMode + "\" }";
 			OutputStream os = con.getOutputStream();
 			os.write(data.getBytes("UTF-8"));
 			os.close();
@@ -630,15 +637,17 @@ public class Control {
 	}
 
 	/**
-	 * This method is used to retrieve (training) sessions (possibly filtered by project ID)
+	 * This method is used to retrieve (training) sessions (possibly filtered by
+	 * project ID)
+	 * 
 	 * @param pmaControlURL       URL for PMA.Control
 	 * @param pmaControlProjectID Project's ID
 	 * @param pmaCoreSessionID    PMA.core session ID
 	 * @return Map of session IDs and titles
 	 */
-	public static Map<Integer, Map<String, Object>> getTrainingSessionsX(String pmaControlURL, Integer pmaControlProjectID,
-			String pmaCoreSessionID) {
-		Map<Integer, Map<String, Object>> map = new HashMap<>(); 
+	public static Map<Integer, Map<String, Object>> getTrainingSessions(String pmaControlURL,
+			Integer pmaControlProjectID, String pmaCoreSessionID) {
+		Map<Integer, Map<String, Object>> map = new HashMap<>();
 		JSONArray all = getTrainingSessions(pmaControlURL, pmaCoreSessionID);
 		for (int i = 0; i < all.length(); i++) {
 			JSONObject sess = all.optJSONObject(i);
@@ -709,7 +718,7 @@ public class Control {
 	 *                         </p>
 	 * @return Array of case collections
 	 */
-	private static JSONArray getCaseCollections(String pmaControlURL, String pmaCoreSessionID, String... varargs) {
+	private static JSONArray pmaGetCaseCollections(String pmaControlURL, String pmaCoreSessionID, String... varargs) {
 		// setting the default value when argument's value is omitted
 		String project = ((varargs.length > 0) && (varargs[0] != null)) ? varargs[0] : "";
 		String url = PMA.join(pmaControlURL, "api/CaseCollections?sessionID=" + PMA.pmaQ(pmaCoreSessionID)
@@ -727,6 +736,28 @@ public class Control {
 			}
 			return null;
 		}
+	}
+
+	/**
+	 * This method is used to retrieve case collection details that belong to a
+	 * specific project
+	 * 
+	 * @param pmaControlURL       URL for PMA.Control
+	 * @param pmaControlProjectID Project's ID
+	 * @param pmaCoreSessionID    PMA.core session ID
+	 * @return Map of case collection details
+	 */
+	public static Map<Integer, JSONObject> getCaseCollections(String pmaControlURL, Integer pmaControlProjectID,
+			String pmaCoreSessionID) {
+		Map<Integer, JSONObject> colls = new HashMap<>();
+		JSONArray allColls = pmaGetCaseCollections(pmaControlURL, pmaCoreSessionID);
+		for (int i = 0; i < allColls.length(); i++) {
+			JSONObject coll = allColls.optJSONObject(i);
+			if ((pmaControlProjectID == coll.optInt("ProjectId")) && !colls.keySet().contains(coll.optInt("Id"))) {
+				colls.put(coll.optInt("Id"), coll);
+			}
+		}
+		return colls;
 	}
 
 	/**
@@ -764,7 +795,7 @@ public class Control {
 	 */
 	public static JSONObject getCaseCollectionByTitle(String pmaControlURL, String pmaCoreSessionID,
 			String caseCollectionTitle) {
-		JSONArray caseCollections = getCaseCollections(pmaControlURL, pmaCoreSessionID);
+		JSONArray caseCollections = pmaGetCaseCollections(pmaControlURL, pmaCoreSessionID);
 		if (caseCollections == null) {
 			return null;
 		} else {
@@ -791,7 +822,7 @@ public class Control {
 			String pmaCoreSessionID) {
 		Map<Integer, String> map = new HashMap<>();
 		try {
-			JSONArray allColletions = getCaseCollections(pmaControlURL, pmaCoreSessionID);
+			JSONArray allColletions = pmaGetCaseCollections(pmaControlURL, pmaCoreSessionID);
 			for (int i = 0; i < allColletions.length(); i++) {
 				JSONObject collection = allColletions.optJSONObject(i);
 				if (pmaControlProjectID == null) {
@@ -822,7 +853,7 @@ public class Control {
 	 */
 	public static JSONObject getCaseCollection(String pmaControlURL, Integer pmaControlCaseCollectionID,
 			String pmaCoreSessionID) {
-		JSONArray allCollections = getCaseCollections(pmaControlURL, pmaCoreSessionID);
+		JSONArray allCollections = pmaGetCaseCollections(pmaControlURL, pmaCoreSessionID);
 		for (int i = 0; i < allCollections.length(); i++) {
 			JSONObject collection = allCollections.optJSONObject(i);
 			if (collection.optInt("Id") == pmaControlCaseCollectionID) {
@@ -856,7 +887,7 @@ public class Control {
 	 * @return The first collection that matches the search criteria
 	 */
 	public static JSONObject searchCaseCollection(String pmaControlURL, String keyword, String pmaCoreSessionID) {
-		JSONArray allCollections = getCaseCollections(pmaControlURL, pmaCoreSessionID);
+		JSONArray allCollections = pmaGetCaseCollections(pmaControlURL, pmaCoreSessionID);
 		for (int i = 0; i < allCollections.length(); i++) {
 			JSONObject collection = allCollections.optJSONObject(i);
 			if (collection.getString("Title").toLowerCase().contains(keyword.toLowerCase())) {
@@ -898,7 +929,7 @@ public class Control {
 	 * @param pmaCoreSessionID PMA.core session ID
 	 * @return Array of projects
 	 */
-	private static JSONArray getProjects(String pmaControlURL, String pmaCoreSessionID) {
+	private static JSONArray pmaGetProjects(String pmaControlURL, String pmaCoreSessionID) {
 		String url = PMA.join(pmaControlURL, "api/Projects?sessionID=" + PMA.pmaQ(pmaCoreSessionID));
 		try {
 			String jsonString = PMA.httpGet(url, "application/json");
@@ -913,6 +944,36 @@ public class Control {
 			}
 			return null;
 		}
+	}
+
+	/**
+	 * This method is used to retrieve project details for all projects
+	 * 
+	 * @param pmaControlURL    URL for PMA.Control
+	 * @param pmaCoreSessionID PMA.core session ID
+	 * @return Map of project details for all projects
+	 */
+	@SuppressWarnings("unchecked")
+	public static Map<Integer, JSONObject> getProjects(String pmaControlURL, String pmaCoreSessionID) {
+		JSONArray allProjects = pmaGetProjects(pmaControlURL, pmaCoreSessionID);
+		Map<Integer, JSONObject> projects = new HashMap<>();
+		for (int i = 0; i < allProjects.length(); i++) {
+			JSONObject prj = allProjects.optJSONObject(i);
+			// summary session-related information so that it makes sense
+			prj.put("Sessions", formatProjectEmbeddedTrainingSessionsProperly(prj.optJSONArray("Sessions")));
+
+			// now integrate case collection information
+			JSONArray colls = pmaGetCaseCollections(pmaControlURL, pmaCoreSessionID);
+			prj.put("CaseCollections", new HashMap<Integer, String>());
+			for (int j = 0; j < colls.length(); j++) {
+				JSONObject col = colls.optJSONObject(j);
+				if (col.getInt("ProjectId") == prj.getInt("Id")) {
+					((Map<Integer, String>) prj.get("CaseCollections")).put(col.optInt("Id"), col.optString("Title"));
+				}
+			}
+			projects.put(prj.optInt("Id"), prj);
+		}
+		return projects;
 	}
 
 	/**
@@ -947,7 +1008,7 @@ public class Control {
 	 */
 	public static Map<Integer, String> getProjectTitlesDict(String pmaControlURL, String pmaCoreSessionID) {
 		Map<Integer, String> map = new HashMap<>();
-		JSONArray allProjects = getProjects(pmaControlURL, pmaCoreSessionID);
+		JSONArray allProjects = pmaGetProjects(pmaControlURL, pmaCoreSessionID);
 		try {
 			for (int i = 0; i < allProjects.length(); i++) {
 				map.put(allProjects.optJSONObject(i).getInt("Id"), allProjects.optJSONObject(i).getString("Title"));
@@ -976,7 +1037,7 @@ public class Control {
 	public static Map<String, Object> getProject(String pmaControlURL, Integer pmaControlProjectID,
 			String pmaCoreSessionID) {
 		try {
-			JSONArray allProjects = getProjects(pmaControlURL, pmaCoreSessionID);
+			JSONArray allProjects = pmaGetProjects(pmaControlURL, pmaCoreSessionID);
 			for (int i = 0; i < allProjects.length(); i++) {
 				JSONObject prj = allProjects.optJSONObject(i);
 				if (prj.optInt("Id") == pmaControlProjectID) {
@@ -988,7 +1049,8 @@ public class Control {
 							formatProjectEmbeddedTrainingSessionsProperly(prj.optJSONArray("Sessions")));
 					// now integrate case collection information
 					// we get the case collections belonging to the project (via the title)
-					JSONArray collections = getCaseCollections(pmaControlURL, pmaCoreSessionID, prj.getString("Title"));
+					JSONArray collections = pmaGetCaseCollections(pmaControlURL, pmaCoreSessionID,
+							prj.getString("Title"));
 					project.put("CaseCollections", new HashMap<Integer, String>());
 					for (int j = 0; j < collections.length(); j++) {
 						JSONObject collection = collections.optJSONObject(j);
@@ -1023,7 +1085,7 @@ public class Control {
 	 */
 	public static Map<String, Object> getProjectByCaseID(String pmaControlURL, Integer pmacontrolCaseID,
 			String pmaCoreSessionID) {
-		JSONArray allCollections = getCaseCollections(pmaControlURL, pmaCoreSessionID);
+		JSONArray allCollections = pmaGetCaseCollections(pmaControlURL, pmaCoreSessionID);
 		for (int i = 0; i < allCollections.length(); i++) {
 			JSONObject collection = allCollections.optJSONObject(i);
 			JSONArray cases = collection.optJSONArray("Cases");
@@ -1047,7 +1109,7 @@ public class Control {
 	 */
 	public static Map<String, Object> getProjectByCaseCollectionID(String pmaControlURL,
 			Integer pmacontrolCaseCollectionID, String pmaCoreSessionID) {
-		JSONArray allCollections = getCaseCollections(pmaControlURL, pmaCoreSessionID);
+		JSONArray allCollections = pmaGetCaseCollections(pmaControlURL, pmaCoreSessionID);
 		for (int i = 0; i < allCollections.length(); i++) {
 			JSONObject collection = allCollections.optJSONObject(i);
 			if (collection.optInt("Id") == pmacontrolCaseCollectionID) {
