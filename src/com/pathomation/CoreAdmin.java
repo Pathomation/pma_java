@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 
 import javax.net.ssl.HttpsURLConnection;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
@@ -150,6 +151,51 @@ public class CoreAdmin {
 	}
 
 	/**
+	 * This method is used to cache results from requested URLs (POST method)
+	 * 
+	 * @param url  URL to request
+	 * @param data JSON input
+	 * @return Data returned following a request to a specific URL
+	 */
+	public static String httpPost(String url, String data) {
+		if (PMA.debug) {
+			System.out.println("Posting to " + url);
+			System.out.println("with paylod " + data);
+		}
+		try {
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("POST");
+			con.setRequestProperty("Content-Type", "application/json");
+			con.setUseCaches(false);
+			con.setDoOutput(true);
+			OutputStream os = con.getOutputStream();
+			os.write(data.getBytes("UTF-8"));
+			os.close();
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
+			if (PMA.debug && jsonString.contains("Code")) {
+				System.out.println(jsonString);
+			} else {
+				PMA.clearURLCache();
+			}
+			return jsonString;
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (PMA.logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				PMA.logger.severe(sw.toString());
+			}
+			return null;
+		}
+	}
+
+	/**
 	 * This method is used to authenticate &amp; connect as an admin to a PMA.core
 	 * instance using admin credentials
 	 *
@@ -272,27 +318,11 @@ public class CoreAdmin {
 
 		try {
 			String url = adminUrl(admSessionID, false) + "CreateUser";
-			System.out.println(url);
-			URL urlResource = new URL(url);
-			HttpURLConnection con;
-			if (url.startsWith("https")) {
-				con = (HttpsURLConnection) urlResource.openConnection();
-			} else {
-				con = (HttpURLConnection) urlResource.openConnection();
-			}
-			con.setRequestMethod("POST");
-			con.setRequestProperty("Content-Type", "application/json");
-			con.setUseCaches(false);
-			con.setDoOutput(true);
 			String input = "{" + "\"sessionID\": " + admSessionID + "," + "\"user\": {" + "\"Login\": " + login + ","
 					+ "\"FirstName\": " + firstName + "," + "\"LastName\": " + lastName + "," + "\"Password\": " + pwd
 					+ "," + "\"Email\": " + email + "," + "\"Administrator\": " + isAdmin + "," + "\"isSuspended\": "
 					+ isSuspended + "," + "\"CanAnnotate\": " + canAnnotate + "}" + "}";
-			OutputStream os = con.getOutputStream();
-			os.write(input.getBytes("UTF-8"));
-			os.close();
-			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
-			return jsonString;
+			return httpPost(url, input);
 		} catch (Exception e) {
 			e.printStackTrace();
 			if (PMA.logger != null) {
@@ -305,36 +335,144 @@ public class CoreAdmin {
 	}
 
 	/**
-	 * This method is used to create a new directory on PMA.core
+	 * This method is used to check if a user exists
 	 * 
-	 * @param sessionID a session ID
-	 * @param path      path to create the new directory in
-	 * @return true if directory was created successfully, false otherwise
+	 * @param admSessionID admin session ID
+	 * @param query        keyword for the User to search for
+	 * @return True if the user exists, false otherwise
 	 */
-	public static boolean createDirectory(String sessionID, String path) {
+	public static boolean userExists(String admSessionID, String query) {
+		String url = adminUrl(admSessionID, false) + "SearchUsers?source=Local" + "&SessionID=" + PMA.pmaQ(admSessionID)
+				+ "&query=" + PMA.pmaQ(query);
 		try {
-			// we create folders on PMA.core only
-			if (Core.isLite(Core.pmaUrl(sessionID))) {
+			String jsonString = PMA.httpGet(url, "application/json");
+			if (PMA.isJSONArray(jsonString)) {
+				JSONArray results = PMA.getJSONArrayResponse(jsonString);
+				for (int i = 0; i < results.length(); i++) {
+					if (results.optJSONObject(i).optString("Login").toLowerCase().equals(query.toLowerCase())) {
+						return true;
+					}
+				}
 				return false;
 			} else {
-				String url = adminUrl(sessionID, false) + "CreateDirectory";
-				URL urlResource = new URL(url);
-				HttpURLConnection con;
-				if (url.startsWith("https")) {
-					con = (HttpsURLConnection) urlResource.openConnection();
-				} else {
-					con = (HttpURLConnection) urlResource.openConnection();
-				}
-				con.setRequestMethod("POST");
-				con.setRequestProperty("Content-Type", "application/json");
-				con.setUseCaches(false);
-				con.setDoOutput(true);
-				String input = "{ \"sessionID\": \"" + sessionID + "\", \"path\": \"" + path + "\" }";
-				OutputStream os = con.getOutputStream();
-				os.write(input.getBytes("UTF-8"));
-				os.close();
-				String jsonString = PMA.getJSONAsStringBuffer(con).toString();
+				return false;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (PMA.logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				PMA.logger.severe(sw.toString());
+			}
+			return false;
+		}
+	}
+
+	/**
+	 * This method is used to create a new directory on PMA.core
+	 * 
+	 * @param admSessionID an admin session ID
+	 * @param path         path to create the new directory in
+	 * @return true if directory was created successfully, false otherwise
+	 */
+	public static boolean createDirectory(String admSessionID, String path) {
+		try {
+			// we create folders on PMA.core only
+			if (Core.isLite(Core.pmaUrl(admSessionID))) {
+				return false;
+			} else if (Core.getSlides(path, admSessionID) != null) {
+				String url = adminUrl(admSessionID, false) + "CreateDirectory";
+				String input = "{ \"sessionID\": \"" + admSessionID + "\", \"path\": \"" + path + "\" }";
+				String jsonString = httpPost(url, input);
 				return jsonString.equals("true") ? true : false;
+			} else {
+				if (PMA.debug) {
+					System.out.println("Directory already exists");
+				}
+				return false;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (PMA.logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				PMA.logger.severe(sw.toString());
+			}
+			return false;
+		}
+	}
+
+	/**
+	 * This method is used to rename a directory on PMA.core
+	 * 
+	 * @param admSessionID an admin session ID
+	 * @param originalPath Old path
+	 * @param newName      New name
+	 * @return true if directory was renamed successfully, false otherwise
+	 */
+	public static boolean renameDirectory(String admSessionID, String originalPath, String newName) {
+		try {
+			// we rename folders on PMA.core only
+			if (Core.isLite(Core.pmaUrl(admSessionID))) {
+				return false;
+			}
+			String url = adminUrl(admSessionID) + "RenameDirectory";
+			String payload = "{ \"sessionID\": \"" + admSessionID + "\", \"path\": \"" + originalPath
+					+ "\", \"newName\":\"" + newName + "\" }";
+			String jsonString = httpPost(url, payload);
+			if (PMA.isJSONObject(jsonString) && PMA.getJSONObjectResponse(jsonString).has("Code")) {
+				if (PMA.debug) {
+					System.out.println(jsonString);
+				}
+				return false;
+			}
+			// Sanity check : no slides should be found anymore in the original directory
+			if (Core.getSlides(originalPath, admSessionID) == null) {
+				// This means the original directory is no longer available. So that's GOOD :-)
+				return true;
+			} else {
+				return false;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (PMA.logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				PMA.logger.severe(sw.toString());
+			}
+			return false;
+		}
+	}
+
+	/**
+	 * This method is used to delete a directory on PMA.core
+	 * 
+	 * @param admSessionID an admin session ID
+	 * @param path path of the directory to delete
+	 * @return true if directory was successfully deleted, false otherwise
+	 */
+	public static boolean deleteDirectory(String admSessionID, String path) {
+		try {
+			// we rename folders on PMA.core only
+			if (Core.isLite(Core.pmaUrl(admSessionID))) {
+				return false;
+			}
+			String url = adminUrl(admSessionID) + "DeleteDirectory";
+			String payload = "{ \"sessionID\": \"" + admSessionID + "\", \"path\": \"" + path + "\" }";
+			httpPost(url, payload);
+			String jsonString = httpPost(url, payload);
+			if (PMA.isJSONObject(jsonString) && PMA.getJSONObjectResponse(jsonString).has("Code")) {
+				if (PMA.debug) {
+					System.out.println(jsonString);
+				}
+				return false;
+			}
+			// Sanity check : no slides should be found anymore in the original directory
+			if (Core.getSlides(path, admSessionID) == null) {
+				// This means the original directory is no longer available. So that's GOOD :-)
+				return true;
+			} else {
+				return false;
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -390,9 +528,9 @@ public class CoreAdmin {
 			serviceUrl = (String) varargs[1];
 		}
 		String s3MountingPoint = "{" + "\"AccessKey\": \"" + accessKey + "\"," + "\"SecretKey\": \"" + secretKey + "\","
-				+ (chunkSize == 1048576 ? "" : "\"ChunkSize\": " + chunkSize + ",") + 
-				(serviceUrl == null ? "" : "\"ServiceUrl\": \"" + serviceUrl + "\",") + 
-				"\"Path\": \"" + path + "\"," + "\"InstanceId\": " + instanceId + "}";
+				+ (chunkSize == 1048576 ? "" : "\"ChunkSize\": " + chunkSize + ",")
+				+ (serviceUrl == null ? "" : "\"ServiceUrl\": \"" + serviceUrl + "\",") + "\"Path\": \"" + path + "\","
+				+ "\"InstanceId\": " + instanceId + "}";
 		return s3MountingPoint;
 	}
 
@@ -409,9 +547,9 @@ public class CoreAdmin {
 	 */
 	public static String createFileSystemMountingPoint(String username, String password, String domainName, String path,
 			Integer instanceId) {
-		String fileSystemMountingPoint = "{" + "\"Username\": \"" + username + "\"," + "\"Password\": \"" + password + "\","
-				+ "\"DomainName\": \"" + domainName + "\"," + "\"Path\": \"" + path + "\"," + "\"InstanceId\": " + instanceId
-				+ "}";
+		String fileSystemMountingPoint = "{" + "\"Username\": \"" + username + "\"," + "\"Password\": \"" + password
+				+ "\"," + "\"DomainName\": \"" + domainName + "\"," + "\"Path\": \"" + path + "\"," + "\"InstanceId\": "
+				+ instanceId + "}";
 		return fileSystemMountingPoint;
 	}
 
@@ -422,13 +560,13 @@ public class CoreAdmin {
 	 * @param varargs      Array of optional arguments
 	 *                     <p>
 	 *                     amazonS3MountingPoints : First optional
-	 *                     argument(List{@literal <}String{@literal >}), default value(null), List of
-	 *                     amazon S3 mounting points
+	 *                     argument(List{@literal <}String{@literal >}), default
+	 *                     value(null), List of amazon S3 mounting points
 	 *                     </p>
 	 *                     <p>
 	 *                     fileSystemMountingPoints : Second optional
-	 *                     argument(List{@literal <}String{@literal >}), default value(null), List of file
-	 *                     system mounting points
+	 *                     argument(List{@literal <}String{@literal >}), default
+	 *                     value(null), List of file system mounting points
 	 *                     </p>
 	 *                     <p>
 	 *                     description : Third optional argument(String), default
@@ -514,16 +652,18 @@ public class CoreAdmin {
 			con.setRequestProperty("Content-Type", "application/json");
 			con.setUseCaches(false);
 			con.setDoOutput(true);
-			String input = "{" + "\"sessionID\": \"" + admSessionID + "\"," + "\"rootDirectory\": {" + "\"Alias\": \"" + alias
-					+ "\"," + "\"Description\": \"" + description + "\"," + "\"Offline\": " + isOffline + "," + "\"Public\": "
-					+ isPublic;
+			String input = "{" + "\"sessionID\": \"" + admSessionID + "\"," + "\"rootDirectory\": {" + "\"Alias\": \""
+					+ alias + "\"," + "\"Description\": \"" + description + "\"," + "\"Offline\": " + isOffline + ","
+					+ "\"Public\": " + isPublic;
 
 			if (amazonS3MountingPoints != null) {
-				String amazonS3MountingPointsForJson = amazonS3MountingPoints.stream().collect(Collectors.joining(",", "[", "]"));
+				String amazonS3MountingPointsForJson = amazonS3MountingPoints.stream()
+						.collect(Collectors.joining(",", "[", "]"));
 				input += ", \"AmazonS3MountingPoints\" :" + amazonS3MountingPointsForJson;
 			}
 			if (fileSystemMountingPoints != null) {
-				String fileSystemMountingPointsForJson = fileSystemMountingPoints.stream().collect(Collectors.joining(",", "[", "]"));
+				String fileSystemMountingPointsForJson = fileSystemMountingPoints.stream()
+						.collect(Collectors.joining(",", "[", "]"));
 				input += ", \"FileSystemMountingPoints\" :" + fileSystemMountingPointsForJson;
 			}
 			input += "}" + "}";
