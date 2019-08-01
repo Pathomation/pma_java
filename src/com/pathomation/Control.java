@@ -219,15 +219,15 @@ public class Control {
 	/**
 	 * This method is used to extract the participants in a particular session
 	 * 
-	 * @param pmaControlURL       URL for PMA.Control
+	 * @param pmaControlURL               URL for PMA.Control
 	 * @param pmaControlTrainingSessionID Training session ID
-	 * @param pmaCoreSessionID    PMA.core session ID
+	 * @param pmaCoreSessionID            PMA.core session ID
 	 * @return Map of participants in a particular session
 	 */
 	public static Map<String, JSONObject> getTrainingSessionParticipants(String pmaControlURL,
 			Integer pmaControlTrainingSessionID, String pmaCoreSessionID) {
-		String url = PMA.join(pmaControlURL,
-				"api/Sessions/" + pmaControlTrainingSessionID + "/Participants?sessionID=" + PMA.pmaQ(pmaCoreSessionID));
+		String url = PMA.join(pmaControlURL, "api/Sessions/" + pmaControlTrainingSessionID + "/Participants?sessionID="
+				+ PMA.pmaQ(pmaCoreSessionID));
 		try {
 			String jsonString = PMA.httpGet(url, "application/json");
 			JSONArray sessionParticipants = PMA.getJSONArrayResponse(jsonString);
@@ -252,17 +252,17 @@ public class Control {
 	 * This method is used to check if a specific user participates in a specific
 	 * session
 	 * 
-	 * @param pmaControlURL       URL for PMA.Control
-	 * @param participantUsername PMA.core username
+	 * @param pmaControlURL               URL for PMA.Control
+	 * @param participantUsername         PMA.core username
 	 * @param pmaControlTrainingSessionID Training session ID
-	 * @param pmaCoreSessionID    PMA.core session ID
+	 * @param pmaCoreSessionID            PMA.core session ID
 	 * @return True if a specific user participates in a specific session, false
 	 *         otherwise.
 	 */
 	public static Boolean isParticipantInTrainingSession(String pmaControlURL, String participantUsername,
 			Integer pmaControlTrainingSessionID, String pmaCoreSessionID) {
-		Map<String, JSONObject> allParticipants = getTrainingSessionParticipants(pmaControlURL, pmaControlTrainingSessionID,
-				pmaCoreSessionID);
+		Map<String, JSONObject> allParticipants = getTrainingSessionParticipants(pmaControlURL,
+				pmaControlTrainingSessionID, pmaCoreSessionID);
 		return allParticipants.containsKey(participantUsername);
 	}
 
@@ -275,15 +275,15 @@ public class Control {
 
 	/**
 	 * 
-	 * @param pmaControlURL              URL for PMA.Control
-	 * @param participantSessionID       The participant's session ID to allow for
-	 *                                   eventual impersonation
-	 * @param participantUsername        participant username
-	 * @param pmaControlTrainingSessionID        Training session ID
-	 * @param pmaControlCaseCollectionID Case collection ID
-	 * @param pmaCoreSessionID           PMA.core session ID, the administrative
-	 *                                   session ID to verify that the participant
-	 *                                   is registered for the training session
+	 * @param pmaControlURL               URL for PMA.Control
+	 * @param participantSessionID        The participant's session ID to allow for
+	 *                                    eventual impersonation
+	 * @param participantUsername         participant username
+	 * @param pmaControlTrainingSessionID Training session ID
+	 * @param pmaControlCaseCollectionID  Case collection ID
+	 * @param pmaCoreSessionID            PMA.core session ID, the administrative
+	 *                                    session ID to verify that the participant
+	 *                                    is registered for the training session
 	 * @return Session's URL
 	 * @throws Exception If participantUsername isn't registred for this session
 	 */
@@ -291,7 +291,8 @@ public class Control {
 	public static String getTrainingSessionURL(String pmaControlURL, String participantSessionID,
 			String participantUsername, Integer pmaControlTrainingSessionID, Integer pmaControlCaseCollectionID,
 			String pmaCoreSessionID) throws Exception {
-		if (isParticipantInTrainingSession(pmaControlURL, participantUsername, pmaControlTrainingSessionID, pmaCoreSessionID)) {
+		if (isParticipantInTrainingSession(pmaControlURL, participantUsername, pmaControlTrainingSessionID,
+				pmaCoreSessionID)) {
 			for (Entry<Integer, Map<String, String>> entry : ((Map<Integer, Map<String, String>>) getTrainingSession(
 					pmaControlURL, pmaControlTrainingSessionID, pmaCoreSessionID).get("CaseCollections")).entrySet()) {
 				if (entry.getKey() == pmaControlCaseCollectionID) {
@@ -334,11 +335,11 @@ public class Control {
 	 * This method is used to register a participant for a session, assign a
 	 * specific role
 	 * 
-	 * @param pmaControlURL       PMA.control URL
-	 * @param participantUsername PMA.core username
+	 * @param pmaControlURL               PMA.control URL
+	 * @param participantUsername         PMA.core username
 	 * @param pmaControlTrainingSessionID Training session ID
-	 * @param pmaControlRole      Role
-	 * @param pmaCoreSessionID    PMA.core session ID
+	 * @param pmaControlRole              Role
+	 * @param pmaCoreSessionID            PMA.core session ID
 	 * @return URL connection output in JSON format
 	 */
 //	 * @throws Exception If user is ALREADY registered in the provided PMA.control
@@ -450,16 +451,19 @@ public class Control {
 			return null;
 		}
 	}
-		
+
 	/**
-	 * This method is used to get the identifier caseCollectionTrainingSessionID
-	 * @param pmaControlURL              PMA.control URL
-	 * @param pmaControlTrainingSessionID        Training session ID
-	 * @param pmaControlCaseCollectionID Case collection ID
-	 * @param pmaCoreSessionID           PMA.core session ID
-	 * @return caseCollectionTrainingSessionID
+	 * This method is a helper to obtain internal technical keys that link training
+	 * sessions with case collections
+	 * 
+	 * @param pmaControlURL               PMA.control URL
+	 * @param pmaControlTrainingSessionID Training session ID
+	 * @param pmaControlCaseCollectionID  Case collection ID
+	 * @param pmaCoreSessionID            PMA.core session ID
+	 * @return Identifier caseCollectionTrainingSessionID
 	 */
-	public static Integer getCaseCollectionTrainingSessionID(String pmaControlURL, Integer pmaControlTrainingSessionID, Integer pmaControlCaseCollectionID, String pmaCoreSessionID) {
+	public static Integer getCaseCollectionTrainingSessionID(String pmaControlURL, Integer pmaControlTrainingSessionID,
+			Integer pmaControlCaseCollectionID, String pmaCoreSessionID) {
 		JSONArray fullTrainingSessions = pmaGetTrainingSessions(pmaControlURL, pmaCoreSessionID);
 		for (int i = 0; i < fullTrainingSessions.length(); i++) {
 			JSONObject sess = fullTrainingSessions.optJSONObject(i);
@@ -480,12 +484,12 @@ public class Control {
 	 * This method is used to a ssign an interaction mode to a particpant for a
 	 * given Case Collection within a training session
 	 * 
-	 * @param pmaControlURL              PMA.control URL
-	 * @param participantUsername        PMA.core username
-	 * @param pmaControlTrainingSessionID        Training session ID
-	 * @param pmaControlCaseCollectionID Case collection ID
-	 * @param pmaControlInteractionMode  Interaction mode
-	 * @param pmaCoreSessionID           PMA.core session ID
+	 * @param pmaControlURL               PMA.control URL
+	 * @param participantUsername         PMA.core username
+	 * @param pmaControlTrainingSessionID Training session ID
+	 * @param pmaControlCaseCollectionID  Case collection ID
+	 * @param pmaControlInteractionMode   Interaction mode
+	 * @param pmaCoreSessionID            PMA.core session ID
 	 * @return URL connection output in JSON format
 	 * @throws Exception If user is NOT registered in the provided PMA.control
 	 *                   training session
@@ -500,8 +504,8 @@ public class Control {
 					+ " is NOT registered in PMA.control training session " + pmaControlTrainingSessionID);
 		}
 		try {
-			String url = PMA.join(pmaControlURL, "api/Sessions/") + pmaControlTrainingSessionID + "/InteractionMode?SessionID="
-					+ pmaCoreSessionID;
+			String url = PMA.join(pmaControlURL, "api/Sessions/") + pmaControlTrainingSessionID
+					+ "/InteractionMode?SessionID=" + pmaCoreSessionID;
 			URL urlResource = new URL(url);
 			HttpURLConnection con;
 			if (url.startsWith("https")) {
@@ -543,12 +547,12 @@ public class Control {
 	 * This method is an overload of previous one. We created to add the possibility
 	 * to assign an interaction mode outside the defined enum values
 	 * 
-	 * @param pmaControlURL              PMA.control URL
-	 * @param participantUsername        PMA.core username
-	 * @param pmaControlTrainingSessionID        Training session ID
-	 * @param pmaControlCaseCollectionID Case collection ID
-	 * @param pmaControlInteractionMode  Interaction mode
-	 * @param pmaCoreSessionID           PMA.core session ID
+	 * @param pmaControlURL               PMA.control URL
+	 * @param participantUsername         PMA.core username
+	 * @param pmaControlTrainingSessionID Training session ID
+	 * @param pmaControlCaseCollectionID  Case collection ID
+	 * @param pmaControlInteractionMode   Interaction mode
+	 * @param pmaCoreSessionID            PMA.core session ID
 	 * @return URL connection output in JSON format
 	 * @throws Exception If user is NOT registered in the provided PMA.control
 	 *                   training session
@@ -563,8 +567,8 @@ public class Control {
 					+ " is NOT registered in PMA.control training session " + pmaControlTrainingSessionID);
 		}
 		try {
-			String url = PMA.join(pmaControlURL, "api/Sessions/") + pmaControlTrainingSessionID + "/InteractionMode?SessionID="
-					+ pmaCoreSessionID;
+			String url = PMA.join(pmaControlURL, "api/Sessions/") + pmaControlTrainingSessionID
+					+ "/InteractionMode?SessionID=" + pmaCoreSessionID;
 			URL urlResource = new URL(url);
 			HttpURLConnection con;
 			if (url.startsWith("https")) {
@@ -689,9 +693,9 @@ public class Control {
 	 * This method is used to get the first (training) session with ID =
 	 * pmaControlTrainingSessionID
 	 * 
-	 * @param pmaControlURL       URL for PMA.Control
+	 * @param pmaControlURL               URL for PMA.Control
 	 * @param pmaControlTrainingSessionID Training session's ID
-	 * @param pmaCoreSessionID    PMA.core session ID
+	 * @param pmaCoreSessionID            PMA.core session ID
 	 * @return First training session with ID = pmacontrolTrainingSessionID
 	 */
 	public static Map<String, Object> getTrainingSession(String pmaControlURL, Integer pmaControlTrainingSessionID,

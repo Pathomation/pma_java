@@ -100,7 +100,7 @@ public class PMA {
 	}
 
 	/**
-	 * This method is used to cache requested URLs
+	 * This method is used to cache results from requested URLs (GET method)
 	 * 
 	 * @param url      URL to request
 	 * @param property Header value
@@ -141,10 +141,12 @@ public class PMA {
 	public static void clearURLCache() {
 		urlContent = new HashMap<>();
 	}
-	
+
 	/**
-	 * This method is used to determine whether the Java SDK runs in debugging mode or not.
-	 * When in debugging mode (flag = true), extra output is produced when certain conditions in the code are not met
+	 * This method is used to determine whether the Java SDK runs in debugging mode
+	 * or not. When in debugging mode (flag = true), extra output is produced when
+	 * certain conditions in the code are not met
+	 * 
 	 * @param flag Debugging mode (activated or deactivated)
 	 */
 	public static void setDebugFlag(Boolean flag) {
@@ -157,7 +159,7 @@ public class PMA {
 						"Debug flag enabled. You will receive extra feedback and messages from the Java SDK (like this one)");
 			}
 		}
-		
+
 	}
 
 	/**
