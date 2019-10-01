@@ -43,7 +43,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.78
+ * @version 2.0.0.79
  */
 public class Core {
 	/**
@@ -1948,7 +1948,7 @@ public class Core {
 		modificationDate = String.valueOf(Core.getSlideInfo(slideRef, sessionID).get("LastModified"));
 		modificationDate = modificationDate.substring(6, modificationDate.length() - 2);
 		// Convert the time stamp to a date
-		SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd H:m:s");
+		SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		modificationDate = simpleDateFormat.format(new Date(new Timestamp(Long.parseLong(modificationDate)).getTime()));
 		return modificationDate;
 	}
