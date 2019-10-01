@@ -1162,7 +1162,7 @@ public class Control {
 		Map<Integer, String> mapProjectTitles = getProjectTitlesDict(pmaControlURL, pmaCoreSessionID);
 		List<Map<String, Object>> lstProjects = new ArrayList<>();
 		for (Entry<Integer, String> entry : mapProjectTitles.entrySet()) {
-			if (entry.getValue().contains(keyword)) {
+			if (entry.getValue().contains(keyword.toLowerCase())) {
 				lstProjects.add(getProject(pmaControlURL, entry.getKey(), pmaCoreSessionID));
 			}
 		}

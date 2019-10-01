@@ -7,8 +7,11 @@ import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +43,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.77
+ * @version 2.0.0.78
  */
 public class Core {
 	/**
@@ -1924,6 +1927,30 @@ public class Core {
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Determine whether a slide contains multiple (stacked) layers or not
 		return getNumberOfLayers(slideRef, sessionID) > 1;
+	}
+
+	/**
+	 * This method is used to convert the slide last modified time stamp into a
+	 * human readable format
+	 * 
+	 * @param slideRef slide's path
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return Slide's last modification date
+	 */
+	public static String getLastModifiedDate(String slideRef, String... varargs) {
+		// setting the default value when arguments' value is omitted
+		String sessionID = varargs.length > 0 ? varargs[0] : null;
+		String modificationDate = null;
+		modificationDate = String.valueOf(Core.getSlideInfo(slideRef, sessionID).get("LastModified"));
+		modificationDate = modificationDate.substring(6, modificationDate.length() - 2);
+		// Convert the time stamp to a date
+		SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd H:m:s");
+		modificationDate = simpleDateFormat.format(new Date(new Timestamp(Long.parseLong(modificationDate)).getTime()));
+		return modificationDate;
 	}
 
 	/**
