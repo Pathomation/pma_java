@@ -43,7 +43,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.79
+ * @version 2.0.0.80
  */
 public class Core {
 	/**
@@ -2381,6 +2381,153 @@ public class Core {
 			return null;
 		}
 	}
+	
+	/**
+	 * This method is used to create the url to retrieve a single tile at position (x, y)
+	 * 
+	 * @param slideRef slide's path or UID
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 x : First optional argument(Integer), default value(0), x
+	 *                 position
+	 *                 </p>
+	 *                 <p>
+	 *                 y : Second optional argument(Integer), default value(0), y
+	 *                 position
+	 *                 </p>
+	 *                 <p>
+	 *                 zoomLevel : Third optional argument(Integer), default
+	 *                 value(null), zoom level
+	 *                 </p>
+	 *                 <p>
+	 *                 zStack : Fourth optional argument(Integer), default value(0),
+	 *                 Number of z stacks
+	 *                 </p>
+	 *                 <p>
+	 *                 sessionID : Fifth optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 *                 <p>
+	 *                 format : Sixth optional argument(String), default value(jpg),
+	 *                 image format
+	 *                 </p>
+	 *                 <p>
+	 *                 quality : Seventh optional argument(Integer), default
+	 *                 value(100), quality
+	 *                 </p>
+	 * @return Url to retrieve a single tile at position (x, y)
+	 * @throws Exception if unable to determine the PMA.core instance the session ID
+	 *                   belong to
+	 */
+	public static String getTileUrl(String slideRef, Object... varargs) throws Exception {
+		// setting the default values when arguments' values are omitted
+		Integer x = 0;
+		Integer y = 0;
+		Integer zoomLevel = null;
+		Integer zStack = 0;
+		String sessionID = null;
+		String format = "jpg";
+		Integer quality = 100;
+		if (varargs.length > 0) {
+			if (!(varargs[0] instanceof Integer) && varargs[0] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getTile() : Illegal argument");
+				}
+				throw new IllegalArgumentException("...");
+			}
+			x = (Integer) varargs[0];
+		}
+		if (varargs.length > 1) {
+			if (!(varargs[1] instanceof Integer) && varargs[1] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getTile() : Illegal argument");
+				}
+				throw new IllegalArgumentException("...");
+			}
+			y = (Integer) varargs[1];
+		}
+		if (varargs.length > 2) {
+			if (!(varargs[2] instanceof Integer) && varargs[2] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getTile() : Illegal argument");
+				}
+				throw new IllegalArgumentException("...");
+			}
+			zoomLevel = (Integer) varargs[2];
+		}
+		if (varargs.length > 3) {
+			if (!(varargs[3] instanceof Integer) && varargs[3] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getTile() : Illegal argument");
+				}
+				throw new IllegalArgumentException("...");
+			}
+			zStack = (Integer) varargs[3];
+		}
+		if (varargs.length > 4) {
+			if (!(varargs[4] instanceof String) && varargs[4] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getTile() : Illegal argument");
+				}
+				throw new IllegalArgumentException("...");
+			}
+			sessionID = (String) varargs[4];
+		}
+		if (varargs.length > 5) {
+			if (!(varargs[5] instanceof String) && varargs[5] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getTile() : Illegal argument");
+				}
+				throw new IllegalArgumentException("...");
+			}
+			format = (String) varargs[5];
+		}
+		if (varargs.length > 6) {
+			if (!(varargs[6] instanceof Integer) && varargs[6] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getTile() : Illegal argument");
+				}
+				throw new IllegalArgumentException("...");
+			}
+			quality = (Integer) varargs[6];
+		}
+		// Get a single tile at position (x, y)
+		// Format can be 'jpg' or 'png'
+		// Quality is an integer value and varies from 0
+		// (as much compression as possible; not recommended) to 100 (100%, no
+		// compression)
+		sessionID = sessionId(sessionID);
+		if (slideRef.startsWith("/")) {
+			slideRef = slideRef.substring(1);
+		}
+		if (zoomLevel == null) {
+			zoomLevel = 0;
+		}
+		String url;
+		url = pmaUrl(sessionID);
+		if (url == null) {
+			if (PMA.logger != null) {
+				PMA.logger.severe("Unable to determine the PMA.core instance belonging to " + sessionID);
+			}
+			throw new Exception("Unable to determine the PMA.core instance belonging to " + sessionID);
+		}
+		try {
+		url += "tile" + "?SessionID=" + PMA.pmaQ(sessionID) + "&channels=" + PMA.pmaQ("0") + "&layer="
+				+ zStack.toString() + "&timeframe=" + PMA.pmaQ("0") + "&layer=" + PMA.pmaQ("0") + "&pathOrUid="
+				+ PMA.pmaQ(slideRef) + "&x=" + x.toString() + "&y=" + y.toString() + "&z=" + zoomLevel.toString()
+				+ "&format=" + PMA.pmaQ(format) + "&quality=" + PMA.pmaQ(quality.toString()) + "&cache="
+				+ pmaUseCacheWhenRetrievingTiles.toString().toLowerCase();
+			return url;
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (PMA.logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				PMA.logger.severe(sw.toString());
+			}
+			return null;
+		}
+	}	
 
 	/**
 	 * This method is used to get a single tile at position (x, y)
@@ -2503,20 +2650,8 @@ public class Core {
 		if (zoomLevel == null) {
 			zoomLevel = 0;
 		}
-		String url;
-		url = pmaUrl(sessionID);
-		if (url == null) {
-			if (PMA.logger != null) {
-				PMA.logger.severe("Unable to determine the PMA.core instance belonging to " + sessionID);
-			}
-			throw new Exception("Unable to determine the PMA.core instance belonging to " + sessionID);
-		}
-		url = "tile" + "?SessionID=" + PMA.pmaQ(sessionID) + "&channels=" + PMA.pmaQ("0") + "&layer="
-				+ zStack.toString() + "&timeframe=" + PMA.pmaQ("0") + "&layer=" + PMA.pmaQ("0") + "&pathOrUid="
-				+ PMA.pmaQ(slideRef) + "&x=" + x.toString() + "&y=" + y.toString() + "&z=" + zoomLevel.toString()
-				+ "&format=" + PMA.pmaQ(format) + "&quality=" + PMA.pmaQ(quality.toString()) + "&cache="
-				+ pmaUseCacheWhenRetrievingTiles.toString().toLowerCase();
 		try {
+			String url = getTileUrl(slideRef, x, y, zoomLevel, zStack, sessionID, format, quality);
 			URL urlResource = new URL(url);
 			URLConnection con = urlResource.openConnection();
 			Image img = ImageIO.read(con.getInputStream());
