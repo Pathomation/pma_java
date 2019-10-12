@@ -263,7 +263,12 @@ public class Control {
 			Integer pmaControlTrainingSessionID, String pmaCoreSessionID) {
 		Map<String, JSONObject> allParticipants = getTrainingSessionParticipants(pmaControlURL,
 				pmaControlTrainingSessionID, pmaCoreSessionID);
-		return allParticipants.containsKey(participantUsername);
+		for (Entry<String, JSONObject> entry : allParticipants.entrySet()) {
+			if (entry.getKey().toLowerCase().equals(participantUsername.toLowerCase())) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -829,7 +834,7 @@ public class Control {
 			return null;
 		} else {
 			for (int i = 0; i < caseCollections.length(); i++) {
-				if (caseCollections.optJSONObject(i).get("Title").toString().equals(caseCollectionTitle)) {
+				if (caseCollections.optJSONObject(i).get("Title").toString().toLowerCase().equals(caseCollectionTitle.toLowerCase())) {
 					return caseCollections.optJSONObject(i);
 				}
 			}
@@ -1162,7 +1167,7 @@ public class Control {
 		Map<Integer, String> mapProjectTitles = getProjectTitlesDict(pmaControlURL, pmaCoreSessionID);
 		List<Map<String, Object>> lstProjects = new ArrayList<>();
 		for (Entry<Integer, String> entry : mapProjectTitles.entrySet()) {
-			if (entry.getValue().contains(keyword.toLowerCase())) {
+			if (entry.getValue().toLowerCase().contains(keyword.toLowerCase())) {
 				lstProjects.add(getProject(pmaControlURL, entry.getKey(), pmaCoreSessionID));
 			}
 		}
