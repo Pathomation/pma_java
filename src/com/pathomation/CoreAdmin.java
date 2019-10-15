@@ -306,9 +306,9 @@ public class CoreAdmin {
 	 *                     value(false), Defines whether the user is suspended or
 	 *                     not
 	 *                     </p>
-	 * @return Response code of the corresponding API call
+	 * @return True if the creation has succeeded, false otherwise
 	 */
-	public static String addUser(String admSessionID, String login, String firstName, String lastName, String email,
+	public static boolean addUser(String admSessionID, String login, String firstName, String lastName, String email,
 			String pwd, Boolean... varargs) {
 		// setting the default value when argument's value is omitted
 		Boolean canAnnotate = varargs.length > 0 ? varargs[0] : false;
@@ -318,11 +318,19 @@ public class CoreAdmin {
 
 		try {
 			String url = adminUrl(admSessionID, false) + "CreateUser";
-			String input = "{" + "\"sessionID\": " + admSessionID + "," + "\"user\": {" + "\"Login\": " + login + ","
-					+ "\"FirstName\": " + firstName + "," + "\"LastName\": " + lastName + "," + "\"Password\": " + pwd
-					+ "," + "\"Email\": " + email + "," + "\"Administrator\": " + isAdmin + "," + "\"isSuspended\": "
+			String input = "{" + "\"sessionID\": \"" + admSessionID + "\"," + "\"user\": {" + "\"Login\": \"" + login + "\","
+					+ "\"FirstName\": \"" + firstName + "\"," + "\"LastName\": \"" + lastName + "\"," + "\"Password\": \"" + pwd
+					+ "\"," + "\"Email\": \"" + email + "\"," + "\"Administrator\": " + isAdmin + "," + "\"isSuspended\": "
 					+ isSuspended + "," + "\"CanAnnotate\": " + canAnnotate + "}" + "}";
-			return httpPost(url, input);
+			
+			String jsonString = httpPost(url, input);
+			if (PMA.isJSONObject(jsonString) && PMA.getJSONObjectResponse(jsonString).has("Code")) {
+				if (PMA.debug) {
+					System.out.println(jsonString);
+				}
+				return false;
+			}
+			return true;
 		} catch (Exception e) {
 			e.printStackTrace();
 			if (PMA.logger != null) {
@@ -330,7 +338,7 @@ public class CoreAdmin {
 				e.printStackTrace(new PrintWriter(sw));
 				PMA.logger.severe(sw.toString());
 			}
-			return null;
+			return false;
 		}
 	}
 
