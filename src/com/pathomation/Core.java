@@ -43,7 +43,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.81
+ * @version 2.0.0.82
  */
 public class Core {
 	/**

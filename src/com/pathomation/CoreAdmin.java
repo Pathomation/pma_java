@@ -369,6 +369,37 @@ public class CoreAdmin {
 	}
 
 	/**
+	 * This method is used to reset a user's password
+	 * 
+	 * @param sessionID   session ID
+	 * @param username    username to update
+	 * @param newPassword new password
+	 * @return True if password reset successfully, false otherwise
+	 */
+	public static boolean resetPassword(String sessionID, String username, String newPassword) {
+		String url = adminUrl(sessionID, false) + "ResetPassword?sessionID=" + sessionID + "&username=" + username
+				+ "&newPassword=" + newPassword;
+		try {
+			String jsonString = PMA.httpGet(url, "application/json");
+			if (PMA.isJSONObject(jsonString) && PMA.getJSONObjectResponse(jsonString).has("Code")) {
+				if (PMA.debug) {
+					System.out.println(jsonString);
+				}
+				return false;
+			}
+			return true;
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (PMA.logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				PMA.logger.severe(sw.toString());
+			}
+			return false;
+		}
+	}
+
+	/**
 	 * This method is used to create a new directory on PMA.core
 	 * 
 	 * @param admSessionID an admin session ID
@@ -448,7 +479,7 @@ public class CoreAdmin {
 	 * This method is used to delete a directory on PMA.core
 	 * 
 	 * @param admSessionID an admin session ID
-	 * @param path path of the directory to delete
+	 * @param path         path of the directory to delete
 	 * @return true if directory was successfully deleted, false otherwise
 	 */
 	public static boolean deleteDirectory(String admSessionID, String path) {
