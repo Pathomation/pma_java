@@ -28,7 +28,12 @@ public class GetUIDSlidePMAStart extends HttpServlet {
 			String dir = Core.getFirstNonEmptyDirectory("/", sessionID);
 			out.println("Looking for slides in " + dir + "<br/>");
 			for (String slide : Core.getSlides(dir, sessionID)) {
-				out.println(slide + " - " + Core.getUid(slide, sessionID) + "<br/>");
+				try {
+					out.println(slide + " - " + Core.getUid(slide, sessionID) + "<br/>");
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 			// not always needed; depends on whether the client (e.g. browser) still needs to SessionID as well
 			Core.disconnect(sessionID);
