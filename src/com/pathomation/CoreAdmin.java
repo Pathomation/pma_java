@@ -61,7 +61,7 @@ public class CoreAdmin {
 	private static String adminUrl(Object... varargs) {
 		// setting the default values when arguments' values are omitted
 		String sessionID = null;
-		Boolean xml = true;
+		Boolean xml = false;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof String) && varargs[0] != null) {
 				if (PMA.logger != null) {
@@ -172,6 +172,7 @@ public class CoreAdmin {
 			}
 			con.setRequestMethod("POST");
 			con.setRequestProperty("Content-Type", "application/json");
+			con.setRequestProperty("Accept", "application/json");
 			con.setUseCaches(false);
 			con.setDoOutput(true);
 			OutputStream os = con.getOutputStream();
@@ -455,7 +456,7 @@ public class CoreAdmin {
 			if (Core.isLite(Core.pmaUrl(admSessionID))) {
 				return false;
 			}
-			String url = adminUrl(admSessionID) + "RenameDirectory";
+			String url = adminUrl(admSessionID, false) + "RenameDirectory";
 			String payload = "{ \"sessionID\": \"" + admSessionID + "\", \"path\": \"" + originalPath
 					+ "\", \"newName\":\"" + newName + "\" }";
 			String jsonString = httpPost(url, payload);
@@ -492,11 +493,11 @@ public class CoreAdmin {
 	 */
 	public static boolean deleteDirectory(String admSessionID, String path) {
 		try {
-			// we rename folders on PMA.core only
+			// we delete folders on PMA.core only
 			if (Core.isLite(Core.pmaUrl(admSessionID))) {
 				return false;
 			}
-			String url = adminUrl(admSessionID) + "DeleteDirectory";
+			String url = adminUrl(admSessionID, false) + "DeleteDirectory";
 			String payload = "{ \"sessionID\": \"" + admSessionID + "\", \"path\": \"" + path + "\" }";
 			httpPost(url, payload);
 			String jsonString = httpPost(url, payload);
@@ -523,7 +524,81 @@ public class CoreAdmin {
 			return false;
 		}
 	}
+	
+	/**
+	 * This method is used to rename a slide on PMA.core
+	 * 
+	 * @param admSessionID an admin session ID
+	 * @param originalPath Old path
+	 * @param newName      New name
+	 * @return true if slide was renamed successfully, false otherwise
+	 */
+	public static boolean renameSlide(String admSessionID, String originalPath, String newName) {
+		try {
+			// we rename slides on PMA.core only
+			if (Core.isLite(Core.pmaUrl(admSessionID))) {
+				return false;
+			}
+			String url = adminUrl(admSessionID, false) + "RenameSlide";
+			String payload = "{ \"sessionID\": \"" + admSessionID + "\", \"path\": \"" + originalPath
+					+ "\", \"newName\":\"" + newName + "\" }";
+			String jsonString = httpPost(url, payload);
+			if (PMA.isJSONObject(jsonString) && PMA.getJSONObjectResponse(jsonString).has("Code")) {
+				if (PMA.debug) {
+					System.out.println(jsonString);
+				}
+				return false;
+			} else if (jsonString.equals("true")) {
+				return true;
+			} else {
+				return false;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (PMA.logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				PMA.logger.severe(sw.toString());
+			}
+			return false;
+		}
+	}
+	
 
+	/**
+	 * This method is used to delete a slide on PMA.core
+	 * 
+	 * @param admSessionID an admin session ID
+	 * @param path         path of the slide to delete
+	 * @return true if slide was successfully deleted, false otherwise
+	 */
+	public static boolean deleteSlide(String admSessionID, String path) {
+		try {
+			// we rename folders on PMA.core only
+			if (Core.isLite(Core.pmaUrl(admSessionID))) {
+				return false;
+			}
+			String url = adminUrl(admSessionID, false) + "DeleteSlide";
+			String payload = "{ \"sessionID\": \"" + admSessionID + "\", \"path\": \"" + path + "\" }";
+			String jsonString = httpPost(url, payload);
+			if (PMA.isJSONObject(jsonString) && PMA.getJSONObjectResponse(jsonString).has("Code")) {
+				if (PMA.debug) {
+					System.out.println(jsonString);
+				}
+				return false;
+			}
+			return true;
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (PMA.logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				PMA.logger.severe(sw.toString());
+			}
+			return false;
+		}
+	}	
+	
 	/**
 	 * This method is used to create an Amazon S3 mounting point. A list of these is
 	 * to be used to supply method create_root_directory()
