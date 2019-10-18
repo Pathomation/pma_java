@@ -43,7 +43,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.83
+ * @version 2.0.0.84
  */
 public class Core {
 	/**
@@ -288,7 +288,7 @@ public class Core {
 	private static String apiUrl(Object... varargs) {
 		// setting the default values when arguments' values are omitted
 		String sessionID = null;
-		Boolean xml = true;
+		Boolean xml = false;
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof String) && varargs[0] != null) {
 				if (PMA.logger != null) {
@@ -647,7 +647,7 @@ public class Core {
 		// Disconnect from a PMA.core instance; return True if session exists; return
 		// False if session didn't exist (anymore)
 		sessionID = sessionId(sessionID);
-		String url = apiUrl(sessionID) + "DeAuthenticate?sessionID=" + PMA.pmaQ((sessionID));
+		String url = apiUrl(sessionID, true) + "DeAuthenticate?sessionID=" + PMA.pmaQ((sessionID));
 		String contents = PMA.urlReader(url);
 		pmaAmountOfDataDownloaded.put(sessionID, pmaAmountOfDataDownloaded.get(sessionID) + contents.length());
 		if (pmaSessions.size() > 0) {
@@ -718,7 +718,7 @@ public class Core {
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Return a list of root-directories available to sessionID
 		sessionID = sessionId(sessionID);
-		String url = apiUrl(sessionID) + "GetRootDirectories?sessionID=" + PMA.pmaQ(sessionID);
+		String url = apiUrl(sessionID, true) + "GetRootDirectories?sessionID=" + PMA.pmaQ(sessionID);
 		String contents = PMA.urlReader(url);
 		pmaAmountOfDataDownloaded.put(sessionID, pmaAmountOfDataDownloaded.get(sessionID) + contents.length());
 		Document dom = PMA.domParser(contents);
@@ -1116,7 +1116,7 @@ public class Core {
 						"PMA.core.lite not found, and besides; it doesn't support UID generation. For advanced anonymization, please upgrade to PMA.core.");
 			}
 		}
-		String url = apiUrl(sessionID) + "GetUID?sessionID=" + PMA.pmaQ(sessionID) + "&path=" + PMA.pmaQ(slideRef);
+		String url = apiUrl(sessionID, true) + "GetUID?sessionID=" + PMA.pmaQ(sessionID) + "&path=" + PMA.pmaQ(slideRef);
 		String contents = PMA.urlReader(url);
 		pmaAmountOfDataDownloaded.put(sessionID, pmaAmountOfDataDownloaded.get(sessionID) + contents.length());
 		Document dom = PMA.domParser(contents);
