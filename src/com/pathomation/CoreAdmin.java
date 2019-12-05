@@ -283,10 +283,44 @@ public class CoreAdmin {
 	}
 
 	/**
+	 * This method is used to send out an email reminder to the address associated
+	 * with user login
+	 * 
+	 * @param admSessionID admin session ID
+	 * @param login        user login
+	 * @param varargs      Array of optional arguments
+	 *                     <p>
+	 *                     subject : First optional argument(Boolean), default
+	 *                     value(false), Defines whether the user can annotate
+	 *                     slides or not
+	 *                     </p>
+	 * @return Empty string if operation successful, an error message otherwise
+	 */
+	public static String sendEmailReminder(String admSessionID, String login, String... varargs) {
+		// setting the default value when argument's value is omitted
+		String subject = varargs.length > 0 ? varargs[0] : "PMA.core password reminder";
+		try {
+			String url = adminUrl(admSessionID, false) + "EmailPassword";
+			String reminderParams = "{\"username\": \"" + login + "\", \"subject\": \"" + subject
+					+ "\",\"messageTemplate\": \"\"" + "}";
+			String reminderResponse = httpPost(url, reminderParams);
+			return reminderResponse;
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (PMA.logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				PMA.logger.severe(sw.toString());
+			}
+			return null;
+		}
+	}
+
+	/**
 	 * This method is used to create a new user on PMA.core
 	 * 
 	 * @param admSessionID admin session ID
-	 * @param login        login
+	 * @param login        user login
 	 * @param firstName    user's first name
 	 * @param lastName     user's last name
 	 * @param email        user's email
@@ -319,11 +353,12 @@ public class CoreAdmin {
 
 		try {
 			String url = adminUrl(admSessionID, false) + "CreateUser";
-			String input = "{" + "\"sessionID\": \"" + admSessionID + "\"," + "\"user\": {" + "\"Login\": \"" + login + "\","
-					+ "\"FirstName\": \"" + firstName + "\"," + "\"LastName\": \"" + lastName + "\"," + "\"Password\": \"" + pwd
-					+ "\"," + "\"Email\": \"" + email + "\"," + "\"Administrator\": " + isAdmin + "," + "\"isSuspended\": "
-					+ isSuspended + "," + "\"CanAnnotate\": " + canAnnotate + "}" + "}";
-			
+			String input = "{" + "\"sessionID\": \"" + admSessionID + "\"," + "\"user\": {" + "\"Login\": \"" + login
+					+ "\"," + "\"FirstName\": \"" + firstName + "\"," + "\"LastName\": \"" + lastName + "\","
+					+ "\"Password\": \"" + pwd + "\"," + "\"Email\": \"" + email + "\"," + "\"Administrator\": "
+					+ isAdmin + "," + "\"isSuspended\": " + isSuspended + "," + "\"CanAnnotate\": " + canAnnotate + "}"
+					+ "}";
+
 			String jsonString = httpPost(url, input);
 			if (PMA.isJSONObject(jsonString) && PMA.getJSONObjectResponse(jsonString).has("Code")) {
 				if (PMA.debug) {
@@ -524,7 +559,7 @@ public class CoreAdmin {
 			return false;
 		}
 	}
-	
+
 	/**
 	 * This method is used to rename a slide on PMA.core
 	 * 
@@ -563,7 +598,6 @@ public class CoreAdmin {
 			return false;
 		}
 	}
-	
 
 	/**
 	 * This method is used to delete a slide on PMA.core
@@ -597,8 +631,8 @@ public class CoreAdmin {
 			}
 			return false;
 		}
-	}	
-	
+	}
+
 	/**
 	 * This method is used to create an Amazon S3 mounting point. A list of these is
 	 * to be used to supply method create_root_directory()
