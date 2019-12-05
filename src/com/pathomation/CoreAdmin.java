@@ -235,6 +235,9 @@ public class CoreAdmin {
 		if (!pmaCoreAdmPassword.equals("")) {
 			url = url.concat("&password=").concat(PMA.pmaQ(pmaCoreAdmPassword));
 		}
+		if (PMA.debug) {
+			System.out.println(url);
+		}
 		try {
 			String jsonString = PMA.httpGet(url, "application/json");
 			String admSessionID;
@@ -590,7 +593,7 @@ public class CoreAdmin {
 				if (PMA.debug) {
 					System.out.println(jsonString);
 				}
-				return null;
+				throw new Exception("reverseUID() on  " + slideRefUid + " resulted in: " + PMA.getJSONObjectResponse(jsonString).getString("Message"));
 			} else {
 				path = jsonString;
 			}
@@ -605,7 +608,53 @@ public class CoreAdmin {
 			return null;
 		}
 	}
-
+	
+	/**
+	 * This method is used to lookup the reverse path of a root-directory
+	 * 
+	 * @param admSessionID an admin session ID
+	 * @param alias  root directory alias
+	 * @return The reverse path of the root directory it's a file system one, empty string if it's a S3 one
+	 * @throws Exception If something goes wrong
+	 */
+	public static String reverseRootDirectory(String admSessionID, String alias) throws Exception {
+		if (admSessionID.equals(Core.getPmaCoreLiteSessionID())) {
+			if (Core.isLite()) {
+				throw new Exception(
+						"PMA.core.lite found running, but doesn't support UIDs. For advanced anonymization, please upgrade to PMA.core.");
+			} else {
+				throw new Exception(
+						"PMA.core.lite not found, and besides; it doesn't support UIDs. For advanced anonymization, please upgrade to PMA.core.");
+			}
+		}
+		try {
+			String url = adminUrl(admSessionID) + "ReverseLookupRootDirectory?sessionID=" + PMA.pmaQ(admSessionID) + "&alias="
+					+ PMA.pmaQ(alias);
+			String path;
+			if (PMA.debug) {
+				System.out.print(url);
+			}
+			String jsonString = PMA.httpGet(url, "application/json");
+			if (PMA.isJSONObject(jsonString) && PMA.getJSONObjectResponse(jsonString).has("Code")) {
+				if (PMA.debug) {
+					System.out.println(jsonString);
+				}
+				throw new Exception("reverseRootDirectory() on  " + alias + " resulted in: " + PMA.getJSONObjectResponse(jsonString).getString("Message"));
+			} else {
+				path = jsonString;
+			}
+			return path;
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (PMA.logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				PMA.logger.severe(sw.toString());
+			}
+			return null;
+		}
+	}
+ 
 	/**
 	 * This method is used to rename a slide on PMA.core
 	 * 
