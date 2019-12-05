@@ -561,6 +561,52 @@ public class CoreAdmin {
 	}
 
 	/**
+	 * This method is used to lookup the reverse path of a UID for a specific slide
+	 * 
+	 * @param admSessionID an admin session ID
+	 * @param slideRefUid  slide UID
+	 * @return The reverse path of the slide
+	 * @throws Exception If something goes wrong
+	 */
+	public static String reverseUID(String admSessionID, String slideRefUid) throws Exception {
+		if (admSessionID.equals(Core.getPmaCoreLiteSessionID())) {
+			if (Core.isLite()) {
+				throw new Exception(
+						"PMA.core.lite found running, but doesn't support UIDs. For advanced anonymization, please upgrade to PMA.core.");
+			} else {
+				throw new Exception(
+						"PMA.core.lite not found, and besides; it doesn't support UIDs. For advanced anonymization, please upgrade to PMA.core.");
+			}
+		}
+		try {
+			String url = adminUrl(admSessionID) + "ReverseLookupUID?sessionID=" + PMA.pmaQ(admSessionID) + "&uid="
+					+ PMA.pmaQ(slideRefUid);
+			String path;
+			if (PMA.debug) {
+				System.out.print(url);
+			}
+			String jsonString = PMA.httpGet(url, "application/json");
+			if (PMA.isJSONObject(jsonString) && PMA.getJSONObjectResponse(jsonString).has("Code")) {
+				if (PMA.debug) {
+					System.out.println(jsonString);
+				}
+				return null;
+			} else {
+				path = jsonString;
+			}
+			return path;
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (PMA.logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				PMA.logger.severe(sw.toString());
+			}
+			return null;
+		}
+	}
+
+	/**
 	 * This method is used to rename a slide on PMA.core
 	 * 
 	 * @param admSessionID an admin session ID
