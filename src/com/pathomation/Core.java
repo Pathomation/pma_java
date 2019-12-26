@@ -43,7 +43,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.87
+ * @version 2.0.0.88
  */
 public class Core {
 	/**
@@ -1280,6 +1280,9 @@ public class Core {
 			try {
 				String url = apiUrl(sessionID, false) + "GetImageInfo?SessionID=" + PMA.pmaQ(sessionID) + "&pathOrUid="
 						+ PMA.pmaQ(slideRef);
+				if (PMA.debug) {
+					System.out.println(url);
+				}
 				URL urlResource = new URL(url);
 				HttpURLConnection con;
 				if (url.startsWith("https")) {

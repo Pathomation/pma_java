@@ -458,7 +458,7 @@ public class CoreAdmin {
 			// we create folders on PMA.core only
 			if (Core.isLite(Core.pmaUrl(admSessionID))) {
 				return false;
-			} else if (Core.getSlides(path, admSessionID) != null) {
+			} else if (Core.getSlides(path, admSessionID) == null) {
 				String url = adminUrl(admSessionID, false) + "CreateDirectory";
 				String input = "{ \"sessionID\": \"" + admSessionID + "\", \"path\": \"" + path + "\" }";
 				String jsonString = httpPost(url, input);
