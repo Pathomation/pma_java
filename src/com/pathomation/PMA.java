@@ -414,7 +414,7 @@ public class PMA {
 		// label "Local Disk"
 		// we need to omit this case since for it PMA.core(.lite) would require a drive
 		// letter instead of a drive name + letter
-		if (displayName.matches(".*\\s\\(..\\)") && !displayName.matches("Local\\sDisk\\s\\(..\\)")) {
+		if (displayName.matches(".*\\s\\(..\\)") && !displayName.matches("Local\\sDisk\\s\\(..\\)") && !displayName.matches("Removable\\sDisk\\s\\(..\\)")) {
 			value = displayName + "/" + value.substring(root.length());
 		}
 		return value.replace("\\", "/");
