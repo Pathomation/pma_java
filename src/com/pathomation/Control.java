@@ -12,7 +12,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.net.ssl.HttpsURLConnection;
-
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -399,26 +400,19 @@ public class Control {
 	 * This method is used to register a participant for all sessions in a given
 	 * project, assigning a specific role
 	 * 
-	 * @param pmaControlURL       PMA.control URL
-	 * @param participantUsername PMA.core username
-	 * @param pmaControlProjectID Project's ID
-	 * @param pmaControlRole      Role
-	 * @param pmaCoreSessionID    PMA.core session ID
-	 * @param varargs             Array of optional arguments
-	 *                            <p>
-	 *                            pmaControlInteractionMode : First optional
-	 *                            argument(PmaInteractionMode), default
-	 *                            value(Locked), interaction mode
-	 *                            </p>
+	 * @param pmaControlURL             PMA.control URL
+	 * @param participantUsername       PMA.core username
+	 * @param pmaControlProjectID       Project's ID
+	 * @param pmaControlRole            Role
+	 * @param pmaCoreSessionID          PMA.core session ID
+	 * @param pmaControlInteractionMode The interaction mode to use
 	 * @return List of all sessions in a project that the participant was registered
 	 *         to
 	 */
 	public static String registerParticipantsForProject(String pmaControlURL, String participantUsername,
 			Integer pmaControlProjectID, PmaTrainingSessionRole pmaControlRole, String pmaCoreSessionID,
-			PmaInteractionMode... varargs) {
-		// setting the default value when argument's value is omitted
-		PmaInteractionMode pmaControlInteractionMode = ((varargs.length > 0) && (varargs[0] != null)) ? varargs[0]
-				: PmaInteractionMode.LOCKED;
+			Integer pmaControlInteractionMode) {
+
 		try {
 			String url = PMA.join(pmaControlURL, "api/Projects/") + pmaControlProjectID + "/AddParticipant?SessionID="
 					+ pmaCoreSessionID;
@@ -834,7 +828,8 @@ public class Control {
 			return null;
 		} else {
 			for (int i = 0; i < caseCollections.length(); i++) {
-				if (caseCollections.optJSONObject(i).get("Title").toString().toLowerCase().equals(caseCollectionTitle.toLowerCase())) {
+				if (caseCollections.optJSONObject(i).get("Title").toString().toLowerCase()
+						.equals(caseCollectionTitle.toLowerCase())) {
 					return caseCollections.optJSONObject(i);
 				}
 			}
@@ -1174,6 +1169,64 @@ public class Control {
 		if (lstProjects.size() > 0) {
 			return lstProjects;
 		} else {
+			return null;
+		}
+	}
+
+	/**
+	 * This method is used to a ssign an interaction mode to a particpant for an
+	 * array of Case Collections within a training session
+	 * 
+	 * @param pmaControlURL               PMA.control URL
+	 * @param participantUsername         PMA.core username
+	 * @param pmaControlTrainingSessionID Training session ID
+	 * @param pmaControlCaseCollectionIDs Array of Case collection IDs
+	 * @param pmaControlInteractionMode   Interaction mode
+	 * @param pmaCoreSessionID            PMA.core session ID
+	 * @return URL connection output in JSON format
+	 * @throws Exception If user is NOT registered in the provided PMA.control
+	 *                   training session
+	 */
+	public static String setParticipantInteractionModeCaseCollection(String pmaControlURL, String participantUsername,
+			Integer pmaControlTrainingSessionID, int[] pmaControlCaseCollectionIDs, Integer pmaControlInteractionMode,
+			String pmaCoreSessionID) throws Exception {
+		try {
+			String url = PMA.join(pmaControlURL, "api/Sessions/") + pmaControlTrainingSessionID
+					+ "/InteractionModeCaseCollections?SessionID=" + pmaCoreSessionID;
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("POST");
+			con.setRequestProperty("Content-Type", "application/json");
+			con.setUseCaches(false);
+			con.setDoOutput(true);
+			String data = "{ \"UserName\": \"" + participantUsername + "\", " + " \"CaseCollectionIds\": ["
+					+ StringUtils.join(ArrayUtils.toObject(pmaControlCaseCollectionIDs), ", ") + "], "
+					+ "\"InteractionMode\": \"" + pmaControlInteractionMode + "\" }"; // default interaction mode =
+																						// Locked
+			// + ", \"InteractionMode\": \"" +
+			// String.valueOf(pmacontrolInteractionMode.ordinal() + 1) + "\" }";
+			OutputStream os = con.getOutputStream();
+			os.write(data.getBytes("UTF-8"));
+			os.close();
+			if (PMA.debug) {
+				System.out.println("Posting to " + url);
+				System.out.println("with payload " + data);
+			}
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
+			PMA.clearURLCache();
+			return jsonString;
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (PMA.logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				PMA.logger.severe(sw.toString());
+			}
 			return null;
 		}
 	}
