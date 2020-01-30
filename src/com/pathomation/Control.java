@@ -31,11 +31,11 @@ public class Control {
 	public enum PmaTrainingSessionRole {
 		SUPERVISOR, TRAINEE, OBSERVER
 	}
-
-	public enum PmaInteractionMode {
-		LOCKED, TEST_ACTIVE, REVIEW, CONSENSUS_VIEW, BROWSE, BOARD, CONSENSUS_SCORE_EDIT, SELF_REVIEW, SELF_TEST,
-		HIDDEN, CLINICAL_INFORMATION_EDIT
-	}
+	
+//	public enum PmaInteractionMode {
+//		LOCKED, TEST_ACTIVE, REVIEW, CONSENSUS_VIEW, BROWSE, BOARD, CONSENSUS_SCORE_EDIT, SELF_REVIEW, SELF_TEST,
+//		HIDDEN, CLINICAL_INFORMATION_EDIT
+//	}
 
 	/**
 	 * This method is used to determine whether the Java SDK runs in debugging mode
@@ -478,69 +478,69 @@ public class Control {
 		}
 		return null;
 	}
-
-	/**
-	 * This method is used to a ssign an interaction mode to a particpant for a
-	 * given Case Collection within a training session
-	 * 
-	 * @param pmaControlURL               PMA.control URL
-	 * @param participantUsername         PMA.core username
-	 * @param pmaControlTrainingSessionID Training session ID
-	 * @param pmaControlCaseCollectionID  Case collection ID
-	 * @param pmaControlInteractionMode   Interaction mode
-	 * @param pmaCoreSessionID            PMA.core session ID
-	 * @return URL connection output in JSON format
-	 * @throws Exception If user is NOT registered in the provided PMA.control
-	 *                   training session
-	 */
-	public static String setParticipantInteractionMode(String pmaControlURL, String participantUsername,
-			Integer pmaControlTrainingSessionID, Integer pmaControlCaseCollectionID,
-			PmaInteractionMode pmaControlInteractionMode, String pmaCoreSessionID) throws Exception {
-
-		if (!isParticipantInTrainingSession(pmaControlURL, participantUsername, pmaControlTrainingSessionID,
-				pmaCoreSessionID)) {
-			throw new Exception("PMA.core user " + participantUsername
-					+ " is NOT registered in PMA.control training session " + pmaControlTrainingSessionID);
-		}
-		try {
-			String url = PMA.join(pmaControlURL, "api/Sessions/") + pmaControlTrainingSessionID
-					+ "/InteractionMode?SessionID=" + pmaCoreSessionID;
-			URL urlResource = new URL(url);
-			HttpURLConnection con;
-			if (url.startsWith("https")) {
-				con = (HttpsURLConnection) urlResource.openConnection();
-			} else {
-				con = (HttpURLConnection) urlResource.openConnection();
-			}
-			con.setRequestMethod("POST");
-			con.setRequestProperty("Content-Type", "application/json");
-			con.setUseCaches(false);
-			con.setDoOutput(true);
-			String data = "{ \"UserName\": \"" + participantUsername + "\", " + " \"CaseCollectionId\": \""
-					+ pmaControlCaseCollectionID + "\", " + "\"InteractionMode\": \"" + pmaControlInteractionMode
-					+ "\" }"; // default interaction mode = Locked
-			// + ", \"InteractionMode\": \"" +
-			// String.valueOf(pmacontrolInteractionMode.ordinal() + 1) + "\" }";
-			OutputStream os = con.getOutputStream();
-			os.write(data.getBytes("UTF-8"));
-			os.close();
-			if (PMA.debug) {
-				System.out.println("Posting to " + url);
-				System.out.println("with payload " + data);
-			}
-			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
-			PMA.clearURLCache();
-			return jsonString;
-		} catch (Exception e) {
-			e.printStackTrace();
-			if (PMA.logger != null) {
-				StringWriter sw = new StringWriter();
-				e.printStackTrace(new PrintWriter(sw));
-				PMA.logger.severe(sw.toString());
-			}
-			return null;
-		}
-	}
+	
+//	/**
+//	 * This method is used to a ssign an interaction mode to a particpant for a
+//	 * given Case Collection within a training session
+//	 * 
+//	 * @param pmaControlURL               PMA.control URL
+//	 * @param participantUsername         PMA.core username
+//	 * @param pmaControlTrainingSessionID Training session ID
+//	 * @param pmaControlCaseCollectionID  Case collection ID
+//	 * @param pmaControlInteractionMode   Interaction mode
+//	 * @param pmaCoreSessionID            PMA.core session ID
+//	 * @return URL connection output in JSON format
+//	 * @throws Exception If user is NOT registered in the provided PMA.control
+//	 *                   training session
+//	 */
+//	public static String setParticipantInteractionMode(String pmaControlURL, String participantUsername,
+//			Integer pmaControlTrainingSessionID, Integer pmaControlCaseCollectionID,
+//			PmaInteractionMode pmaControlInteractionMode, String pmaCoreSessionID) throws Exception {
+//
+//		if (!isParticipantInTrainingSession(pmaControlURL, participantUsername, pmaControlTrainingSessionID,
+//				pmaCoreSessionID)) {
+//			throw new Exception("PMA.core user " + participantUsername
+//					+ " is NOT registered in PMA.control training session " + pmaControlTrainingSessionID);
+//		}
+//		try {
+//			String url = PMA.join(pmaControlURL, "api/Sessions/") + pmaControlTrainingSessionID
+//					+ "/InteractionMode?SessionID=" + pmaCoreSessionID;
+//			URL urlResource = new URL(url);
+//			HttpURLConnection con;
+//			if (url.startsWith("https")) {
+//				con = (HttpsURLConnection) urlResource.openConnection();
+//			} else {
+//				con = (HttpURLConnection) urlResource.openConnection();
+//			}
+//			con.setRequestMethod("POST");
+//			con.setRequestProperty("Content-Type", "application/json");
+//			con.setUseCaches(false);
+//			con.setDoOutput(true);
+//			String data = "{ \"UserName\": \"" + participantUsername + "\", " + " \"CaseCollectionId\": \""
+//					+ pmaControlCaseCollectionID + "\", " + "\"InteractionMode\": \"" + pmaControlInteractionMode
+//					+ "\" }"; // default interaction mode = Locked
+//			// + ", \"InteractionMode\": \"" +
+//			// String.valueOf(pmacontrolInteractionMode.ordinal() + 1) + "\" }";
+//			OutputStream os = con.getOutputStream();
+//			os.write(data.getBytes("UTF-8"));
+//			os.close();
+//			if (PMA.debug) {
+//				System.out.println("Posting to " + url);
+//				System.out.println("with payload " + data);
+//			}
+//			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
+//			PMA.clearURLCache();
+//			return jsonString;
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//			if (PMA.logger != null) {
+//				StringWriter sw = new StringWriter();
+//				e.printStackTrace(new PrintWriter(sw));
+//				PMA.logger.severe(sw.toString());
+//			}
+//			return null;
+//		}
+//	}
 
 	/**
 	 * This method is an overload of previous one. We created to add the possibility
