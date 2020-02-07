@@ -173,7 +173,7 @@ public class CoreAdmin {
 			con.setRequestMethod("POST");
 			con.setRequestProperty("Content-Type", "application/json");
 			con.setRequestProperty("Accept", "application/json");
-			con.setUseCaches(false);
+			con.setUseCaches(true);
 			con.setDoOutput(true);
 			OutputStream os = con.getOutputStream();
 			os.write(data.getBytes("UTF-8"));
@@ -893,7 +893,7 @@ public class CoreAdmin {
 			}
 			con.setRequestMethod("POST");
 			con.setRequestProperty("Content-Type", "application/json");
-			con.setUseCaches(false);
+			con.setUseCaches(true);
 			con.setDoOutput(true);
 			String input = "{" + "\"sessionID\": \"" + admSessionID + "\"," + "\"rootDirectory\": {" + "\"Alias\": \""
 					+ alias + "\"," + "\"Description\": \"" + description + "\"," + "\"Offline\": " + isOffline + ","

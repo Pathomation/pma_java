@@ -31,7 +31,7 @@ public class Control {
 	public enum PmaTrainingSessionRole {
 		SUPERVISOR, TRAINEE, OBSERVER
 	}
-	
+
 //	public enum PmaInteractionMode {
 //		LOCKED, TEST_ACTIVE, REVIEW, CONSENSUS_VIEW, BROWSE, BOARD, CONSENSUS_SCORE_EDIT, SELF_REVIEW, SELF_TEST,
 //		HIDDEN, CLINICAL_INFORMATION_EDIT
@@ -93,6 +93,33 @@ public class Control {
 	 */
 	private static JSONArray pmaGetTrainingSessions(String pmaControlURL, String pmaCoreSessionID) {
 		String url = PMA.join(pmaControlURL, "api/Sessions?sessionID=" + PMA.pmaQ(pmaCoreSessionID));
+		try {
+			String jsonString = PMA.httpGet(url, "application/json");
+			JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
+			return jsonResponse;
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (PMA.logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				PMA.logger.severe(sw.toString());
+			}
+			return null;
+		}
+	}
+
+	/**
+	 * This method is used to retrieve a list of currently defined training sessions
+	 * in PMA.control
+	 * 
+	 * @param pmaControlURL    URL for PMA.Control
+	 * @param pmaCoreSessionID PMA.core session ID
+	 * @return List of registred sessions
+	 */
+	private static JSONArray pmaGetTrainingSessionsViaProject(String pmaControlURL, String pmaCoreSessionID,
+			Integer pmaControlProjectID) {
+		String url = PMA.join(pmaControlURL,
+				"api/Projects/" + pmaControlProjectID + "/Sessions?sessionID=" + PMA.pmaQ(pmaCoreSessionID));
 		try {
 			String jsonString = PMA.httpGet(url, "application/json");
 			JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
@@ -369,7 +396,7 @@ public class Control {
 			}
 			con.setRequestMethod("POST");
 			con.setRequestProperty("Content-Type", "application/json");
-			con.setUseCaches(false);
+			con.setUseCaches(true);
 			con.setDoOutput(true);
 			// default interaction mode = Locked
 			String data = "{ \"UserName\": \"" + participantUsername + "\", \"Role\": \"" + pmaControlRole + "\" }";
@@ -425,7 +452,7 @@ public class Control {
 			}
 			con.setRequestMethod("POST");
 			con.setRequestProperty("Content-Type", "application/json");
-			con.setUseCaches(false);
+			con.setUseCaches(true);
 			con.setDoOutput(true);
 			// default interaction mode = Locked
 			String data = "{ \"UserName\": \"" + participantUsername + "\", \"Role\": \"" + pmaControlRole
@@ -478,7 +505,7 @@ public class Control {
 		}
 		return null;
 	}
-	
+
 //	/**
 //	 * This method is used to a ssign an interaction mode to a particpant for a
 //	 * given Case Collection within a training session
@@ -577,7 +604,7 @@ public class Control {
 			}
 			con.setRequestMethod("POST");
 			con.setRequestProperty("Content-Type", "application/json");
-			con.setUseCaches(false);
+			con.setUseCaches(true);
 			con.setDoOutput(true);
 			String data = "{ \"UserName\": \"" + participantUsername + "\", " + " \"CaseCollectionId\": \""
 					+ pmaControlCaseCollectionID + "\", " + "\"InteractionMode\": \"" + pmaControlInteractionMode
@@ -677,6 +704,30 @@ public class Control {
 			Integer pmaControlProjectID, String pmaCoreSessionID) {
 		Map<Integer, Map<String, Object>> map = new HashMap<>();
 		JSONArray all = pmaGetTrainingSessions(pmaControlURL, pmaCoreSessionID);
+		for (int i = 0; i < all.length(); i++) {
+			JSONObject sess = all.optJSONObject(i);
+			if (pmaControlProjectID == null) {
+				map.put(sess.optInt("Id"), formatTrainingSessionProperly(sess));
+			} else if (pmaControlProjectID == sess.optInt("ProjectId")) {
+				map.put(sess.optInt("Id"), formatTrainingSessionProperly(sess));
+			}
+		}
+		return map;
+	}
+
+	/**
+	 * This method is used to retrieve (training) sessions (possibly filtered by
+	 * project ID)
+	 * 
+	 * @param pmaControlURL       URL for PMA.Control
+	 * @param pmaControlProjectID Project's ID
+	 * @param pmaCoreSessionID    PMA.core session ID
+	 * @return Map of session IDs and titles
+	 */
+	public static Map<Integer, Map<String, Object>> getTrainingSessionsViaProject(String pmaControlURL,
+			Integer pmaControlProjectID, String pmaCoreSessionID) {
+		Map<Integer, Map<String, Object>> map = new HashMap<>();
+		JSONArray all = pmaGetTrainingSessionsViaProject(pmaControlURL, pmaCoreSessionID, pmaControlProjectID);
 		for (int i = 0; i < all.length(); i++) {
 			JSONObject sess = all.optJSONObject(i);
 			if (pmaControlProjectID == null) {
@@ -1202,7 +1253,7 @@ public class Control {
 			}
 			con.setRequestMethod("POST");
 			con.setRequestProperty("Content-Type", "application/json");
-			con.setUseCaches(false);
+			con.setUseCaches(true);
 			con.setDoOutput(true);
 			String data = "{ \"UserName\": \"" + participantUsername + "\", " + " \"CaseCollectionIds\": ["
 					+ StringUtils.join(ArrayUtils.toObject(pmaControlCaseCollectionIDs), ", ") + "], "
@@ -1210,6 +1261,67 @@ public class Control {
 																						// Locked
 			// + ", \"InteractionMode\": \"" +
 			// String.valueOf(pmacontrolInteractionMode.ordinal() + 1) + "\" }";
+			OutputStream os = con.getOutputStream();
+			os.write(data.getBytes("UTF-8"));
+			os.close();
+			if (PMA.debug) {
+				System.out.println("Posting to " + url);
+				System.out.println("with payload " + data);
+			}
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
+			PMA.clearURLCache();
+			return jsonString;
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (PMA.logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				PMA.logger.severe(sw.toString());
+			}
+			return null;
+		}
+	}
+
+	/**
+	 * This method is used to assign an interaction mode to a particpant for
+	 * training sessions in batch mode
+	 * 
+	 * @param pmaControlURL               PMA.control URL
+	 * @param participantUsername         PMA.core username
+	 * @param pmaControlTrainingSessionID Training session ID
+	 * @param pmaControlCaseCollectionIDs Array of Case collection IDs
+	 * @param pmaControlInteractionMode   Interaction mode
+	 * @param pmaCoreSessionID            PMA.core session ID
+	 * @return URL connection output in JSON format
+	 * @throws Exception If user is NOT registered in the provided PMA.control
+	 *                   training session
+	 */
+	public static String setParticipantInteractionModeInBatch(String pmaControlURL, String participantUsername,
+			List<Map<String, Object>> trainingSessions, Integer pmaControlInteractionMode, String pmaCoreSessionID)
+			throws Exception {
+		try {
+			String url = PMA.join(pmaControlURL, "api/Sessions/InteractionMode?sessionID=") + pmaCoreSessionID;
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("POST");
+			con.setRequestProperty("Content-Type", "application/json");
+			con.setUseCaches(true);
+			con.setDoOutput(true);
+			String jsonContentForTrainingSessions = "";
+			for (Map<String, Object> trainingSession : trainingSessions) {
+				jsonContentForTrainingSessions += "{\"SessionId\":\"" + trainingSession.get("Id")
+						+ "\", \"CaseCollectionIds\":["
+						+ StringUtils.join(ArrayUtils.toObject((int[]) trainingSession.get("CaseCollections")), ", ")
+						+ "]},";
+			}
+			String data = "{\"UserName\":\"" + participantUsername + "\", " + "\"Sessions\":["
+					+ jsonContentForTrainingSessions + "]," + "\"InteractionMode\":\"" + pmaControlInteractionMode
+					+ "\"}"; // default interaction mode = // Locked
 			OutputStream os = con.getOutputStream();
 			os.write(data.getBytes("UTF-8"));
 			os.close();
