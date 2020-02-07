@@ -43,7 +43,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.91
+ * @version 2.0.0.92
  */
 public class Core {
 	/**
@@ -1383,7 +1383,7 @@ public class Core {
 				}
 				con.setRequestMethod("POST");
 				con.setRequestProperty("Content-Type", "application/json");
-				con.setUseCaches(false);
+				con.setUseCaches(true);
 				con.setDoOutput(true);
 				// we convert the list of slide to a string of this fashion :
 				// ["slide1","slide2"....]
