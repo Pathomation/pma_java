@@ -43,7 +43,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.92
+ * @version 2.0.0.93
  */
 public class Core {
 	/**
@@ -1116,7 +1116,8 @@ public class Core {
 						"PMA.core.lite not found, and besides; it doesn't support UID generation. For advanced anonymization, please upgrade to PMA.core.");
 			}
 		}
-		String url = apiUrl(sessionID, true) + "GetUID?sessionID=" + PMA.pmaQ(sessionID) + "&path=" + PMA.pmaQ(slideRef);
+		String url = apiUrl(sessionID, true) + "GetUID?sessionID=" + PMA.pmaQ(sessionID) + "&path="
+				+ PMA.pmaQ(slideRef);
 		String contents = PMA.urlReader(url);
 		pmaAmountOfDataDownloaded.put(sessionID, pmaAmountOfDataDownloaded.get(sessionID) + contents.length());
 		Document dom = PMA.domParser(contents);
@@ -2384,9 +2385,10 @@ public class Core {
 			return null;
 		}
 	}
-	
+
 	/**
-	 * This method is used to create the url to retrieve a single tile at position (x, y)
+	 * This method is used to create the url to retrieve a single tile at position
+	 * (x, y)
 	 * 
 	 * @param slideRef slide's path or UID
 	 * @param varargs  Array of optional arguments
@@ -2515,11 +2517,11 @@ public class Core {
 			throw new Exception("Unable to determine the PMA.core instance belonging to " + sessionID);
 		}
 		try {
-		url += "tile" + "?SessionID=" + PMA.pmaQ(sessionID) + "&channels=" + PMA.pmaQ("0") + "&layer="
-				+ zStack.toString() + "&timeframe=" + PMA.pmaQ("0") + "&layer=" + PMA.pmaQ("0") + "&pathOrUid="
-				+ PMA.pmaQ(slideRef) + "&x=" + x.toString() + "&y=" + y.toString() + "&z=" + zoomLevel.toString()
-				+ "&format=" + PMA.pmaQ(format) + "&quality=" + PMA.pmaQ(quality.toString()) + "&cache="
-				+ pmaUseCacheWhenRetrievingTiles.toString().toLowerCase();
+			url += "tile" + "?SessionID=" + PMA.pmaQ(sessionID) + "&channels=" + PMA.pmaQ("0") + "&layer="
+					+ zStack.toString() + "&timeframe=" + PMA.pmaQ("0") + "&layer=" + PMA.pmaQ("0") + "&pathOrUid="
+					+ PMA.pmaQ(slideRef) + "&x=" + x.toString() + "&y=" + y.toString() + "&z=" + zoomLevel.toString()
+					+ "&format=" + PMA.pmaQ(format) + "&quality=" + PMA.pmaQ(quality.toString()) + "&cache="
+					+ pmaUseCacheWhenRetrievingTiles.toString().toLowerCase();
 			return url;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -2530,7 +2532,7 @@ public class Core {
 			}
 			return null;
 		}
-	}	
+	}
 
 	/**
 	 * This method is used to get a single tile at position (x, y)

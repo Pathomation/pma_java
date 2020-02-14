@@ -328,7 +328,7 @@ public class Control {
 				pmaCoreSessionID)) {
 			for (Entry<Integer, Map<String, String>> entry : ((Map<Integer, Map<String, String>>) getTrainingSession(
 					pmaControlURL, pmaControlTrainingSessionID, pmaCoreSessionID).get("CaseCollections")).entrySet()) {
-				if (entry.getKey() == pmaControlCaseCollectionID) {
+				if (entry.getKey().equals(pmaControlCaseCollectionID)) {
 					return entry.getValue().get("Url").toString() + "?sessionID=" + participantSessionID;
 				}
 			}
