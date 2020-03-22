@@ -43,7 +43,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.93
+ * @version 2.0.0.94
  */
 public class Core {
 	/**
@@ -2038,6 +2038,39 @@ public class Core {
 
 		} else {
 			return 0;
+		}
+	}
+
+	/**
+	 * This method is used to return the list of image types associated with a slide
+	 * (thumbnail, barcode...)
+	 * 
+	 * @param slideRef slide's path
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 sessionID : First optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 * @return List of associated image types
+	 */
+	@SuppressWarnings("unchecked")
+	public static List<String> getAssociatedImageTypes(String slideRef, String... varargs) {
+		// setting the default value when arguments' value is omitted
+		String sessionID = varargs.length > 0 ? varargs[0] : null;
+		// Determine the maximum zoomlevel that still represents an optical
+		// magnification
+		Map<String, Object> info = getSlideInfo(slideRef, sessionID);
+		if (info == null) {
+			return null;
+		} else if (info.containsKey("AssociatedImageTypes")) {
+			List<String> result = new ArrayList<>();
+			List<String> associatedImageTypes = ((List<String>) info.get("AssociatedImageTypes"));
+			for (String associatedImage : associatedImageTypes) {
+				result.add(associatedImage);
+			}
+			return result;
+		} else {
+			return null;
 		}
 	}
 

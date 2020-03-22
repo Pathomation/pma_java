@@ -114,6 +114,7 @@ public class Control {
 	 * 
 	 * @param pmaControlURL    URL for PMA.Control
 	 * @param pmaCoreSessionID PMA.core session ID
+	 * @param pmaControlProjectID Project ID
 	 * @return List of registred sessions
 	 */
 	private static JSONArray pmaGetTrainingSessionsViaProject(String pmaControlURL, String pmaCoreSessionID,
@@ -1288,8 +1289,7 @@ public class Control {
 	 * 
 	 * @param pmaControlURL               PMA.control URL
 	 * @param participantUsername         PMA.core username
-	 * @param pmaControlTrainingSessionID Training session ID
-	 * @param pmaControlCaseCollectionIDs Array of Case collection IDs
+	 * @param trainingSessions			  Training sessions
 	 * @param pmaControlInteractionMode   Interaction mode
 	 * @param pmaCoreSessionID            PMA.core session ID
 	 * @return URL connection output in JSON format
