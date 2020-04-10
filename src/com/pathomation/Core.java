@@ -28,8 +28,6 @@ import javax.net.ssl.HttpsURLConnection;
 import org.apache.commons.io.FilenameUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -43,7 +41,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.94
+ * @version 2.0.0.95
  */
 public class Core {
 	/**
@@ -246,17 +244,15 @@ public class Core {
 	 *                pmaCoreURL : First optional argument(String), default
 	 *                value(Class field pmaCoreLiteURL), url of PMA.core instance
 	 *                </p>
-	 * @return True if an instance of PMA.core is running, false otherwise
+	 * @return True if an instance of PMA.core.lite is running, false otherwise
 	 */
 	private static Boolean pmaIsLite(String... varargs) {
 		// setting the default value when argument's value is omitted
 		String pmaCoreURL = varargs.length > 0 ? varargs[0] : pmaCoreLiteURL;
-		String url = PMA.join(pmaCoreURL, "api/xml/IsLite");
-		String contents = "";
+		String url = PMA.join(pmaCoreURL, "api/json/IsLite");
 		try {
-			contents = PMA.urlReader(url);
-			return PMA.domParser(contents).getChildNodes().item(0).getChildNodes().item(0).getNodeValue().toLowerCase()
-					.toString().equals("true");
+			String jsonString = PMA.httpGet(url, "application/json");
+			return jsonString.equals("true");
 		} catch (Exception e) {
 			// this happens when NO instance of PMA.core is detected
 			e.printStackTrace();
@@ -647,8 +643,8 @@ public class Core {
 		// Disconnect from a PMA.core instance; return True if session exists; return
 		// False if session didn't exist (anymore)
 		sessionID = sessionId(sessionID);
-		String url = apiUrl(sessionID, true) + "DeAuthenticate?sessionID=" + PMA.pmaQ((sessionID));
-		String contents = PMA.urlReader(url);
+		String url = apiUrl(sessionID, false) + "DeAuthenticate?sessionID=" + PMA.pmaQ((sessionID));
+		String contents = PMA.httpGet(url, "application/json");
 		pmaAmountOfDataDownloaded.put(sessionID, pmaAmountOfDataDownloaded.get(sessionID) + contents.length());
 		if (pmaSessions.size() > 0) {
 			// yes we do! This means that when there's a PMA.core active session AND
@@ -718,11 +714,42 @@ public class Core {
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Return a list of root-directories available to sessionID
 		sessionID = sessionId(sessionID);
-		String url = apiUrl(sessionID, true) + "GetRootDirectories?sessionID=" + PMA.pmaQ(sessionID);
-		String contents = PMA.urlReader(url);
-		pmaAmountOfDataDownloaded.put(sessionID, pmaAmountOfDataDownloaded.get(sessionID) + contents.length());
-		Document dom = PMA.domParser(contents);
-		return PMA.xmlToStringArray((Element) dom.getFirstChild());
+		try {
+			String url = apiUrl(sessionID, false) + "GetRootDirectories?sessionID=" + PMA.pmaQ(sessionID);
+			String jsonString = PMA.httpGet(url, "application/json");
+			List<String> rootDirs;
+			if (PMA.isJSONArray(jsonString)) {
+				JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
+				pmaAmountOfDataDownloaded.put(sessionID,
+						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
+				rootDirs = new ArrayList<>();
+				for (int i = 0; i < jsonResponse.length(); i++) {
+					rootDirs.add(jsonResponse.optString(i));
+				}
+				// return dirs;
+			} else {
+				JSONObject jsonResponse = PMA.getJSONObjectResponse(jsonString);
+				pmaAmountOfDataDownloaded.put(sessionID,
+						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
+				if (jsonResponse.has("Code")) {
+					if (PMA.logger != null) {
+						PMA.logger.severe("getrootdirectories() failed with error " + jsonResponse.get("Message"));
+					}
+					// throw new Exception("getrootdirectories() failed with error " +
+					// jsonResponse.get("Message"));
+				}
+				return null;
+			}
+			return rootDirs;
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (PMA.logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				PMA.logger.severe(sw.toString());
+			}
+			return null;
+		}
 	}
 
 	/**
@@ -1116,12 +1143,33 @@ public class Core {
 						"PMA.core.lite not found, and besides; it doesn't support UID generation. For advanced anonymization, please upgrade to PMA.core.");
 			}
 		}
-		String url = apiUrl(sessionID, true) + "GetUID?sessionID=" + PMA.pmaQ(sessionID) + "&path="
+		String url = apiUrl(sessionID, false) + "GetUID?sessionID=" + PMA.pmaQ(sessionID) + "&path="
 				+ PMA.pmaQ(slideRef);
-		String contents = PMA.urlReader(url);
-		pmaAmountOfDataDownloaded.put(sessionID, pmaAmountOfDataDownloaded.get(sessionID) + contents.length());
-		Document dom = PMA.domParser(contents);
-		return PMA.xmlToStringArray(dom).get(0);
+		try {
+			String jsonString = PMA.httpGet(url, "application/json");
+			pmaAmountOfDataDownloaded.put(sessionID, pmaAmountOfDataDownloaded.get(sessionID) + jsonString.length());
+			if (PMA.isJSONObject(jsonString)) {
+				JSONObject jsonResponse = PMA.getJSONObjectResponse(jsonString);
+				if (jsonResponse.has("Code")) {
+					if (PMA.logger != null) {
+						PMA.logger.severe("getUid() on  " + slideRef + " resulted in: " + jsonResponse.get("Message"));
+					}
+					//throw new Exception("getUid() on  " + slideRef + " resulted in: " + jsonResponse.get("Message"));
+				}
+				return null;
+			} else {
+				return jsonString;
+			}
+		} catch (Exception e) {
+			// this happens when NO instance of PMA.core is detected
+			e.printStackTrace();
+			if (PMA.logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				PMA.logger.severe(sw.toString());
+			}
+			return null;
+		}
 	}
 
 	/**

@@ -582,7 +582,7 @@ public class CoreAdmin {
 			}
 		}
 		try {
-			String url = adminUrl(admSessionID) + "ReverseLookupUID?sessionID=" + PMA.pmaQ(admSessionID) + "&uid="
+			String url = adminUrl(admSessionID, false) + "ReverseLookupUID?sessionID=" + PMA.pmaQ(admSessionID) + "&uid="
 					+ PMA.pmaQ(slideRefUid);
 			String path;
 			if (PMA.debug) {
