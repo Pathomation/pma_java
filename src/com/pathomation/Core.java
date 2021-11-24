@@ -288,7 +288,7 @@ public class Core {
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof String) && varargs[0] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("apiUrl() : Illegal argument");
+					PMA.logger.severe("apiUrl() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -297,7 +297,7 @@ public class Core {
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof Boolean) && varargs[1] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("apiUrl() : Illegal argument");
+					PMA.logger.severe("apiUrl() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -785,7 +785,7 @@ public class Core {
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof String) && varargs[0] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getDirectories() : Illegal argument");
+					PMA.logger.severe("getDirectories() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -794,7 +794,7 @@ public class Core {
 		if (varargs.length > 1) {
 			if ((!(varargs[1] instanceof Integer) && !(varargs[1] instanceof Boolean)) && (varargs[1] != null)) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getDirectories() : Illegal argument");
+					PMA.logger.severe("getDirectories() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -988,7 +988,7 @@ public class Core {
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof String) && varargs[0] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getSlides() : Illegal argument");
+					PMA.logger.severe("getSlides() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -997,7 +997,7 @@ public class Core {
 		if (varargs.length > 1) {
 			if ((!(varargs[1] instanceof Integer) && !(varargs[1] instanceof Boolean)) && (varargs[1] != null)) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getSlides() : Illegal argument");
+					PMA.logger.severe("getSlides() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -1154,7 +1154,8 @@ public class Core {
 					if (PMA.logger != null) {
 						PMA.logger.severe("getUid() on  " + slideRef + " resulted in: " + jsonResponse.get("Message"));
 					}
-					//throw new Exception("getUid() on  " + slideRef + " resulted in: " + jsonResponse.get("Message"));
+					// throw new Exception("getUid() on " + slideRef + " resulted in: " +
+					// jsonResponse.get("Message"));
 				}
 				return null;
 			} else {
@@ -1359,8 +1360,8 @@ public class Core {
 						// we store the map created for both the slide name & the UID
 						((Map<String, Object>) pmaSlideInfos.get(sessionID))
 								.put(jsonResponse.getJSONObject("d").optString("Filename"), jsonMap);
-//						((Map<String, Object>) pmaSlideInfos.get(sessionID))
-//								.put(jsonResponse.getJSONObject("d").optString("UID"), jsonMap);
+						// ((Map<String, Object>) pmaSlideInfos.get(sessionID))
+						// .put(jsonResponse.getJSONObject("d").optString("UID"), jsonMap);
 					} else {
 						// we convert the Json object to a Map<String, Object>
 						Map<String, Object> jsonMap = objectMapper.readerFor(new TypeReference<Map<String, Object>>() {
@@ -1465,8 +1466,8 @@ public class Core {
 							// we store the map created for both the slide name & the UID
 							((Map<String, Object>) pmaSlideInfos.get(sessionID))
 									.put(jsonArrayResponse.getJSONObject(i).getString("Filename"), jsonMap);
-//							((Map<String, Object>) pmaSlideInfos.get(sessionID))
-//									.put(jsonArrayResponse.getJSONObject(i).getString("UID"), jsonMap);
+							// ((Map<String, Object>) pmaSlideInfos.get(sessionID))
+							// .put(jsonArrayResponse.getJSONObject(i).getString("UID"), jsonMap);
 						}
 					} else {
 						return null;
@@ -1595,7 +1596,7 @@ public class Core {
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof String) && varargs[0] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getZoomLevelsList() : Illegal argument");
+					PMA.logger.severe("getZoomLevelsList() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -1604,7 +1605,7 @@ public class Core {
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof Integer) && varargs[1] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getZoomLevelsList() : Illegal argument");
+					PMA.logger.severe("getZoomLevelsList() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -1647,7 +1648,7 @@ public class Core {
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof String) && varargs[0] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getZoomLevelsDict() : Illegal argument");
+					PMA.logger.severe("getZoomLevelsDict() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -1656,7 +1657,7 @@ public class Core {
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof Integer) && varargs[1] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getZoomLevelsDict() : Illegal argument");
+					PMA.logger.severe("getZoomLevelsDict() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -1712,7 +1713,7 @@ public class Core {
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof Integer) && varargs[0] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getZoomLevelsDict() : Illegal argument");
+					PMA.logger.severe("getZoomLevelsDict() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -1721,7 +1722,7 @@ public class Core {
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof String) && varargs[1] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getZoomLevelsDict() : Illegal argument");
+					PMA.logger.severe("getZoomLevelsDict() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -1773,7 +1774,7 @@ public class Core {
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof Integer) && varargs[0] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getPixelDimensions() : Illegal argument");
+					PMA.logger.severe("getPixelDimensions() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -1782,7 +1783,7 @@ public class Core {
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof String) && varargs[1] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getPixelDimensions() : Illegal argument");
+					PMA.logger.severe("getPixelDimensions() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -1828,7 +1829,7 @@ public class Core {
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof Integer) && varargs[0] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getNumberOfTiles() : Illegal argument");
+					PMA.logger.severe("getNumberOfTiles() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -1837,7 +1838,7 @@ public class Core {
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof String) && varargs[1] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getNumberOfTiles() : Illegal argument");
+					PMA.logger.severe("getNumberOfTiles() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2051,7 +2052,7 @@ public class Core {
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof Integer) && varargs[0] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getMagnification() : Illegal argument");
+					PMA.logger.severe("getMagnification() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2060,7 +2061,7 @@ public class Core {
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof Boolean) && varargs[1] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getMagnification() : Illegal argument");
+					PMA.logger.severe("getMagnification() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2069,7 +2070,7 @@ public class Core {
 		if (varargs.length > 2) {
 			if (!(varargs[2] instanceof String) && varargs[2] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getMagnification() : Illegal argument");
+					PMA.logger.severe("getMagnification() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2344,7 +2345,7 @@ public class Core {
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof String) && varargs[0] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getThumbnailUrl() : Illegal argument");
+					PMA.logger.severe("getThumbnailUrl() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2353,7 +2354,7 @@ public class Core {
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof Integer) && varargs[1] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getThumbnailUrl() : Illegal argument");
+					PMA.logger.severe("getThumbnailUrl() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2362,7 +2363,7 @@ public class Core {
 		if (varargs.length > 2) {
 			if (!(varargs[2] instanceof Integer) && varargs[2] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getThumbnailUrl() : Illegal argument");
+					PMA.logger.severe("getThumbnailUrl() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2419,7 +2420,7 @@ public class Core {
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof String) && varargs[0] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getThumbnailImage() : Illegal argument");
+					PMA.logger.severe("getThumbnailImage() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2428,7 +2429,7 @@ public class Core {
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof Integer) && varargs[1] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getThumbnailImage() : Illegal argument");
+					PMA.logger.severe("getThumbnailImage() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2437,7 +2438,7 @@ public class Core {
 		if (varargs.length > 2) {
 			if (!(varargs[2] instanceof Integer) && varargs[2] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getThumbnailImage() : Illegal argument");
+					PMA.logger.severe("getThumbnailImage() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2517,7 +2518,7 @@ public class Core {
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof Integer) && varargs[0] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getTile() : Illegal argument");
+					PMA.logger.severe("getTile() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2526,7 +2527,7 @@ public class Core {
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof Integer) && varargs[1] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getTile() : Illegal argument");
+					PMA.logger.severe("getTile() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2535,7 +2536,7 @@ public class Core {
 		if (varargs.length > 2) {
 			if (!(varargs[2] instanceof Integer) && varargs[2] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getTile() : Illegal argument");
+					PMA.logger.severe("getTile() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2544,7 +2545,7 @@ public class Core {
 		if (varargs.length > 3) {
 			if (!(varargs[3] instanceof Integer) && varargs[3] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getTile() : Illegal argument");
+					PMA.logger.severe("getTile() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2553,7 +2554,7 @@ public class Core {
 		if (varargs.length > 4) {
 			if (!(varargs[4] instanceof String) && varargs[4] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getTile() : Illegal argument");
+					PMA.logger.severe("getTile() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2562,7 +2563,7 @@ public class Core {
 		if (varargs.length > 5) {
 			if (!(varargs[5] instanceof String) && varargs[5] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getTile() : Illegal argument");
+					PMA.logger.severe("getTile() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2571,7 +2572,7 @@ public class Core {
 		if (varargs.length > 6) {
 			if (!(varargs[6] instanceof Integer) && varargs[6] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getTile() : Illegal argument");
+					PMA.logger.severe("getTile() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2664,7 +2665,7 @@ public class Core {
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof Integer) && varargs[0] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getTile() : Illegal argument");
+					PMA.logger.severe("getTile() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2673,7 +2674,7 @@ public class Core {
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof Integer) && varargs[1] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getTile() : Illegal argument");
+					PMA.logger.severe("getTile() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2682,7 +2683,7 @@ public class Core {
 		if (varargs.length > 2) {
 			if (!(varargs[2] instanceof Integer) && varargs[2] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getTile() : Illegal argument");
+					PMA.logger.severe("getTile() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2691,7 +2692,7 @@ public class Core {
 		if (varargs.length > 3) {
 			if (!(varargs[3] instanceof Integer) && varargs[3] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getTile() : Illegal argument");
+					PMA.logger.severe("getTile() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2700,7 +2701,7 @@ public class Core {
 		if (varargs.length > 4) {
 			if (!(varargs[4] instanceof String) && varargs[4] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getTile() : Illegal argument");
+					PMA.logger.severe("getTile() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2709,7 +2710,7 @@ public class Core {
 		if (varargs.length > 5) {
 			if (!(varargs[5] instanceof String) && varargs[5] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getTile() : Illegal argument");
+					PMA.logger.severe("getTile() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2718,7 +2719,7 @@ public class Core {
 		if (varargs.length > 6) {
 			if (!(varargs[6] instanceof Integer) && varargs[6] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getTile() : Illegal argument");
+					PMA.logger.severe("getTile() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2744,6 +2745,488 @@ public class Core {
 			pmaAmountOfDataDownloaded.put(sessionID,
 					pmaAmountOfDataDownloaded.get(sessionID) + con.getInputStream().toString().length());
 			return img;
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (PMA.logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				PMA.logger.severe(sw.toString());
+			}
+			return null;
+		}
+	}
+
+	/**
+	 * Gets a region of the slide at the specified scale Format can be 'jpg' or
+	 * 'png' Quality is an integer value and varies from 0 (as much compression as
+	 * possible; not recommended) to 100 (100%, no compression) x,y,width,height is
+	 * the region to get rotation is the rotation in degrees of the slide to get
+	 *
+	 * @param slideRef slide's path or UID
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 x : First optional argument(Integer), default value(0),
+	 *                 starting x position
+	 *                 </p>
+	 *                 <p>
+	 *                 y : Second optional argument(Integer), default value(0),
+	 *                 starting y position
+	 *                 </p>
+	 *                 <p>
+	 *                 width : Third optional argument(Integer), default value(0),
+	 *                 ending width position
+	 *                 </p>
+	 *                 <p>
+	 *                 height : Fourth optional argument(Integer), default value(0),
+	 *                 height
+	 *                 </p>
+	 *                 <p>
+	 *                 scale : Fifth optional argument(Integer), default value(1),
+	 *                 scale
+	 *                 </p>
+	 *                 <p>
+	 *                 zStack : Sixth optional argument(Integer), default value(0),
+	 *                 Number of z stacks
+	 *                 </p>
+	 *                 <p>
+	 *                 sessionID : Seventh optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 *                 <p>
+	 *                 format : Eighth optional argument(String), default
+	 *                 value(jpg), image format
+	 *                 </p>
+	 *                 <p>
+	 *                 quality : Ninth optional argument(Integer), default
+	 *                 value(100), quality
+	 *                 </p>
+	 *                 <p>
+	 *                 rotation : Tenth optional argument(Integer), default
+	 *                 value(0), rotation
+	 *                 </p>
+	 *                 <p>
+	 *                 contrast : Eleventh optional argument(Integer), default
+	 *                 value(null), contrast
+	 *                 </p>
+	 *                 <p>
+	 *                 brightness : Twelfth optional argument(Integer), default
+	 *                 value(null), brightness
+	 *                 </p>
+	 *                 <p>
+	 *                 dpi : Thirteenth optional argument(Integer), default
+	 *                 value(300), dpi
+	 *                 </p>
+	 *                 <p>
+	 *                 flipVertical : Fourteenth optional argument(Boolean), default
+	 *                 value(false), flip vertical
+	 *                 </p>
+	 *                 <p>
+	 *                 flipHorizontal : Fifteenth optional argument(Boolean),
+	 *                 default value(false), flip horizontal
+	 *                 </p>
+	 *                 <p>
+	 *                 annotationsLayerType : Sixteenth optional argument(String),
+	 *                 default value(null), annotations layer type
+	 *                 </p>
+	 *                 <p>
+	 *                 drawFilename : Seventeenth optional argument(Integer),
+	 *                 default value(0), draw filename
+	 *                 </p>
+	 *                 <p>
+	 *                 downloadInsteadOfDisplay : Eighteenth optional
+	 *                 argument(Boolean), default value(false), download instead of
+	 *                 display
+	 *                 </p>
+	 *                 <p>
+	 *                 drawScaleBar : Nineteenth optional argument(Boolean), default
+	 *                 value(false), draw scale bar
+	 *                 </p>
+	 *                 <p>
+	 *                 gamma : Twentieth optional argument(ArrayList), default
+	 *                 value([]), gamma
+	 *                 </p>
+	 *                 <p>
+	 *                 channelClipping : Twenty-first optional argument(ArrayList),
+	 *                 default value([]), channel clipping
+	 *                 </p>
+	 * @return Gets a region of the slide at the specified scale
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public static Image getRegion(String slideRef, Object... varargs) {
+		String sessionID = null;
+		if (varargs.length > 5) {
+			if (!(varargs[5] instanceof String) && varargs[5] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getRegion() : Invalid argument");
+				}
+				throw new IllegalArgumentException("Invalid sessionID");
+			}
+			sessionID = (String) varargs[5];
+		}
+
+		sessionID = sessionId(sessionID);
+		if (slideRef.startsWith("/")) {
+			slideRef = slideRef.substring(1);
+		}
+
+		try {
+			String url = getRegionUrl(slideRef, varargs);
+			URL urlResource = new URL(url);
+			URLConnection con = urlResource.openConnection();
+			Image img = ImageIO.read(con.getInputStream());
+			pmaAmountOfDataDownloaded.put(sessionID,
+					pmaAmountOfDataDownloaded.get(sessionID) + con.getInputStream().toString().length());
+			return img;
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (PMA.logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				PMA.logger.severe(sw.toString());
+			}
+			return null;
+		}
+	}
+
+	/**
+	 * This method is used to create the url to retrieve a region of the slide at
+	 * the specified scale (x,y,width,height)
+	 *
+	 * @param slideRef slide's path or UID
+	 * @param varargs  Array of optional arguments
+	 *                 <p>
+	 *                 x : First optional argument(Integer), default value(0),
+	 *                 starting x position
+	 *                 </p>
+	 *                 <p>
+	 *                 y : Second optional argument(Integer), default value(0),
+	 *                 starting y position
+	 *                 </p>
+	 *                 <p>
+	 *                 width : Third optional argument(Integer), default value(0),
+	 *                 ending width position
+	 *                 </p>
+	 *                 <p>
+	 *                 height : Fourth optional argument(Integer), default value(0),
+	 *                 height
+	 *                 </p>
+	 *                 <p>
+	 *                 scale : Fifth optional argument(Integer), default value(1),
+	 *                 scale
+	 *                 </p>
+	 *                 <p>
+	 *                 zStack : Sixth optional argument(Integer), default value(0),
+	 *                 Number of z stacks
+	 *                 </p>
+	 *                 <p>
+	 *                 sessionID : Seventh optional argument(String), default
+	 *                 value(null), session's ID
+	 *                 </p>
+	 *                 <p>
+	 *                 format : Eighth optional argument(String), default
+	 *                 value(jpg), image format
+	 *                 </p>
+	 *                 <p>
+	 *                 quality : Ninth optional argument(Integer), default
+	 *                 value(100), quality
+	 *                 </p>
+	 *                 <p>
+	 *                 rotation : Tenth optional argument(Integer), default
+	 *                 value(0), rotation
+	 *                 </p>
+	 *                 <p>
+	 *                 contrast : Eleventh optional argument(Integer), default
+	 *                 value(null), contrast
+	 *                 </p>
+	 *                 <p>
+	 *                 brightness : Twelfth optional argument(Integer), default
+	 *                 value(null), brightness
+	 *                 </p>
+	 *                 <p>
+	 *                 dpi : Thirteenth optional argument(Integer), default
+	 *                 value(300), dpi
+	 *                 </p>
+	 *                 <p>
+	 *                 flipVertical : Fourteenth optional argument(Boolean), default
+	 *                 value(false), flip vertical
+	 *                 </p>
+	 *                 <p>
+	 *                 flipHorizontal : Fifteenth optional argument(Boolean),
+	 *                 default value(false), flip horizontal
+	 *                 </p>
+	 *                 <p>
+	 *                 annotationsLayerType : Sixteenth optional argument(String),
+	 *                 default value(null), annotations layer type
+	 *                 </p>
+	 *                 <p>
+	 *                 drawFilename : Seventeenth optional argument(Integer),
+	 *                 default value(0), draw filename
+	 *                 </p>
+	 *                 <p>
+	 *                 downloadInsteadOfDisplay : Eighteenth optional
+	 *                 argument(Boolean), default value(false), download instead of
+	 *                 display
+	 *                 </p>
+	 *                 <p>
+	 *                 drawScaleBar : Nineteenth optional argument(Boolean), default
+	 *                 value(false), draw scale bar
+	 *                 </p>
+	 *                 <p>
+	 *                 gamma : Twentieth optional argument(ArrayList), default
+	 *                 value([]), gamma
+	 *                 </p>
+	 *                 <p>
+	 *                 channelClipping : Twenty-first optional argument(ArrayList),
+	 *                 default value([]), channel clipping
+	 *                 </p>
+	 * @return Url to retrieve a region at position (x, y, width, height)
+	 * @throws Exception if unable to determine the PMA.core instance the session ID
+	 *                   belong to
+	 */
+	@SuppressWarnings({ "unchecked" })
+	public static String getRegionUrl(String slideRef, Object... varargs) throws Exception {
+		// setting the default values when arguments' values are omitted
+		Integer x = 0;
+		Integer y = 0;
+		Integer width = 0;
+		Integer height = 0;
+		Integer scale = 1;
+		Integer zStack = 0;
+		String sessionID = null;
+		String format = "jpg";
+		Integer quality = 100;
+		Integer rotation = 0;
+		Integer contrast = null;
+		Integer brightness = null;
+		Integer postGamma = null;
+		Integer dpi = 300;
+		Boolean flipVertical = false;
+		Boolean flipHorizontal = false;
+		String annotationsLayerType = null;
+		Integer drawFilename = 0;
+		Boolean downloadInsteadOfDisplay = false;
+		Boolean drawScaleBar = false;
+		String gamma = null;
+		String channelClipping = null;
+
+		if (varargs.length > 0) {
+			if (!(varargs[0] instanceof Integer) && varargs[0] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getRegion(): Invalid argument, X is required");
+				}
+				throw new IllegalArgumentException("X is required");
+			}
+			x = (Integer) varargs[0];
+		}
+		if (varargs.length > 1) {
+			if (!(varargs[1] instanceof Integer) && varargs[1] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getRegion():  Invalid argument, Y is required");
+				}
+				throw new IllegalArgumentException("Y is required");
+			}
+			y = (Integer) varargs[1];
+		}
+		if (varargs.length > 2) {
+			if (!(varargs[2] instanceof Integer) && varargs[2] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getRegion(): Invalid argument, width is required");
+				}
+				throw new IllegalArgumentException("Width is required");
+			}
+			width = (Integer) varargs[2];
+		}
+		if (varargs.length > 3) {
+			if (!(varargs[3] instanceof Integer) && varargs[3] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getRegion(): Invalid argument, height is required");
+				}
+				throw new IllegalArgumentException("Height is required");
+			}
+			height = (Integer) varargs[3];
+		}
+		if (varargs.length > 4) {
+			if (!(varargs[4] instanceof Integer) && varargs[4] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getRegion(): Invalid argument, zStack is required");
+				}
+				throw new IllegalArgumentException("ZStack is required");
+			}
+			zStack = (Integer) varargs[4];
+		}
+		if (varargs.length > 5) {
+			if (!(varargs[5] instanceof String) && varargs[5] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getRegion(): Invalid argument, invalid sessionId");
+				}
+				throw new IllegalArgumentException("Invalid session id");
+			}
+			sessionID = (String) varargs[5];
+		}
+		if (varargs.length > 6) {
+			if (!(varargs[6] instanceof String) && varargs[6] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getRegion(): Invalid argument, invalid format parameter");
+				}
+				throw new IllegalArgumentException("Invalid format parameter");
+			}
+			format = (String) varargs[6];
+		}
+		if (varargs.length > 7) {
+			if (!(varargs[7] instanceof Integer) && varargs[7] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getRegion(): Invalid argument, invalid quality parameter");
+				}
+				throw new IllegalArgumentException("Invalid quality parameter");
+			}
+			quality = (Integer) varargs[7];
+		}
+		if (varargs.length > 8) {
+			if (!(varargs[8] instanceof Integer) && varargs[8] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getRegion(): Invalid argument, invalid rotation parameter");
+				}
+				throw new IllegalArgumentException("Invalid rotation parameter");
+			}
+			rotation = (Integer) varargs[8];
+		}
+		if (varargs.length > 9) {
+			if (!(varargs[9] instanceof Integer) && varargs[9] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getRegion(): Invalid argument constrast");
+				}
+				throw new IllegalArgumentException("Invalid contrast parameter");
+			}
+			contrast = (Integer) varargs[9];
+		}
+		if (varargs.length > 10) {
+			if (!(varargs[10] instanceof Integer) && varargs[10] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getRegion(): Invalid argument brightness");
+				}
+				throw new IllegalArgumentException("Invalid brightness parameter");
+			}
+			brightness = (Integer) varargs[10];
+		}
+		if (varargs.length > 11) {
+			if (!(varargs[11] instanceof Integer) && varargs[11] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getRegion(): Invalid argument postGamma");
+				}
+				throw new IllegalArgumentException("Invalid post gamma parameter.");
+			}
+			postGamma = (Integer) varargs[11];
+		}
+		if (varargs.length > 12) {
+			if (!(varargs[12] instanceof Integer) && varargs[12] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getRegion(): Invalid argument dpi");
+				}
+				throw new IllegalArgumentException("Invalid dpi parameter");
+			}
+			dpi = (Integer) varargs[12];
+		}
+		if (varargs.length > 13) {
+			if (!(varargs[13] instanceof Boolean) && varargs[13] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getRegion(): Invalid argument flipVertical");
+				}
+				throw new IllegalArgumentException(" Invalid paramter flipVertical");
+			}
+			flipVertical = (Boolean) varargs[13];
+		}
+		if (varargs.length > 14) {
+			if (!(varargs[14] instanceof Boolean) && varargs[14] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getRegion(): Invalid argument flipHorizontal");
+				}
+				throw new IllegalArgumentException("Invalid argument flipHorizontal");
+			}
+			flipHorizontal = (Boolean) varargs[14];
+		}
+		if (varargs.length > 15) {
+			if (!(varargs[15] instanceof String) && varargs[15] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getRegion(): Invalid argument annotationsLayerType");
+				}
+				throw new IllegalArgumentException("Invalid argument annotationsLayerType");
+			}
+			annotationsLayerType = (String) varargs[15];
+		}
+		if (varargs.length > 16) {
+			if (!(varargs[16] instanceof Integer) && varargs[16] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getRegion(): Invalid argument drawFilename");
+				}
+				throw new IllegalArgumentException("Invalid argument drawFilename");
+			}
+			drawFilename = (Integer) varargs[16];
+		}
+		if (varargs.length > 17) {
+			if (!(varargs[17] instanceof Boolean) && varargs[17] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getRegion(): Invalid argument downloadInsteadOfDisplay");
+				}
+				throw new IllegalArgumentException("Invalid argument downloadInsteadOfDisplay");
+			}
+			downloadInsteadOfDisplay = (Boolean) varargs[17];
+		}
+		if (varargs.length > 18) {
+			if (!(varargs[18] instanceof Boolean) && varargs[18] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getRegion(): Invalid argument drawScaleBar");
+				}
+				throw new IllegalArgumentException("Invalid argument drawScaleBar");
+			}
+			drawScaleBar = (Boolean) varargs[18];
+		}
+		if (varargs.length > 19) {
+			if (!(varargs[19] instanceof ArrayList) && varargs[19] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getRegion(): Invalid argument gamma");
+				}
+				throw new IllegalArgumentException("Invalid argument gamma");
+			}
+
+			gamma = String.join(",", (List<String>) varargs[19]);
+		}
+		if (varargs.length > 20) {
+			if (!(varargs[20] instanceof ArrayList) && varargs[20] != null) {
+				if (PMA.logger != null) {
+					PMA.logger.severe("getRegion(): Invalid argument channelClipping");
+				}
+				throw new IllegalArgumentException("Invalid argument channelClipping");
+			}
+			channelClipping = String.join(",", (List<String>) varargs[19]);
+		}
+
+		sessionID = sessionId(sessionID);
+		if (slideRef.startsWith("/")) {
+			slideRef = slideRef.substring(1);
+		}
+
+		String url;
+		url = pmaUrl(sessionID);
+		if (url == null) {
+			if (PMA.logger != null) {
+				PMA.logger.severe("Unable to determine the PMA.core instance belonging to " + sessionID);
+			}
+			throw new Exception("Unable to determine the PMA.core instance belonging to " + sessionID);
+		}
+		try {
+			url += "region" + "?SessionID=" + PMA.pmaQ(sessionID) + "&channels=" + PMA.pmaQ("0") + "&layer="
+					+ zStack.toString() + "&timeframe=" + PMA.pmaQ("0") + "&layer=" + PMA.pmaQ("0") + "&pathOrUid="
+					+ PMA.pmaQ(slideRef) + "&x=" + x.toString() + "&y=" + y.toString() + "&width=" + width.toString()
+					+ "&height=" + height.toString() + "&scale=" + scale.toString() + "&format=" + PMA.pmaQ(format)
+					+ "&quality=" + PMA.pmaQ(quality.toString()) + "&rotation=" + rotation.toString() + "&contrast="
+					+ contrast.toString() + "&brightness=" + brightness.toString() + "&postGamma="
+					+ postGamma.toString() + "&dpi=" + dpi.toString() + "&flipVertical=" + flipVertical.toString()
+					+ "&flipHorizontal=" + flipHorizontal.toString() + "&annotationsLayerType="
+					+ PMA.pmaQ(annotationsLayerType) + "&drawFilename=" + drawFilename.toString()
+					+ "&downloadInsteadOfDisplay=" + downloadInsteadOfDisplay.toString() + "&drawScaleBar="
+					+ drawScaleBar.toString() + "&gamma=" + PMA.pmaQ(gamma) + "&channelClipping="
+					+ PMA.pmaQ(channelClipping) + "&cache=" + pmaUseCacheWhenRetrievingTiles.toString().toLowerCase();
+			return url;
 		} catch (Exception e) {
 			e.printStackTrace();
 			if (PMA.logger != null) {
@@ -2814,7 +3297,7 @@ public class Core {
 		if (varargs.length > 0) {
 			if (!(varargs[0] instanceof Integer) && varargs[0] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getTiles() : Illegal argument");
+					PMA.logger.severe("getTiles() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2823,7 +3306,7 @@ public class Core {
 		if (varargs.length > 1) {
 			if (!(varargs[1] instanceof Integer) && varargs[1] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getTiles() : Illegal argument");
+					PMA.logger.severe("getTiles() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2832,7 +3315,7 @@ public class Core {
 		if (varargs.length > 2) {
 			if (!(varargs[2] instanceof Integer) && varargs[2] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getTiles() : Illegal argument");
+					PMA.logger.severe("getTiles() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2841,7 +3324,7 @@ public class Core {
 		if (varargs.length > 3) {
 			if (!(varargs[3] instanceof Integer) && varargs[3] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getTiles() : Illegal argument");
+					PMA.logger.severe("getTiles() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2850,7 +3333,7 @@ public class Core {
 		if (varargs.length > 4) {
 			if (!(varargs[4] instanceof Integer) && varargs[4] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getTiles() : Illegal argument");
+					PMA.logger.severe("getTiles() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2859,7 +3342,7 @@ public class Core {
 		if (varargs.length > 5) {
 			if (!(varargs[5] instanceof Integer) && varargs[5] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getTiles() : Illegal argument");
+					PMA.logger.severe("getTiles() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2868,7 +3351,7 @@ public class Core {
 		if (varargs.length > 6) {
 			if (!(varargs[6] instanceof String) && varargs[6] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getTiles() : Illegal argument");
+					PMA.logger.severe("getTiles() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2877,7 +3360,7 @@ public class Core {
 		if (varargs.length > 7) {
 			if (!(varargs[7] instanceof String) && varargs[7] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getTiles() : Illegal argument");
+					PMA.logger.severe("getTiles() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
@@ -2886,7 +3369,7 @@ public class Core {
 		if (varargs.length > 8) {
 			if (!(varargs[8] instanceof Integer) && varargs[8] != null) {
 				if (PMA.logger != null) {
-					PMA.logger.severe("getTiles() : Illegal argument");
+					PMA.logger.severe("getTiles() : Invalid argument");
 				}
 				throw new IllegalArgumentException("...");
 			}
