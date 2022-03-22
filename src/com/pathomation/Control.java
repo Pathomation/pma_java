@@ -32,10 +32,11 @@ public class Control {
 		SUPERVISOR, TRAINEE, OBSERVER
 	}
 
-//	public enum PmaInteractionMode {
-//		LOCKED, TEST_ACTIVE, REVIEW, CONSENSUS_VIEW, BROWSE, BOARD, CONSENSUS_SCORE_EDIT, SELF_REVIEW, SELF_TEST,
-//		HIDDEN, CLINICAL_INFORMATION_EDIT
-//	}
+	// public enum PmaInteractionMode {
+	// LOCKED, TEST_ACTIVE, REVIEW, CONSENSUS_VIEW, BROWSE, BOARD,
+	// CONSENSUS_SCORE_EDIT, SELF_REVIEW, SELF_TEST,
+	// HIDDEN, CLINICAL_INFORMATION_EDIT
+	// }
 
 	/**
 	 * This method is used to determine whether the Java SDK runs in debugging mode
@@ -89,10 +90,23 @@ public class Control {
 	 * 
 	 * @param pmaControlURL    URL for PMA.Control
 	 * @param pmaCoreSessionID PMA.core session ID
+	 * @param pmaTrainingSessionId Optional training session id to fetch
+	 * @param sessionTitle     an optional session title filter
 	 * @return List of registred sessions
 	 */
-	private static JSONArray pmaGetTrainingSessions(String pmaControlURL, String pmaCoreSessionID) {
-		String url = PMA.join(pmaControlURL, "api/Sessions?sessionID=" + PMA.pmaQ(pmaCoreSessionID));
+	private static JSONArray pmaGetTrainingSessions(String pmaControlURL, String pmaCoreSessionID,
+			Integer pmaTrainingSessionId,
+			String sessionTitle) {
+		String url = PMA.join(pmaControlURL, "api/Sessions");
+		if (pmaTrainingSessionId != null) {
+			url += "/" + pmaTrainingSessionId;
+		}
+
+		url += "?sessionID=" + PMA.pmaQ(pmaCoreSessionID);
+		if (sessionTitle != null) {
+			url += "&sessionTitle=" + PMA.pmaQ(sessionTitle);
+		}
+
 		try {
 			String jsonString = PMA.httpGet(url, "application/json");
 			JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
@@ -112,15 +126,19 @@ public class Control {
 	 * This method is used to retrieve a list of currently defined training sessions
 	 * in PMA.control
 	 * 
-	 * @param pmaControlURL    URL for PMA.Control
-	 * @param pmaCoreSessionID PMA.core session ID
+	 * @param pmaControlURL       URL for PMA.Control
+	 * @param pmaCoreSessionID    PMA.core session ID
 	 * @param pmaControlProjectID Project ID
+	 * @param sessionTitle        An optional session title filter
 	 * @return List of registred sessions
 	 */
 	private static JSONArray pmaGetTrainingSessionsViaProject(String pmaControlURL, String pmaCoreSessionID,
-			Integer pmaControlProjectID) {
+			Integer pmaControlProjectID, String sessionTitle) {
 		String url = PMA.join(pmaControlURL,
 				"api/Projects/" + pmaControlProjectID + "/Sessions?sessionID=" + PMA.pmaQ(pmaCoreSessionID));
+		if (sessionTitle != null) {
+			url += "&sessionTitle=" + PMA.pmaQ(sessionTitle);
+		}
 		try {
 			String jsonString = PMA.httpGet(url, "application/json");
 			JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
@@ -169,55 +187,66 @@ public class Control {
 		return sessionData;
 	}
 
-//	/**
-//	 * This method is used to Retrieve a dictionary with currently defined training
-//	 * sessions in PMA.control. The resulting dictionary use the session's
-//	 * identifier as the dictionary key, and therefore this method is easier to
-//	 * quickly retrieve and represent session-related data. However, this method
-//	 * returns less verbose data than getSessions()
-//	 * 
-//	 * @param pmaControlURL    URL for PMA.Control
-//	 * @param pmaCoreSessionID PMA.core session ID
-//	 * @return Map of data related to registred session IDs
-//	 */
-//	public static Map<String, Map<String, String>> getSessionIds(String pmaControlURL, String pmaCoreSessionID) {
-//		JSONArray fullSessions = getSessions(pmaControlURL, pmaCoreSessionID);
-//		Map<String, Map<String, String>> newSession = new HashMap<>();
-//		for (int i = 0; i < fullSessions.length(); i++) {
-//			Map<String, String> sessData = new HashMap<String, String>();
-//			sessData.put("LogoPath", fullSessions.getJSONObject(i).getString("LogoPath"));
-//			sessData.put("StartsOn", fullSessions.getJSONObject(i).getString("StartsOn"));
-//			sessData.put("EndsOn", fullSessions.getJSONObject(i).getString("EndsOn"));
-//			sessData.put("ModuleId", fullSessions.getJSONObject(i).getString("ModuleId"));
-//			sessData.put("State", fullSessions.getJSONObject(i).getString("State"));
-//			newSession.put(fullSessions.getJSONObject(i).getString("Id"), sessData);
-//		}
-//		return newSession;
-//	}
+	// /**
+	// * This method is used to Retrieve a dictionary with currently defined
+	// training
+	// * sessions in PMA.control. The resulting dictionary use the session's
+	// * identifier as the dictionary key, and therefore this method is easier to
+	// * quickly retrieve and represent session-related data. However, this method
+	// * returns less verbose data than getSessions()
+	// *
+	// * @param pmaControlURL URL for PMA.Control
+	// * @param pmaCoreSessionID PMA.core session ID
+	// * @return Map of data related to registred session IDs
+	// */
+	// public static Map<String, Map<String, String>> getSessionIds(String
+	// pmaControlURL, String pmaCoreSessionID) {
+	// JSONArray fullSessions = getSessions(pmaControlURL, pmaCoreSessionID);
+	// Map<String, Map<String, String>> newSession = new HashMap<>();
+	// for (int i = 0; i < fullSessions.length(); i++) {
+	// Map<String, String> sessData = new HashMap<String, String>();
+	// sessData.put("LogoPath",
+	// fullSessions.getJSONObject(i).getString("LogoPath"));
+	// sessData.put("StartsOn",
+	// fullSessions.getJSONObject(i).getString("StartsOn"));
+	// sessData.put("EndsOn", fullSessions.getJSONObject(i).getString("EndsOn"));
+	// sessData.put("ModuleId",
+	// fullSessions.getJSONObject(i).getString("ModuleId"));
+	// sessData.put("State", fullSessions.getJSONObject(i).getString("State"));
+	// newSession.put(fullSessions.getJSONObject(i).getString("Id"), sessData);
+	// }
+	// return newSession;
+	// }
 
-//	/**
-//	 * This method is used to retrieve a dictionary with currently defined training
-//	 * sessions in PMA.control. The resulting dictionary use the training session's
-//	 * identifier as the dictionary key, and therefore this method is easier to
-//	 * quickly retrieve and represent session-related data.
-//	 * 
-//	 * @param pmaControlURL       URL for PMA.Control
-//	 * @param pmaControlProjectID Project ID
-//	 * @param pmaCoreSessionID    PMA.core session ID
-//	 * @return Map of data related to registred session IDs
-//	 */
-//	public static Map<Integer, Map<String, Object>> getTrainingSessionsOld(String pmaControlURL,
-//			Integer pmaControlProjectID, String pmaCoreSessionID) {
-//		JSONArray fullTrainingSessions = pmaGetTrainingSessions(pmaControlURL, pmaCoreSessionID);
-//		Map<Integer, Map<String, Object>> newTrainingSessionMap = new HashMap<>();
-//		for (int i = 0; i < fullTrainingSessions.length(); i++) {
-//			JSONObject session = fullTrainingSessions.optJSONObject(i);
-//			if ((pmaControlProjectID != null) || (pmaControlProjectID == session.optInt("ProjectId"))) {
-//				newTrainingSessionMap.put(session.optInt("Id"), formatTrainingSessionProperly(session));
-//			}
-//		}
-//		return newTrainingSessionMap;
-//	}
+	// /**
+	// * This method is used to retrieve a dictionary with currently defined
+	// training
+	// * sessions in PMA.control. The resulting dictionary use the training
+	// session's
+	// * identifier as the dictionary key, and therefore this method is easier to
+	// * quickly retrieve and represent session-related data.
+	// *
+	// * @param pmaControlURL URL for PMA.Control
+	// * @param pmaControlProjectID Project ID
+	// * @param pmaCoreSessionID PMA.core session ID
+	// * @return Map of data related to registred session IDs
+	// */
+	// public static Map<Integer, Map<String, Object>> getTrainingSessionsOld(String
+	// pmaControlURL,
+	// Integer pmaControlProjectID, String pmaCoreSessionID) {
+	// JSONArray fullTrainingSessions = pmaGetTrainingSessions(pmaControlURL,
+	// pmaCoreSessionID);
+	// Map<Integer, Map<String, Object>> newTrainingSessionMap = new HashMap<>();
+	// for (int i = 0; i < fullTrainingSessions.length(); i++) {
+	// JSONObject session = fullTrainingSessions.optJSONObject(i);
+	// if ((pmaControlProjectID != null) || (pmaControlProjectID ==
+	// session.optInt("ProjectId"))) {
+	// newTrainingSessionMap.put(session.optInt("Id"),
+	// formatTrainingSessionProperly(session));
+	// }
+	// }
+	// return newTrainingSessionMap;
+	// }
 
 	/**
 	 * This method is used to get sessions for a certain participant
@@ -229,7 +258,7 @@ public class Control {
 	 */
 	public static Map<Integer, Map<String, Object>> getTrainingSessionsForParticipant(String pmaControlURL,
 			String participantUsername, String pmaCoreSessionID) {
-		JSONArray fullTrainingSessions = pmaGetTrainingSessions(pmaControlURL, pmaCoreSessionID);
+		JSONArray fullTrainingSessions = pmaGetTrainingSessions(pmaControlURL, pmaCoreSessionID, null, null);
 		Map<Integer, Map<String, Object>> newTrainingSessionMap = new HashMap<>();
 		for (int i = 0; i < fullTrainingSessions.length(); i++) {
 			JSONObject session = fullTrainingSessions.optJSONObject(i);
@@ -347,7 +376,7 @@ public class Control {
 	 * @return Map of all participants registered across all sessions
 	 */
 	public static Map<String, Map<Integer, String>> getAllParticipants(String pmaControlURL, String pmaCoreSessionID) {
-		JSONArray fullTrainingSessions = pmaGetTrainingSessions(pmaControlURL, pmaCoreSessionID);
+		JSONArray fullTrainingSessions = pmaGetTrainingSessions(pmaControlURL, pmaCoreSessionID, null, null);
 		Map<String, Map<Integer, String>> userMap = new HashMap<>();
 		for (int i = 0; i < fullTrainingSessions.length(); i++) {
 			JSONObject session = fullTrainingSessions.optJSONObject(i);
@@ -376,15 +405,17 @@ public class Control {
 	 * @param pmaCoreSessionID            PMA.core session ID
 	 * @return URL connection output in JSON format
 	 */
-//	 * @throws Exception If user is ALREADY registered in the provided PMA.control
-//	 *                   training session	
+	// * @throws Exception If user is ALREADY registered in the provided PMA.control
+	// * training session
 	public static String registerParticipantForTrainingSession(String pmaControlURL, String participantUsername,
 			Integer pmaControlTrainingSessionID, PmaTrainingSessionRole pmaControlRole, String pmaCoreSessionID) {
-//			throws Exception {
-//		if (isParticipantInTrainingSession(pmaControlURL, participantUsername, pmaControlSessionID, pmaCoreSessionID)) {
-//			throw new Exception("PMA.core user " + participantUsername
-//					+ " is ALREADY registered in PMA.control training session " + pmaControlSessionID);
-//		}
+		// throws Exception {
+		// if (isParticipantInTrainingSession(pmaControlURL, participantUsername,
+		// pmaControlSessionID, pmaCoreSessionID)) {
+		// throw new Exception("PMA.core user " + participantUsername
+		// + " is ALREADY registered in PMA.control training session " +
+		// pmaControlSessionID);
+		// }
 		try {
 			String url = PMA.join(pmaControlURL, "api/Sessions/") + pmaControlTrainingSessionID.toString()
 					+ "/AddParticipant?SessionID=" + pmaCoreSessionID;
@@ -491,7 +522,7 @@ public class Control {
 	 */
 	public static Integer getCaseCollectionTrainingSessionID(String pmaControlURL, Integer pmaControlTrainingSessionID,
 			Integer pmaControlCaseCollectionID, String pmaCoreSessionID) {
-		JSONArray fullTrainingSessions = pmaGetTrainingSessions(pmaControlURL, pmaCoreSessionID);
+		JSONArray fullTrainingSessions = pmaGetTrainingSessions(pmaControlURL, pmaCoreSessionID, null, null);
 		for (int i = 0; i < fullTrainingSessions.length(); i++) {
 			JSONObject sess = fullTrainingSessions.optJSONObject(i);
 			if (sess.optInt("Id") == pmaControlTrainingSessionID) {
@@ -507,68 +538,75 @@ public class Control {
 		return null;
 	}
 
-//	/**
-//	 * This method is used to a ssign an interaction mode to a particpant for a
-//	 * given Case Collection within a training session
-//	 * 
-//	 * @param pmaControlURL               PMA.control URL
-//	 * @param participantUsername         PMA.core username
-//	 * @param pmaControlTrainingSessionID Training session ID
-//	 * @param pmaControlCaseCollectionID  Case collection ID
-//	 * @param pmaControlInteractionMode   Interaction mode
-//	 * @param pmaCoreSessionID            PMA.core session ID
-//	 * @return URL connection output in JSON format
-//	 * @throws Exception If user is NOT registered in the provided PMA.control
-//	 *                   training session
-//	 */
-//	public static String setParticipantInteractionMode(String pmaControlURL, String participantUsername,
-//			Integer pmaControlTrainingSessionID, Integer pmaControlCaseCollectionID,
-//			PmaInteractionMode pmaControlInteractionMode, String pmaCoreSessionID) throws Exception {
-//
-//		if (!isParticipantInTrainingSession(pmaControlURL, participantUsername, pmaControlTrainingSessionID,
-//				pmaCoreSessionID)) {
-//			throw new Exception("PMA.core user " + participantUsername
-//					+ " is NOT registered in PMA.control training session " + pmaControlTrainingSessionID);
-//		}
-//		try {
-//			String url = PMA.join(pmaControlURL, "api/Sessions/") + pmaControlTrainingSessionID
-//					+ "/InteractionMode?SessionID=" + pmaCoreSessionID;
-//			URL urlResource = new URL(url);
-//			HttpURLConnection con;
-//			if (url.startsWith("https")) {
-//				con = (HttpsURLConnection) urlResource.openConnection();
-//			} else {
-//				con = (HttpURLConnection) urlResource.openConnection();
-//			}
-//			con.setRequestMethod("POST");
-//			con.setRequestProperty("Content-Type", "application/json");
-//			con.setUseCaches(false);
-//			con.setDoOutput(true);
-//			String data = "{ \"UserName\": \"" + participantUsername + "\", " + " \"CaseCollectionId\": \""
-//					+ pmaControlCaseCollectionID + "\", " + "\"InteractionMode\": \"" + pmaControlInteractionMode
-//					+ "\" }"; // default interaction mode = Locked
-//			// + ", \"InteractionMode\": \"" +
-//			// String.valueOf(pmacontrolInteractionMode.ordinal() + 1) + "\" }";
-//			OutputStream os = con.getOutputStream();
-//			os.write(data.getBytes("UTF-8"));
-//			os.close();
-//			if (PMA.debug) {
-//				System.out.println("Posting to " + url);
-//				System.out.println("with payload " + data);
-//			}
-//			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
-//			PMA.clearURLCache();
-//			return jsonString;
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//			if (PMA.logger != null) {
-//				StringWriter sw = new StringWriter();
-//				e.printStackTrace(new PrintWriter(sw));
-//				PMA.logger.severe(sw.toString());
-//			}
-//			return null;
-//		}
-//	}
+	// /**
+	// * This method is used to a ssign an interaction mode to a particpant for a
+	// * given Case Collection within a training session
+	// *
+	// * @param pmaControlURL PMA.control URL
+	// * @param participantUsername PMA.core username
+	// * @param pmaControlTrainingSessionID Training session ID
+	// * @param pmaControlCaseCollectionID Case collection ID
+	// * @param pmaControlInteractionMode Interaction mode
+	// * @param pmaCoreSessionID PMA.core session ID
+	// * @return URL connection output in JSON format
+	// * @throws Exception If user is NOT registered in the provided PMA.control
+	// * training session
+	// */
+	// public static String setParticipantInteractionMode(String pmaControlURL,
+	// String participantUsername,
+	// Integer pmaControlTrainingSessionID, Integer pmaControlCaseCollectionID,
+	// PmaInteractionMode pmaControlInteractionMode, String pmaCoreSessionID) throws
+	// Exception {
+	//
+	// if (!isParticipantInTrainingSession(pmaControlURL, participantUsername,
+	// pmaControlTrainingSessionID,
+	// pmaCoreSessionID)) {
+	// throw new Exception("PMA.core user " + participantUsername
+	// + " is NOT registered in PMA.control training session " +
+	// pmaControlTrainingSessionID);
+	// }
+	// try {
+	// String url = PMA.join(pmaControlURL, "api/Sessions/") +
+	// pmaControlTrainingSessionID
+	// + "/InteractionMode?SessionID=" + pmaCoreSessionID;
+	// URL urlResource = new URL(url);
+	// HttpURLConnection con;
+	// if (url.startsWith("https")) {
+	// con = (HttpsURLConnection) urlResource.openConnection();
+	// } else {
+	// con = (HttpURLConnection) urlResource.openConnection();
+	// }
+	// con.setRequestMethod("POST");
+	// con.setRequestProperty("Content-Type", "application/json");
+	// con.setUseCaches(false);
+	// con.setDoOutput(true);
+	// String data = "{ \"UserName\": \"" + participantUsername + "\", " + "
+	// \"CaseCollectionId\": \""
+	// + pmaControlCaseCollectionID + "\", " + "\"InteractionMode\": \"" +
+	// pmaControlInteractionMode
+	// + "\" }"; // default interaction mode = Locked
+	// // + ", \"InteractionMode\": \"" +
+	// // String.valueOf(pmacontrolInteractionMode.ordinal() + 1) + "\" }";
+	// OutputStream os = con.getOutputStream();
+	// os.write(data.getBytes("UTF-8"));
+	// os.close();
+	// if (PMA.debug) {
+	// System.out.println("Posting to " + url);
+	// System.out.println("with payload " + data);
+	// }
+	// String jsonString = PMA.getJSONAsStringBuffer(con).toString();
+	// PMA.clearURLCache();
+	// return jsonString;
+	// } catch (Exception e) {
+	// e.printStackTrace();
+	// if (PMA.logger != null) {
+	// StringWriter sw = new StringWriter();
+	// e.printStackTrace(new PrintWriter(sw));
+	// PMA.logger.severe(sw.toString());
+	// }
+	// return null;
+	// }
+	// }
 
 	/**
 	 * This method is an overload of previous one. We created to add the possibility
@@ -640,13 +678,15 @@ public class Control {
 	 * @param pmaControlURL       URL for PMA.Control
 	 * @param pmaControlProjectID Project's ID
 	 * @param pmaCoreSessionID    PMA.core session ID
+	 * @param sessionTitle        An optional session title filter
 	 * @return List of session titles
 	 */
 	public static List<String> getTrainingSessionTitles(String pmaControlURL, Integer pmaControlProjectID,
-			String pmaCoreSessionID) {
+			String pmaCoreSessionID, String sessionTitle) {
 		try {
 			return new ArrayList<String>(
-					getTrainingSessionTitlesDict(pmaControlURL, pmaControlProjectID, pmaCoreSessionID).values());
+					getTrainingSessionTitlesDict(pmaControlURL, pmaControlProjectID, pmaCoreSessionID, sessionTitle)
+							.values());
 		} catch (Exception e) {
 			e.printStackTrace();
 			if (PMA.logger != null) {
@@ -665,13 +705,15 @@ public class Control {
 	 * @param pmaControlURL       URL for PMA.Control
 	 * @param pmaControlProjectID Project's ID
 	 * @param pmaCoreSessionID    PMA.core session ID
+	 * @param sessionTitle        an optional session title filter
 	 * @return Map of session IDs and titles
 	 */
 	public static Map<Integer, String> getTrainingSessionTitlesDict(String pmaControlURL, Integer pmaControlProjectID,
-			String pmaCoreSessionID) {
+			String pmaCoreSessionID, String sessionTitle) {
 		Map<Integer, String> map = new HashMap<>();
 		try {
-			JSONArray all = pmaGetTrainingSessions(pmaControlURL, pmaCoreSessionID);
+			JSONArray all = pmaGetTrainingSessionsViaProject(pmaControlURL, pmaCoreSessionID, pmaControlProjectID,
+					sessionTitle);
 			for (int i = 0; i < all.length(); i++) {
 				JSONObject session = all.optJSONObject(i);
 				if (pmaControlProjectID == null) {
@@ -704,7 +746,7 @@ public class Control {
 	public static Map<Integer, Map<String, Object>> getTrainingSessions(String pmaControlURL,
 			Integer pmaControlProjectID, String pmaCoreSessionID) {
 		Map<Integer, Map<String, Object>> map = new HashMap<>();
-		JSONArray all = pmaGetTrainingSessions(pmaControlURL, pmaCoreSessionID);
+		JSONArray all = pmaGetTrainingSessions(pmaControlURL, pmaCoreSessionID, null, null);
 		for (int i = 0; i < all.length(); i++) {
 			JSONObject sess = all.optJSONObject(i);
 			if (pmaControlProjectID == null) {
@@ -723,12 +765,14 @@ public class Control {
 	 * @param pmaControlURL       URL for PMA.Control
 	 * @param pmaControlProjectID Project's ID
 	 * @param pmaCoreSessionID    PMA.core session ID
+	 * @param sessionTitle        An optional session title filter
 	 * @return Map of session IDs and titles
 	 */
 	public static Map<Integer, Map<String, Object>> getTrainingSessionsViaProject(String pmaControlURL,
-			Integer pmaControlProjectID, String pmaCoreSessionID) {
+			Integer pmaControlProjectID, String pmaCoreSessionID, String sessionTitle) {
 		Map<Integer, Map<String, Object>> map = new HashMap<>();
-		JSONArray all = pmaGetTrainingSessionsViaProject(pmaControlURL, pmaCoreSessionID, pmaControlProjectID);
+		JSONArray all = pmaGetTrainingSessionsViaProject(pmaControlURL, pmaCoreSessionID, pmaControlProjectID,
+				sessionTitle);
 		for (int i = 0; i < all.length(); i++) {
 			JSONObject sess = all.optJSONObject(i);
 			if (pmaControlProjectID == null) {
@@ -751,7 +795,7 @@ public class Control {
 	 */
 	public static Map<String, Object> getTrainingSession(String pmaControlURL, Integer pmaControlTrainingSessionID,
 			String pmaCoreSessionID) {
-		JSONArray allTrainingSessions = pmaGetTrainingSessions(pmaControlURL, pmaCoreSessionID);
+		JSONArray allTrainingSessions = pmaGetTrainingSessions(pmaControlURL, pmaCoreSessionID, pmaControlTrainingSessionID, null);
 		for (int i = 0; i < allTrainingSessions.length(); i++) {
 			JSONObject el = allTrainingSessions.optJSONObject(i);
 			if (el.optInt("Id") == pmaControlTrainingSessionID) {
@@ -774,7 +818,7 @@ public class Control {
 	 */
 	public static Map<String, Object> searchTrainingSession(String pmaControlURL, String keyword,
 			String pmaCoreSessionID) {
-		JSONArray all = pmaGetTrainingSessions(pmaControlURL, pmaCoreSessionID);
+		JSONArray all = pmaGetTrainingSessions(pmaControlURL, pmaCoreSessionID, null, keyword);
 
 		for (int i = 0; i < all.length(); i++) {
 			JSONObject el = all.optJSONObject(i);
@@ -789,20 +833,24 @@ public class Control {
 	 * This method is used to retrieve all the data for all the defined case
 	 * collections in PMA.control (RAW JSON data; not suited for human consumption)
 	 * 
-	 * @param pmaControlURL    URL for PMA.Control
-	 * @param pmaCoreSessionID PMA.core session ID
-	 * @param varargs          Array of optional arguments
-	 *                         <p>
-	 *                         project : First optional argument(String), default
-	 *                         value(null), project case collections belong to
-	 *                         </p>
+	 * @param pmaControlURL       URL for PMA.Control
+	 * @param pmaCoreSessionID    PMA.core session ID
+	 * @param project             project case collections belong to
+	 * @param caseCollectionTitle An optional case collection title to filter
 	 * @return Array of case collections
 	 */
-	private static JSONArray pmaGetCaseCollections(String pmaControlURL, String pmaCoreSessionID, String... varargs) {
+	private static JSONArray pmaGetCaseCollections(String pmaControlURL, String pmaCoreSessionID, String project,
+			String caseCollectionTitle) {
 		// setting the default value when argument's value is omitted
-		String project = ((varargs.length > 0) && (varargs[0] != null)) ? varargs[0] : "";
-		String url = PMA.join(pmaControlURL, "api/CaseCollections?sessionID=" + PMA.pmaQ(pmaCoreSessionID)
-				+ ((project.length() > 0) ? ("&project=" + PMA.pmaQ(project)) : ""));
+		String url = PMA.join(pmaControlURL, "api/CaseCollections?sessionID=" + PMA.pmaQ(pmaCoreSessionID));
+
+		if (project != null) {
+			url += "&project=" + PMA.pmaQ(project);
+		}
+		if (caseCollectionTitle != null) {
+			url += "&caseCollectionTitle=" + PMA.pmaQ(caseCollectionTitle);
+		}
+
 		try {
 			String jsonString = PMA.httpGet(url, "application/json");
 			JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
@@ -830,7 +878,7 @@ public class Control {
 	public static Map<Integer, JSONObject> getCaseCollections(String pmaControlURL, Integer pmaControlProjectID,
 			String pmaCoreSessionID) {
 		Map<Integer, JSONObject> colls = new HashMap<>();
-		JSONArray allColls = pmaGetCaseCollections(pmaControlURL, pmaCoreSessionID);
+		JSONArray allColls = pmaGetCaseCollections(pmaControlURL, pmaCoreSessionID, null, null);
 		for (int i = 0; i < allColls.length(); i++) {
 			JSONObject coll = allColls.optJSONObject(i);
 			if ((pmaControlProjectID == coll.optInt("ProjectId")) && !colls.keySet().contains(coll.optInt("Id"))) {
@@ -875,7 +923,7 @@ public class Control {
 	 */
 	public static JSONObject getCaseCollectionByTitle(String pmaControlURL, String pmaCoreSessionID,
 			String caseCollectionTitle) {
-		JSONArray caseCollections = pmaGetCaseCollections(pmaControlURL, pmaCoreSessionID);
+		JSONArray caseCollections = pmaGetCaseCollections(pmaControlURL, pmaCoreSessionID, null, caseCollectionTitle);
 		if (caseCollections == null) {
 			return null;
 		} else {
@@ -903,7 +951,7 @@ public class Control {
 			String pmaCoreSessionID) {
 		Map<Integer, String> map = new HashMap<>();
 		try {
-			JSONArray allColletions = pmaGetCaseCollections(pmaControlURL, pmaCoreSessionID);
+			JSONArray allColletions = pmaGetCaseCollections(pmaControlURL, pmaCoreSessionID, null, null);
 			for (int i = 0; i < allColletions.length(); i++) {
 				JSONObject collection = allColletions.optJSONObject(i);
 				if (pmaControlProjectID == null) {
@@ -934,7 +982,7 @@ public class Control {
 	 */
 	public static JSONObject getCaseCollection(String pmaControlURL, Integer pmaControlCaseCollectionID,
 			String pmaCoreSessionID) {
-		JSONArray allCollections = pmaGetCaseCollections(pmaControlURL, pmaCoreSessionID);
+		JSONArray allCollections = pmaGetCaseCollections(pmaControlURL, pmaCoreSessionID, null, null);
 		for (int i = 0; i < allCollections.length(); i++) {
 			JSONObject collection = allCollections.optJSONObject(i);
 			if (collection.optInt("Id") == pmaControlCaseCollectionID) {
@@ -968,7 +1016,7 @@ public class Control {
 	 * @return The first collection that matches the search criteria
 	 */
 	public static JSONObject searchCaseCollection(String pmaControlURL, String keyword, String pmaCoreSessionID) {
-		JSONArray allCollections = pmaGetCaseCollections(pmaControlURL, pmaCoreSessionID);
+		JSONArray allCollections = pmaGetCaseCollections(pmaControlURL, pmaCoreSessionID, null, keyword);
 		for (int i = 0; i < allCollections.length(); i++) {
 			JSONObject collection = allCollections.optJSONObject(i);
 			if (collection.getString("Title").toLowerCase().contains(keyword.toLowerCase())) {
@@ -1008,10 +1056,15 @@ public class Control {
 	 * 
 	 * @param pmaControlURL    URL for PMA.Control
 	 * @param pmaCoreSessionID PMA.core session ID
+	 * @param title            An optional title filter
 	 * @return Array of projects
 	 */
-	private static JSONArray pmaGetProjects(String pmaControlURL, String pmaCoreSessionID) {
+	private static JSONArray pmaGetProjects(String pmaControlURL, String pmaCoreSessionID, String title) {
 		String url = PMA.join(pmaControlURL, "api/Projects?sessionID=" + PMA.pmaQ(pmaCoreSessionID));
+		if (title != null) {
+			url += "&title=" + PMA.pmaQ(title);
+		}
+
 		try {
 			String jsonString = PMA.httpGet(url, "application/json");
 			JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
@@ -1036,7 +1089,7 @@ public class Control {
 	 */
 	@SuppressWarnings("unchecked")
 	public static Map<Integer, JSONObject> getProjects(String pmaControlURL, String pmaCoreSessionID) {
-		JSONArray allProjects = pmaGetProjects(pmaControlURL, pmaCoreSessionID);
+		JSONArray allProjects = pmaGetProjects(pmaControlURL, pmaCoreSessionID, null);
 		Map<Integer, JSONObject> projects = new HashMap<>();
 		for (int i = 0; i < allProjects.length(); i++) {
 			JSONObject prj = allProjects.optJSONObject(i);
@@ -1044,7 +1097,7 @@ public class Control {
 			prj.put("Sessions", formatProjectEmbeddedTrainingSessionsProperly(prj.optJSONArray("Sessions")));
 
 			// now integrate case collection information
-			JSONArray colls = pmaGetCaseCollections(pmaControlURL, pmaCoreSessionID);
+			JSONArray colls = pmaGetCaseCollections(pmaControlURL, pmaCoreSessionID, null, null);
 			prj.put("CaseCollections", new HashMap<Integer, String>());
 			for (int j = 0; j < colls.length(); j++) {
 				JSONObject col = colls.optJSONObject(j);
@@ -1067,7 +1120,7 @@ public class Control {
 	 */
 	public static List<String> getProjectTitles(String pmaControlURL, String pmaCoreSessionID) {
 		try {
-			return new ArrayList<String>(getProjectTitlesDict(pmaControlURL, pmaCoreSessionID).values());
+			return new ArrayList<String>(getProjectTitlesDict(pmaControlURL, pmaCoreSessionID, null).values());
 		} catch (Exception e) {
 			e.printStackTrace();
 			if (PMA.logger != null) {
@@ -1085,11 +1138,13 @@ public class Control {
 	 * 
 	 * @param pmaControlURL    URL for PMA.Control
 	 * @param pmaCoreSessionID PMA.core session ID
+	 * @param title            Optional title filter
 	 * @return Map of project-IDs and titles
 	 */
-	public static Map<Integer, String> getProjectTitlesDict(String pmaControlURL, String pmaCoreSessionID) {
+	public static Map<Integer, String> getProjectTitlesDict(String pmaControlURL, String pmaCoreSessionID,
+			String title) {
 		Map<Integer, String> map = new HashMap<>();
-		JSONArray allProjects = pmaGetProjects(pmaControlURL, pmaCoreSessionID);
+		JSONArray allProjects = pmaGetProjects(pmaControlURL, pmaCoreSessionID, title);
 		try {
 			for (int i = 0; i < allProjects.length(); i++) {
 				map.put(allProjects.optJSONObject(i).getInt("Id"), allProjects.optJSONObject(i).getString("Title"));
@@ -1118,7 +1173,7 @@ public class Control {
 	public static Map<String, Object> getProject(String pmaControlURL, Integer pmaControlProjectID,
 			String pmaCoreSessionID) {
 		try {
-			JSONArray allProjects = pmaGetProjects(pmaControlURL, pmaCoreSessionID);
+			JSONArray allProjects = pmaGetProjects(pmaControlURL, pmaCoreSessionID, null);
 			for (int i = 0; i < allProjects.length(); i++) {
 				JSONObject prj = allProjects.optJSONObject(i);
 				if (prj.optInt("Id") == pmaControlProjectID) {
@@ -1131,7 +1186,7 @@ public class Control {
 					// now integrate case collection information
 					// we get the case collections belonging to the project (via the title)
 					JSONArray collections = pmaGetCaseCollections(pmaControlURL, pmaCoreSessionID,
-							prj.getString("Title"));
+							prj.getString("Title"), null);
 					project.put("CaseCollections", new HashMap<Integer, String>());
 					for (int j = 0; j < collections.length(); j++) {
 						JSONObject collection = collections.optJSONObject(j);
@@ -1166,7 +1221,7 @@ public class Control {
 	 */
 	public static Map<String, Object> getProjectByCaseID(String pmaControlURL, Integer pmacontrolCaseID,
 			String pmaCoreSessionID) {
-		JSONArray allCollections = pmaGetCaseCollections(pmaControlURL, pmaCoreSessionID);
+		JSONArray allCollections = pmaGetCaseCollections(pmaControlURL, pmaCoreSessionID, null, null);
 		for (int i = 0; i < allCollections.length(); i++) {
 			JSONObject collection = allCollections.optJSONObject(i);
 			JSONArray cases = collection.optJSONArray("Cases");
@@ -1190,7 +1245,7 @@ public class Control {
 	 */
 	public static Map<String, Object> getProjectByCaseCollectionID(String pmaControlURL,
 			Integer pmacontrolCaseCollectionID, String pmaCoreSessionID) {
-		JSONArray allCollections = pmaGetCaseCollections(pmaControlURL, pmaCoreSessionID);
+		JSONArray allCollections = pmaGetCaseCollections(pmaControlURL, pmaCoreSessionID, null, null);
 		for (int i = 0; i < allCollections.length(); i++) {
 			JSONObject collection = allCollections.optJSONObject(i);
 			if (collection.optInt("Id") == pmacontrolCaseCollectionID) {
@@ -1211,7 +1266,7 @@ public class Control {
 	 */
 	public static List<Map<String, Object>> searchProjects(String pmaControlURL, String keyword,
 			String pmaCoreSessionID) {
-		Map<Integer, String> mapProjectTitles = getProjectTitlesDict(pmaControlURL, pmaCoreSessionID);
+		Map<Integer, String> mapProjectTitles = getProjectTitlesDict(pmaControlURL, pmaCoreSessionID, keyword);
 		List<Map<String, Object>> lstProjects = new ArrayList<>();
 		for (Entry<Integer, String> entry : mapProjectTitles.entrySet()) {
 			if (entry.getValue().toLowerCase().contains(keyword.toLowerCase())) {
@@ -1287,11 +1342,11 @@ public class Control {
 	 * This method is used to assign an interaction mode to a particpant for
 	 * training sessions in batch mode
 	 * 
-	 * @param pmaControlURL               PMA.control URL
-	 * @param participantUsername         PMA.core username
-	 * @param trainingSessions			  Training sessions
-	 * @param pmaControlInteractionMode   Interaction mode
-	 * @param pmaCoreSessionID            PMA.core session ID
+	 * @param pmaControlURL             PMA.control URL
+	 * @param participantUsername       PMA.core username
+	 * @param trainingSessions          Training sessions
+	 * @param pmaControlInteractionMode Interaction mode
+	 * @param pmaCoreSessionID          PMA.core session ID
 	 * @return URL connection output in JSON format
 	 * @throws Exception If user is NOT registered in the provided PMA.control
 	 *                   training session
