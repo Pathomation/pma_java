@@ -432,7 +432,70 @@ public class Core {
 					return null;
 				}
 			} else {
-				version = jsonString;
+				version = jsonString.replaceAll("\"$|^\"", "");
+			}
+
+			if (version.startsWith("3.0")){
+				String revision = getBuildRevision(pmaCoreURL);
+				if (!revision.isEmpty()){
+					version += "." + revision;
+				}
+			}
+
+			return version;
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (PMA.logger != null) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				PMA.logger.severe(sw.toString());
+			}
+			return null;
+		}
+	}
+
+	/**
+	 * This method is used to get the version number
+	 * 
+	 * @param varargs Array of optional arguments
+	 *                <p>
+	 *                pmaCoreURL : First optional argument(String), default
+	 *                value(Class field pmaCoreLiteURL), url of PMA.core instance
+	 *                </p>
+	 * @return Version number
+	 */
+	public static String getBuildRevision(String... varargs) {
+		// setting the default value when argument's value is omitted
+		String pmaCoreURL = varargs.length > 0 ? varargs[0] : pmaCoreLiteURL;
+		String url = PMA.join(pmaCoreURL, "api/json/GetBuildRevision");
+		String version = null;
+		if (PMA.debug) {
+			System.out.println(url);
+		}
+		try {
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("GET");
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
+			if (PMA.isJSONObject(jsonString)) {
+				JSONObject jsonResponse = PMA.getJSONObjectResponse(jsonString);
+				if (jsonResponse.has("Code")) {
+					if (PMA.logger != null) {
+						PMA.logger.severe("getBuildRevision failed : " + jsonResponse.get("Message"));
+					}
+					throw new Exception("getBuildRevision failed : " + jsonResponse.get("Message"));
+				} else if (jsonResponse.has("d")) {
+					version = jsonResponse.getString("d");
+				} else {
+					return null;
+				}
+			} else {
+				version = jsonString.replaceAll("\"$|^\"", "");
 			}
 			return version;
 		} catch (Exception e) {
