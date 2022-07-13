@@ -1145,6 +1145,7 @@ public class Control {
 			String title) {
 		Map<Integer, String> map = new HashMap<>();
 		JSONArray allProjects = pmaGetProjects(pmaControlURL, pmaCoreSessionID, title);
+		System.out.println(allProjects);
 		try {
 			for (int i = 0; i < allProjects.length(); i++) {
 				map.put(allProjects.optJSONObject(i).getInt("Id"), allProjects.optJSONObject(i).getString("Title"));

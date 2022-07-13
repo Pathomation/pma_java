@@ -20,12 +20,6 @@
 	</licenses>
 	<developers>
 		<developer>
-			<name>Yassine Iddaoui</name>
-			<email>yassine@pathomation.com</email>
-			<organization>Pathomation</organization>
-			<organizationUrl>http://www.pathomation.com</organizationUrl>
-		</developer>
-		<developer>
 			<name>Antreas Gribaviotis</name>
 			<email>antreasgribas@gmail.com</email>
 			<organization>Pathomation</organization>
@@ -168,6 +162,13 @@
 					<nexusUrl>https://oss.sonatype.org/</nexusUrl>
 					<autoReleaseAfterClose>true</autoReleaseAfterClose>
 				</configuration>
+				<dependencies>
+				<dependency>
+					<groupId>com.thoughtworks.xstream</groupId>
+					<artifactId>xstream</artifactId>
+					<version>1.4.15</version> <!-- apparently this needs to be exactly this version -->
+				</dependency>
+			</dependencies>
 			</plugin>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
