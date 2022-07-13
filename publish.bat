@@ -1,4 +1,4 @@
-mvn javadoc:javadoc
+REM mvn javadoc:javadoc
 mvn clean deploy
 ROBOCOPY /MIR .\doc ..\..\..\SDK.docs\pma.java
 cd ..\..\..\SDK.docs
