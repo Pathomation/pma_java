@@ -1,5 +1,5 @@
-REM mvn javadoc:javadoc
-mvn clean deploy
+call mvn javadoc:javadoc
+call mvn clean deploy
 ROBOCOPY /MIR .\doc ..\..\..\SDK.docs\pma.java
 cd ..\..\..\SDK.docs
 svn commit -m "Update from jenkins build" --username Antreas --password Patho!Andre4$
