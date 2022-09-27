@@ -1,12 +1,12 @@
 package com.pathomation;
 
 import java.awt.Image;
-import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -24,14 +24,24 @@ import java.util.stream.Stream;
 
 import javax.imageio.ImageIO;
 import javax.net.ssl.HttpsURLConnection;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+
+import static com.pathomation.PMA.getJSONArrayResponse;
+import static java.lang.System.out;
 
 /**
  * <h1>Java SDK</h1>
@@ -229,6 +239,187 @@ public class Core {
 	}
 
 	/**
+	 * This method is used to retrieve HTML Code from URL
+	 *
+	 * @param url
+	 *            to get HTML code from
+	 * @return String HTML code generated from the url argument
+	 */
+	public static String urlReader(String url) {
+		try {
+			URL urlResource = new URL(url);
+			URLConnection con = urlResource.openConnection();
+			InputStream in = con.getInputStream();
+			String encoding = con.getContentEncoding();
+			encoding = encoding == null ? "UTF-8" : encoding;
+			return IOUtils.toString(in, encoding);
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
+	/**
+	 * This method is used to parse a XML content
+	 *
+	 * @param s
+	 *            XML content to parse
+	 * @return Document parsed XML
+	 */
+	public static Document domParser(String s) {
+		try {
+			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder documentBuilder = factory.newDocumentBuilder();
+			InputSource inputStream = new InputSource();
+			inputStream.setCharacterStream(new StringReader(s));
+			return documentBuilder.parse(inputStream);
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
+	/**
+	 * This method is used to encode a String to be compatible as a url
+	 *
+	 * @param arg
+	 *            string to be encoded
+	 * @return String encoded String to be compatible as a url
+	 */
+	private static String pmaQ(String arg) {
+		if (arg == null) {
+			return "";
+		} else {
+			try {
+				return URLEncoder.encode(arg, "UTF-8").replace("+", "%20");
+			} catch (Exception e) {
+				System.out.print(e.getMessage());
+				return "";
+			}
+		}
+	}
+
+	/**
+	 * This method is used to get the list of sessions
+	 *
+	 * @param pmaControlURL
+	 *            URL for PMA.Control
+	 * @param pmaCoreSessionID
+	 *            PMA.core session ID
+	 * @return JSONArray containing the list of sessions
+	 */
+	public static JSONArray getSessions(String pmaControlURL, String pmaCoreSessionID) {
+		String url = join(pmaControlURL, "api/Sessions?sessionID=" + pmaQ(pmaCoreSessionID));
+		System.out.println(url);
+		try {
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("GET");
+			con.setRequestProperty("Accept", "application/json");
+			String jsonString = getJSONAsStringBuffer(con).toString();
+			JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+			return jsonResponse;
+		} catch (Exception e) {
+			System.out.print(e.getMessage());
+			return null;
+		}
+	}
+
+	/**
+	 *
+	 * This method is used to get the list of sessions' IDs
+	 *
+	 * @param pmaControlURL
+	 *            URL for PMA.Control
+	 * @param pmaCoreSessionID
+	 *            PMA.core session ID
+	 * @return Map<String, Map<String, String>> containing the sessions' IDs
+	 */
+	public static Map<String, Map<String, String>> getSessionIds(String pmaControlURL, String pmaCoreSessionID) {
+		JSONArray fullSessions = getSessions(pmaControlURL, pmaCoreSessionID);
+		Map<String, Map<String, String>> newSession = new HashMap<>();
+		for (int i = 0; i < fullSessions.length(); i++) {
+			Map<String, String> sessData = new HashMap<String, String>();
+			try {
+				sessData.put("LogoPath", fullSessions.getJSONObject(i).getString("LogoPath"));
+				sessData.put("StartsOn", fullSessions.getJSONObject(i).getString("StartsOn"));
+				sessData.put("EndsOn", fullSessions.getJSONObject(i).getString("EndsOn"));
+				sessData.put("ModuleId", fullSessions.getJSONObject(i).getString("ModuleId"));
+				sessData.put("State", fullSessions.getJSONObject(i).getString("State"));
+				newSession.put(fullSessions.getJSONObject(i).getString("Id"), sessData);
+			} catch (JSONException e) {
+				// ignore
+			}
+		}
+		return newSession;
+	}
+
+	/**
+	 * This method is used to get case collections
+	 *
+	 * @param pmaControlURL
+	 *            URL for PMA.Control
+	 * @param pmaCoreSessionID
+	 *            PMA.core session ID
+	 * @return JSONArray containing the list of case sessions
+	 */
+	public static JSONArray getCaseCollections(String pmaControlURL, String pmaCoreSessionID) {
+		String url = join(pmaControlURL, "api/CaseCollections?sessionID=" + pmaQ(pmaCoreSessionID));
+		System.out.println(url);
+		try {
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("GET");
+			con.setRequestProperty("Accept", "application/json");
+			String jsonString = getJSONAsStringBuffer(con).toString();
+			JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+			return jsonResponse;
+		} catch (Exception e) {
+			System.out.print(e.getMessage());
+			return null;
+		}
+	}
+
+	/**
+	 * This method is used to get the list of projects
+	 *
+	 * @param pmaControlURL
+	 *            URL for PMA.Control
+	 * @param pmaCoreSessionID
+	 *            PMA.core session ID
+	 * @return JSONArray containing the list of projects
+	 */
+	public static JSONArray getProjects(String pmaControlURL, String pmaCoreSessionID) {
+		String url = join(pmaControlURL, "api/Projects?sessionID=" + pmaQ(pmaCoreSessionID));
+		System.out.println(url);
+		try {
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("GET");
+			con.setRequestProperty("Accept", "application/json");
+			String jsonString = getJSONAsStringBuffer(con).toString();
+			JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+			return jsonResponse;
+		} catch (Exception e) {
+			System.out.print(e.getMessage());
+			return null;
+		}
+	}
+
+	/**
 	 * This method is used to check to see if PMA.core.lite (server component of
 	 * PMA.start) is running at a given endpoint. if pmaCoreURL is omitted, default
 	 * check is to see if PMA.start is effectively running at localhost (defined by
@@ -326,6 +517,52 @@ public class Core {
 		} else {
 			return PMA.join(url, "api/json/");
 		}
+	}
+
+	/**
+	 * This method concatenates strings with "/"
+	 * @param s
+	 * @return
+	 */
+	private static String join(String... s) {
+		String joinString = "";
+		for (String ss : s) {
+			if (!joinString.endsWith("/") && (!joinString.equals(""))) {
+				joinString = joinString.concat("/");
+			}
+			if (ss != null) {
+				joinString = joinString.concat(ss);
+			}
+		}
+		return joinString;
+	}
+
+	/**
+	 * This method is used to get a list of the values of "String" tags of a XML
+	 * document
+	 *
+	 * @param root
+	 *            XML document
+	 * @param limit
+	 *            it's an optional argument (int), default value set to "0"
+	 * @return List{@literal <}String{@literal >} a list of the values of "String"
+	 *         tags of a XML document
+	 */
+	private static List<String> xmlToStringArray(Document root, Integer... varargs) {
+		// setting the default value when argument's value is omitted
+		int limit = varargs.length > 0 ? varargs[0] : 0;
+		NodeList eLs = root.getElementsByTagName("string");
+		List<String> l = new ArrayList<>();
+		if (limit > 0) {
+			for (int i = 0; i < limit; i++) {
+				l.add(eLs.item(i).getFirstChild().getNodeValue());
+			}
+		} else {
+			for (int i = 0; i < eLs.getLength(); i++) {
+				l.add(eLs.item(i).getFirstChild().getNodeValue());
+			}
+		}
+		return l;
 	}
 
 	/**
@@ -455,6 +692,63 @@ public class Core {
 	}
 
 	/**
+	 * This method is used to get version info from PMA.control instance running at
+	 * pmacontrolURL
+	 *
+	 * @param pmaControlURL
+	 *            PMA Control's URL
+	 * @return JSONObject containing the version info
+	 */
+	public static JSONObject getVersionInfoPmaControl(String pmaControlURL) {
+		// Get version info from PMA.control instance running at pmacontrolURL
+		// why? because GetVersionInfo can be invoked WITHOUT a valid SessionID;
+		// _pma_api_url() takes session information into account
+		String url = join(pmaControlURL, "api/version");
+		try {
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("GET");
+			con.setRequestProperty("Accept", "application/json");
+			String jsonString = getJSONAsStringBuffer(con).toString();
+			JSONObject jsonResponse = getJSONResponse(jsonString);
+			return jsonResponse;
+		} catch (Exception e) {
+			System.out.print(e.getMessage());
+			return null;
+		}
+	}
+
+	/**
+	 * This method checks the spelling of the server version, namely the length.
+	 * @param serverVersion
+	 * @return
+	 */
+	private static boolean doesServerSupportPostAuth(String serverVersion) {
+		if (serverVersion == null || serverVersion.length() == 0) {
+			return false;
+		}
+
+
+		String[] version = serverVersion.split("\\.");
+		if (version.length != 4) {
+			return false;
+		}
+		try {
+			int major = Integer.parseInt(version[0], 10);
+			int build = Integer.parseInt(version[3], 10);
+
+			return major > 2 || (major == 2 && build >= 1836);
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
+	/**
 	 * This method is used to get the version number
 	 * 
 	 * @param varargs Array of optional arguments
@@ -567,7 +861,7 @@ public class Core {
 					return null;
 				}
 			} else {
-				JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
+				JSONArray jsonResponse = getJSONArrayResponse(jsonString);
 				version = new ArrayList<>();
 				for (int i = 0; i < jsonResponse.length(); i++) {
 					version.add(jsonResponse.optInt(i));
@@ -782,7 +1076,7 @@ public class Core {
 			String jsonString = PMA.httpGet(url, "application/json");
 			List<String> rootDirs;
 			if (PMA.isJSONArray(jsonString)) {
-				JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
+				JSONArray jsonResponse = getJSONArrayResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				rootDirs = new ArrayList<>();
@@ -913,7 +1207,7 @@ public class Core {
 					return null;
 				}
 			} else {
-				JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
+				JSONArray jsonResponse = getJSONArrayResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				dirs = new ArrayList<>();
@@ -1115,7 +1409,7 @@ public class Core {
 					return null;
 				}
 			} else {
-				JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
+				JSONArray jsonResponse = getJSONArrayResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				slides = new ArrayList<>();
@@ -1536,7 +1830,7 @@ public class Core {
 						return null;
 					}
 				} else {
-					JSONArray jsonArrayResponse = PMA.getJSONArrayResponse(jsonString);
+					JSONArray jsonArrayResponse = getJSONArrayResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonArrayResponse.length());
 					for (int i = 0; i < jsonArrayResponse.length(); i++) {
@@ -3549,7 +3843,7 @@ public class Core {
 						forms = null;
 					}
 				} else {
-					JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
+					JSONArray jsonResponse = getJSONArrayResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					for (int i = 0; i < jsonResponse.length(); i++) {
@@ -3626,7 +3920,7 @@ public class Core {
 						data = null;
 					}
 				} else {
-					JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
+					JSONArray jsonResponse = getJSONArrayResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					data = jsonResponse;
@@ -3696,7 +3990,7 @@ public class Core {
 						formDef = null;
 					}
 				} else {
-					JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
+					JSONArray jsonResponse = getJSONArrayResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					for (int i = 0; i < jsonResponse.length(); i++) {
@@ -3787,7 +4081,7 @@ public class Core {
 						forms = null;
 					}
 				} else {
-					JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
+					JSONArray jsonResponse = getJSONArrayResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					for (int i = 0; i < jsonResponse.length(); i++) {
@@ -3826,6 +4120,67 @@ public class Core {
 		sessionID = sessionId(sessionID);
 		if (slideRef.startsWith("/")) {
 			slideRef = slideRef.substring(1);
+		}
+		return null;
+	}
+
+	/**
+	 * This method is used to add the annotations for slide
+	 *
+	 * @param  sessionID session's ID
+	 * @param  pathOrUid slide's path
+	 * @param classification slide's  classification
+	 * @param layerID slide's layer id
+	 * @param notes "Annotation" + number or app name.
+	 * @param geometry annotation's geometry
+	 * @param color annotation's color
+	 */
+	public static JSONArray add_Annotations (
+			String sessionID,
+			String pathOrUid,
+			String classification,
+			int layerID,
+			String notes,
+			String geometry,
+			String color)
+			throws Exception {
+		JSONObject data = new JSONObject();
+		String urlS;
+		sessionID = sessionId(sessionID);
+		if (sessionID == pmaCoreLiteSessionID) {
+			if (isLite()) {
+				throw new Exception("PMA.core.lite found running, but doesn't support adding annotations.");
+			} else {
+				throw new Exception("PMA.core.lite not found, and besides; it doesn't support adding annotations.");
+			}
+		}
+		urlS = pmaUrl(sessionID) + "api/json/AddAnnotation";
+		URL url = new URL(urlS);
+		data.put("sessionID", sessionID);
+		data.put("pathOrUid", pathOrUid);
+		data.put("classification", classification);
+		data.put("layerID", layerID);
+		data.put("notes", notes);
+		data.put("geometry", geometry);
+		data.put("color", color);
+
+		URLConnection con = url.openConnection();
+		HttpURLConnection http = (HttpURLConnection) con;
+		http.setRequestMethod("POST"); // PUT is another valid option
+		http.setDoOutput(true);
+		out.println(con);
+		out.println(http);
+
+		byte[] out = data.toString().getBytes(StandardCharsets.UTF_8);
+		int length = out.length;
+		System.out.println(length);
+
+		http.setFixedLengthStreamingMode(length);
+		http.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+		http.connect();
+		try (OutputStream os = http.getOutputStream()) {
+			os.write(out);
+			System.out.println(os);
 		}
 		return null;
 	}
@@ -3880,7 +4235,7 @@ public class Core {
 						data = null;
 					}
 				} else {
-					JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
+					JSONArray jsonResponse = getJSONArrayResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					data = jsonResponse;
@@ -3898,6 +4253,51 @@ public class Core {
 			return null;
 		}
 		return data;
+	}
+
+	/**
+	 * This method is used to delete all the annotations for slide
+	 *
+	 * @param  sessionID session's ID
+	 * @param  slideRef slide's path
+	 * @param layerID slide's layer id
+	 */
+	public static boolean clear_annotations(String slideRef, int layerID, String sessionID) throws Exception {
+		sessionID = sessionId(sessionID);
+		JSONObject data = new JSONObject();
+		String urlS = pmaUrl(sessionID) + "api/json/DeleteAnnotations";
+		URL url = new URL(urlS);
+		if (sessionID == pmaCoreLiteSessionID) {
+			if (isLite()) {
+				throw new Exception("PMA.core.lite found running, but doesn't support adding annotations.");
+			} else {
+				throw new Exception("PMA.core.lite not found, and besides; it doesn't support adding annotations.");
+			}
+		}
+
+		data.put("sessionID", sessionID);
+		data.put("pathOrUid", slideRef);
+		data.put("layerID", layerID);
+
+		URLConnection con = url.openConnection();
+		HttpURLConnection http = (HttpURLConnection) con;
+		http.setRequestMethod("POST"); // PUT is another valid option
+		http.setDoOutput(true);
+		out.println(con);
+		out.println(http);
+
+		byte[] out = data.toString().getBytes(StandardCharsets.UTF_8);
+		int length = out.length;
+		System.out.println(length);
+
+		http.setFixedLengthStreamingMode(length);
+		http.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+		http.connect();
+		try (OutputStream os = http.getOutputStream()) {
+			os.write(out);
+			System.out.println(os);
+		}
+		return true;
 	}
 
 	/**
@@ -4018,7 +4418,7 @@ public class Core {
 					return null;
 				}
 			} else {
-				resultsArray = PMA.getJSONArrayResponse(jsonString);
+				resultsArray = getJSONArrayResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + resultsArray.length());
 			}
@@ -4109,7 +4509,7 @@ public class Core {
 					return null;
 				}
 			} else {
-				JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
+				JSONArray jsonResponse = getJSONArrayResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				List<String> files = new ArrayList<>();
@@ -4165,7 +4565,7 @@ public class Core {
 			con.setRequestMethod("GET");
 			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
 			if (PMA.isJSONArray(jsonString)) {
-				JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
+				JSONArray jsonResponse = getJSONArrayResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				List<Map<String, String>> result = new ArrayList<>();
@@ -4264,7 +4664,7 @@ public class Core {
 					files = null;
 				}
 			} else {
-				JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
+				JSONArray jsonResponse = getJSONArrayResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				files = new ArrayList<>();
@@ -4282,5 +4682,199 @@ public class Core {
 			}
 			return null;
 		}
+	}
+
+	/**
+	 * This method returns a boolean result based on the input parameters.
+	 * @param sessionId
+	 * @param url
+	 * @param length
+	 * @return
+	 */
+	public static Boolean addServer(String sessionId, String url, int length) {
+		pmaSessions.put(sessionId, url);
+		pmaSlideInfos.put(sessionId, new HashMap<String, Object>());
+		pmaAmountOfDataDownloaded.put(sessionId, length);
+
+		return true;
+	}
+
+	/**
+	 * This method returns pmaSessions.
+	 * @return
+	 */
+	public static Map<String, Object> sessions() {
+		return pmaSessions;
+	}
+
+	/**
+	 * This method connect to cloud with json data.
+	 * @param username
+	 * @param password
+	 * @return
+	 */
+	public static CloudServerData connectToCloud(String username, String password) {
+		String url = "https://myapi.pathomation.com/oauth/token";
+		String payload = "{" +
+				"\"grant_type\": \"password\", " +
+				"\"client_id\": 5, " +
+				"\"client_secret\": \"GCUwTDdIuy2zqay70ZqraOPEzjXCcFFy8TjJjoid\", " +
+				"\"username\": \"" + username + "\", " +
+				"\"password\": \"" + password + "\", " +
+				"\"caller\": \"Plugin Histoj\", " +
+				"\"scope\": \"*\" " +
+				"}";
+		String response = postItem(url, payload);
+		if (response == null) {
+			return null;
+		}
+		try {
+			JSONObject obj = new JSONObject(response);
+			String accessToken = obj.getString("access_token");
+			response = getCloudAuth(accessToken);
+			obj = new JSONObject(response);
+			String status = obj.getString("status");
+			String reason = obj.optString("reason");
+			if ("fail".equals(status)) {
+				return new CloudServerData(null, null, null, response.length(), false, reason);
+			}
+
+			String sessionId = obj.getString("session_id");
+			String serverUrl = obj.getJSONArray("selected_nodes").getJSONObject(0).getString("Uri");
+			String folder = obj.getString("folder");
+			return new CloudServerData(serverUrl, sessionId, folder, response.length(), true, null);
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
+	/**
+	 * This method makes DataOutputStream connection to send data to cloud.
+	 * @param url
+	 * @param payload
+	 * @return
+	 */
+	public static String postItem(String url, String payload) {
+		try {
+			URL urlResource = new URL(url);
+			URLConnection conn = urlResource.openConnection();
+			conn.setDoOutput(true);
+			conn.setRequestProperty( "Content-Type", "application/json");
+			conn.setRequestProperty( "charset", "utf-8");
+			conn.setUseCaches( false );
+			try(DataOutputStream wr = new DataOutputStream( conn.getOutputStream())) {
+				wr.write(payload.getBytes());
+			}
+
+			return getResponseString(conn);
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
+	/**
+	 * This method make authorization with token to connect cloud
+	 * @param accessToken
+	 * @return
+	 */
+	public static String getCloudAuth(String accessToken) {
+		try {
+			URL urlResource = new URL("https://myapi.pathomation.com/api/v1/authenticate");
+			URLConnection conn = urlResource.openConnection();
+			conn.setRequestProperty( "Authorization", "Bearer " + accessToken);
+			conn.setUseCaches( false );
+			return getResponseString(conn);
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
+	/**
+	 * This method reads and returns the input string data
+	 * @param conn
+	 * @return
+	 * @throws IOException
+	 */
+	private static String getResponseString(URLConnection conn) throws IOException {
+		Reader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
+		StringBuilder sb = new StringBuilder();
+		for (int c; (c = in.read()) >= 0; )
+			sb.append((char) c);
+		return sb.toString();
+	}
+
+	/**
+	 * This method reads and returns the input json data
+	 * @param value
+	 * @return
+	 */
+	public static JSONObject getJSONResponse(String value) {
+		JSONObject jsonResponse;
+		try {
+			jsonResponse = new JSONObject(value.toString());
+		} catch (JSONException e) {
+			return null;
+		}
+
+		return jsonResponse;
+	}
+
+	/**
+	 *
+	 *
+	 * @param con
+	 *            url to retrieve JSON from
+	 * @return StringBuffer Json result
+	 */
+	public static StringBuffer getJSONAsStringBuffer(HttpURLConnection con) {
+		try {
+			BufferedReader in;
+			if (Integer.toString(con.getResponseCode()).startsWith("2")) {
+				in = new BufferedReader(new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8));
+			} else {
+				in = new BufferedReader(new InputStreamReader(con.getErrorStream(), StandardCharsets.UTF_8));
+			}
+			String inputline;
+			StringBuffer response = new StringBuffer();
+			while ((inputline = in.readLine()) != null) {
+				response.append(inputline);
+			}
+			in.close();
+			return response;
+
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
+	/**
+	 *
+	 * @param value
+	 * json returned as String
+	 * @return Boolean true if it's a JSONObject, false if it's an Array
+	 */
+	public static Boolean isJSONObject(String value) {
+		if (value.startsWith("{")) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	/**
+	 * This method is used to get a JSONArray from a String argument
+	 *
+	 * @param value
+	 *            String argument
+	 * @return JSONArray converts String argument to JSONArray
+	 */
+	public static JSONArray getJSONArrayResponse(String value) {
+		JSONArray jsonResponse;
+		try {
+			jsonResponse = new JSONArray(value);
+		} catch (JSONException e) {
+			return null;
+		}
+		return jsonResponse;
 	}
 }
