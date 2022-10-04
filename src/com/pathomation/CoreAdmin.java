@@ -1,33 +1,40 @@
 package com.pathomation;
 
+import com.pathomation.Core;
+import com.pathomation.PMA;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import javax.net.ssl.HttpsURLConnection;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.*;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import javax.net.ssl.HttpsURLConnection;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
+import static com.pathomation.Core.pmaUrl;
+import static java.lang.System.out;
 
 /**
  * Intended for PMA.core interactions related to administrative operations. Does
  * NOT apply to PMA.start / PMA.core.lite
- * 
+ *
  * @author Yassine Iddaoui
  *
  */
 public class CoreAdmin {
 
+	private static int DEFAULT_CHUNK_SIZE = 1048576;
+
 	/**
 	 * This method is used to determine whether the Java SDK runs in debugging mode
 	 * or not. When in debugging mode (flag = true), extra output is produced when
 	 * certain conditions in the code are not met
-	 * 
+	 *
 	 * @param flag Debugging mode (activated or deactivated)
 	 */
 	public static void setDebugFlag(boolean flag) {
@@ -45,42 +52,17 @@ public class CoreAdmin {
 	/**
 	 * This method is used to define which content will be received "XML" or "Json"
 	 * for "Admin" Web service calls
-	 * 
-	 * @param varargs Array of optional arguments
-	 *                <p>
-	 *                sessionID : First optional argument(String), default
-	 *                value(null), session's ID
-	 *                </p>
-	 *                <p>
-	 *                xml : Second optional argument(Boolean), default value(true),
-	 *                define if method will return XML or Json content
-	 *                </p>
+	 *
+	 * @param sessionID sessionID : First optional argument(String), default
+	 *	                value(null), session's ID
+	 * @param xml       default value(false), define if method will return XML
+	 *                    or Json content
 	 * @return Adds sequence to the url to specify which content to be received (XML
 	 *         or Json)
 	 */
-	private static String adminUrl(Object... varargs) {
-		// setting the default values when arguments' values are omitted
-		String sessionID = null;
-		Boolean xml = false;
-		if (varargs.length > 0) {
-			if (!(varargs[0] instanceof String) && varargs[0] != null) {
-				if (PMA.logger != null) {
-					PMA.logger.severe("adminUrl() : Illegal argument");
-				}
-				throw new IllegalArgumentException("...");
-			}
-			sessionID = (String) varargs[0];
-		}
-		if (varargs.length > 1) {
-			if (!(varargs[1] instanceof Boolean) && varargs[1] != null) {
-				if (PMA.logger != null) {
-					PMA.logger.severe("adminUrl() : Illegal argument");
-				}
-				throw new IllegalArgumentException("...");
-			}
-			xml = (Boolean) varargs[1];
-		}
+	private static String adminUrl(String sessionID, Boolean xml) {
 		// let's get the base URL first for the specified session
+		xml = xml == null ? false : xml;
 		String url;
 		try {
 			url = Core.pmaUrl(sessionID);
@@ -105,35 +87,30 @@ public class CoreAdmin {
 		}
 	}
 
+	private static String adminUrl(String sessionID) {
+		return adminUrl(sessionID, false);
+	}
+
+	private static String adminUrl() {
+		return adminUrl(null, false);
+	}
+
 	/**
 	 * This method is under construction
-	 * 
-	 * @param varargs Array of optional arguments
-	 *                <p>
-	 *                method : First optional argument(String), default value(""),
-	 *                method
-	 *                </p>
-	 *                <p>
-	 *                url : Second optional argument(String), default value(null),
-	 *                url
-	 *                </p>
-	 *                <p>
-	 *                session : Third optional argument(String), default
-	 *                value(null), Session ID
-	 *                </p>
+	 *
+	 * @param method  default value(""),
+	 * @param url     default value(null),
+	 * @param session  default value(null), Session ID
 	 * @throws Exception If something goes wrong
 	 */
-	public static void checkForPMAStart(String... varargs) throws Exception {
-		// setting the default values when arguments' values are omitted
-		String method = varargs.length > 0 ? varargs[0] : "";
-		String url = varargs.length > 1 ? varargs[1] : null;
-		String session = varargs.length > 2 ? varargs[2] : null;
-		if (Core.getPmaCoreLiteSessionID().equals(session)) {
+	public static void checkForPMAStart(String method, String url, String session) throws Exception {
+		method = method == null ? "" : method;
+		if (session != null && Core.getPmaCoreLiteSessionID().equals(session)) {
 			if (PMA.logger != null) {
 				PMA.logger.severe("PMA.start doesn't support " + method);
 			}
 			throw new Exception("PMA.start doesn't support " + method);
-		} else if (url.equals(Core.getPmaCoreLiteSessionID())) {
+		} else if (url != null && url.equals(Core.getPmaCoreLiteSessionID())) {
 			if (Core.isLite()) {
 				if (PMA.logger != null) {
 					PMA.logger.severe("PMA.core.lite found running, but doesn't support an administrative back-end");
@@ -150,9 +127,21 @@ public class CoreAdmin {
 		}
 	}
 
+	public static void checkForPMAStart(String method, String url) throws Exception {
+		checkForPMAStart(method, url, null);
+	}
+
+	public static void checkForPMAStart(String method) throws Exception {
+		checkForPMAStart(method, null, null);
+	}
+
+	public static void checkForPMAStart() throws Exception {
+		checkForPMAStart(null, null, null);
+	}
+
 	/**
 	 * This method is used to cache results from requested URLs (POST method)
-	 * 
+	 *
 	 * @param url  URL to request
 	 * @param data JSON input
 	 * @return Data returned following a request to a specific URL
@@ -200,27 +189,20 @@ public class CoreAdmin {
 	 * This method is used to authenticate &amp; connect as an admin to a PMA.core
 	 * instance using admin credentials
 	 *
-	 * @param varargs Array of optional arguments
-	 *                <p>
-	 *                pmacoreURL : First optional argument(String), default
-	 *                value(Class field pmaCoreLiteURL), url of PMA.core instance
-	 *                </p>
-	 *                <p>
-	 *                pmacoreUsername : Second optional argument(String), default
-	 *                value(""), username for PMA.core instance
-	 *                </p>
-	 *                <p>
-	 *                pmacorePassword : Third optional argument(String), default
-	 *                value(""), password for PMA.core instance
-	 *                </p>
-	 * @return session's ID if session was created successfully, otherwise null
+	 * @param pmaCoreURL url of PMA.core instance
+	 *@param pmaCoreAdmUsername default value(""), username for PMA.core
+	 *                             instance
+	 @param pmaCoreAdmPassword default value(""), password for PMA.core instance
+	  * @return session's ID if session was created successfully, otherwise null
 	 * @throws Exception If target instance isn't a PMA.core instance
 	 */
-	public static String adminConnect(String... varargs) throws Exception {
+	public static String adminConnect(String pmaCoreURL,
+									  String pmaCoreAdmUsername,
+									  String pmaCoreAdmPassword) throws Exception {
 		// setting the default values when arguments' values are omitted
-		String pmaCoreURL = varargs.length > 0 ? varargs[0] : Core.getPmaCoreLiteURL();
-		String pmaCoreAdmUsername = varargs.length > 1 ? varargs[1] : "";
-		String pmaCoreAdmPassword = varargs.length > 2 ? varargs[2] : "";
+		pmaCoreURL = pmaCoreURL == null ? Core.getPmaCoreLiteURL() : pmaCoreURL;
+		pmaCoreAdmUsername = pmaCoreAdmUsername == null ? "" : pmaCoreAdmUsername;
+		pmaCoreAdmPassword = pmaCoreAdmPassword == null ? "" : pmaCoreAdmPassword;
 		// Attempt to connect to PMA.core instance; success results in a SessionID
 		// only success if the user has administrative status
 		checkForPMAStart("adminConnect", pmaCoreURL);
@@ -269,39 +251,47 @@ public class CoreAdmin {
 		}
 	}
 
+
+	public static String adminConnect(String pmaCoreURL,
+									  String pmaCoreAdmUsername) throws Exception {
+		return adminConnect(pmaCoreURL, pmaCoreAdmUsername, "" );
+	}
+
+	public static String adminConnect(String pmaCoreURL) throws Exception {
+		return adminConnect(pmaCoreURL, "", "");
+	}
+
+	public static String adminConnect() throws Exception {
+		return adminConnect(null, "", "");
+	}
+
 	/**
 	 * This method is used to disconnect an admin session from a PMA.core instance
-	 * 
-	 * @param varargs Array of optional arguments
-	 *                <p>
-	 *                sessionID : First optional argument(String), default
-	 *                value(null), session's ID
-	 *                </p>
+	 *
+	 * @param adminSessionID First optional argument(String), default
 	 * @return True if successfully disconnected, false otherwise
 	 */
-	public static boolean adminDisconnect(String... varargs) {
-		// setting the default value when argument's value is omitted
-		String admsessionID = varargs.length > 0 ? varargs[0] : null;
-		return Core.disconnect(admsessionID);
+	public static boolean adminDisconnect(String adminSessionID) {
+		return Core.disconnect(adminSessionID);
+	}
+
+	public static boolean adminDisconnect() {
+		return Core.disconnect(null);
 	}
 
 	/**
 	 * This method is used to send out an email reminder to the address associated
 	 * with user login
-	 * 
+	 *
 	 * @param admSessionID admin session ID
 	 * @param login        user login
-	 * @param varargs      Array of optional arguments
-	 *                     <p>
-	 *                     subject : First optional argument(Boolean), default
-	 *                     value(false), Defines whether the user can annotate
-	 *                     slides or not
-	 *                     </p>
+	 * @param subject      First argument(String) - email subject.
 	 * @return Empty string if operation successful, an error message otherwise
 	 */
-	public static String sendEmailReminder(String admSessionID, String login, String... varargs) {
+	public static String sendEmailReminder(String admSessionID, String login,
+										   String subject) {
 		// setting the default value when argument's value is omitted
-		String subject = varargs.length > 0 ? varargs[0] : "PMA.core password reminder";
+		subject = subject == null ? "PMA.core password reminder" : subject;
 		try {
 			String url = adminUrl(admSessionID, false) + "EmailPassword";
 			String reminderParams = "{\"username\": \"" + login + "\", \"subject\": \"" + subject
@@ -319,39 +309,28 @@ public class CoreAdmin {
 		}
 	}
 
+	public static String sendEmailReminder(String admSessionID, String login) {
+		return sendEmailReminder(admSessionID, login, null);
+	}
+
 	/**
 	 * This method is used to create a new user on PMA.core
-	 * 
+	 *
 	 * @param admSessionID admin session ID
 	 * @param login        user login
 	 * @param firstName    user's first name
 	 * @param lastName     user's last name
 	 * @param email        user's email
 	 * @param pwd          user's password
-	 * @param varargs      Array of optional arguments
-	 *                     <p>
-	 *                     canAnnotate : First optional argument(Boolean), default
-	 *                     value(false), Defines whether the user can annotate
-	 *                     slides or not
-	 *                     </p>
-	 *                     <p>
-	 *                     isAdmin : Second optional argument(Boolean), default
-	 *                     value(false), Defines whether the user is an
-	 *                     administrator or not
-	 *                     </p>
-	 *                     <p>
-	 *                     isSuspended : Second optional argument(Boolean), default
-	 *                     value(false), Defines whether the user is suspended or
-	 *                     not
-	 *                     </p>
+	 * @param canAnnotate  Defines whether the user can annotate slides or not
+	 * @param isAdmin      Defines whether the user is an administrator or not
+	 * @param isSuspended  Defines whether the user is suspended or not
 	 * @return True if the creation has succeeded, false otherwise
 	 */
 	public static boolean addUser(String admSessionID, String login, String firstName, String lastName, String email,
-			String pwd, Boolean... varargs) {
+								  String pwd, Boolean canAnnotate, Boolean isAdmin, Boolean isSuspended) {
 		// setting the default value when argument's value is omitted
-		Boolean canAnnotate = varargs.length > 0 ? varargs[0] : false;
-		Boolean isAdmin = varargs.length > 1 ? varargs[1] : false;
-		Boolean isSuspended = varargs.length > 2 ? varargs[2] : false;
+
 		System.out.println("Using credentials from " + admSessionID);
 
 		try {
@@ -381,9 +360,27 @@ public class CoreAdmin {
 		}
 	}
 
+	public static boolean addUser(String admSessionID, String login, String firstName, String lastName, String email,
+								  String pwd) {
+		return addUser(admSessionID, login, firstName, lastName, email, pwd,
+				false,false, false);
+	}
+
+	public static boolean addUser(String admSessionID, String login, String firstName, String lastName, String email,
+								  String pwd, Boolean canAnnotate) {
+		return addUser(admSessionID, login, firstName, lastName, email, pwd,
+				canAnnotate,false, false);
+	}
+
+	public static boolean addUser(String admSessionID, String login, String firstName, String lastName, String email,
+								  String pwd, Boolean canAnnotate, Boolean isAdmin) {
+		return addUser(admSessionID, login, firstName, lastName, email, pwd,
+				canAnnotate,isAdmin, false);
+	}
+
 	/**
 	 * This method is used to check if a user exists
-	 * 
+	 *
 	 * @param admSessionID admin session ID
 	 * @param query        keyword for the User to search for
 	 * @return True if the user exists, false otherwise
@@ -417,7 +414,7 @@ public class CoreAdmin {
 
 	/**
 	 * This method is used to reset a user's password
-	 * 
+	 *
 	 * @param sessionID   session ID
 	 * @param username    username to update
 	 * @param newPassword new password
@@ -448,41 +445,67 @@ public class CoreAdmin {
 
 	/**
 	 * This method is used to create a new directory on PMA.core
-	 * 
-	 * @param admSessionID an admin session ID
+	 *
+	 * @param sessionID an admin session ID
 	 * @param path         path to create the new directory in
 	 * @return true if directory was created successfully, false otherwise
 	 */
-	public static boolean createDirectory(String admSessionID, String path) {
+	public static boolean createDirectory(String sessionID, String path) throws IOException {
+		out.println();
+		String urlS = null;
 		try {
-			// we create folders on PMA.core only
-			if (Core.isLite(Core.pmaUrl(admSessionID))) {
-				return false;
-			} else if (Core.getSlides(path, admSessionID) == null) {
-				String url = adminUrl(admSessionID, false) + "CreateDirectory";
-				String input = "{ \"sessionID\": \"" + admSessionID + "\", \"path\": \"" + path + "\" }";
-				String jsonString = httpPost(url, input);
-				return jsonString.equals("true") ? true : false;
-			} else {
-				if (PMA.debug) {
-					System.out.println("Directory already exists");
-				}
-				return false;
-			}
+			urlS = pmaUrl(sessionID) + "admin/json/CreateDirectory";
 		} catch (Exception e) {
-			e.printStackTrace();
-			if (PMA.logger != null) {
-				StringWriter sw = new StringWriter();
-				e.printStackTrace(new PrintWriter(sw));
-				PMA.logger.severe(sw.toString());
-			}
-			return false;
+			throw new RuntimeException(e);
 		}
+		out.println(urlS + "   urlS");
+		String data = "{ \"sessionID\": \"" + sessionID + "\", \"path\": \"" + path + "\" }";
+		out.println(data + "   data");
+		String jsonString = httpPost(urlS, data);
+
+		URL url = null;
+		try {
+			url = new URL(urlS);
+		} catch (MalformedURLException e) {
+			throw new RuntimeException(e);
+		}
+		URLConnection con = null;
+		try {
+			con = url.openConnection();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		HttpURLConnection http = (HttpURLConnection) con;
+		try {
+			http.setRequestMethod("POST"); // PUT is another valid option
+		} catch (ProtocolException e) {
+			throw new RuntimeException(e);
+		}
+		http.setDoOutput(true);
+		out.println(con);
+		out.println(http);
+
+		byte[] out = data.toString().getBytes(StandardCharsets.UTF_8);
+		int length = out.length;
+		System.out.println(length);
+
+		http.setFixedLengthStreamingMode(length);
+		http.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+		try {
+			http.connect();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		try (OutputStream os = http.getOutputStream()) {
+			os.write(out);
+			System.out.println(os);
+		}
+		return true;
 	}
 
 	/**
 	 * This method is used to rename a directory on PMA.core
-	 * 
+	 *
 	 * @param admSessionID an admin session ID
 	 * @param originalPath Old path
 	 * @param newName      New name
@@ -524,7 +547,7 @@ public class CoreAdmin {
 
 	/**
 	 * This method is used to delete a directory on PMA.core
-	 * 
+	 *
 	 * @param admSessionID an admin session ID
 	 * @param path         path of the directory to delete
 	 * @return true if directory was successfully deleted, false otherwise
@@ -565,7 +588,7 @@ public class CoreAdmin {
 
 	/**
 	 * This method is used to lookup the reverse path of a UID for a specific slide
-	 * 
+	 *
 	 * @param admSessionID an admin session ID
 	 * @param slideRefUid  slide UID
 	 * @return The reverse path of the slide
@@ -608,10 +631,10 @@ public class CoreAdmin {
 			return null;
 		}
 	}
-	
+
 	/**
 	 * This method is used to lookup the reverse path of a root-directory
-	 * 
+	 *
 	 * @param admSessionID an admin session ID
 	 * @param alias  root directory alias
 	 * @return The reverse path of the root directory it's a file system one, empty string if it's a S3 one
@@ -654,10 +677,10 @@ public class CoreAdmin {
 			return null;
 		}
 	}
- 
+
 	/**
 	 * This method is used to rename a slide on PMA.core
-	 * 
+	 *
 	 * @param admSessionID an admin session ID
 	 * @param originalPath Old path
 	 * @param newName      New name
@@ -696,7 +719,7 @@ public class CoreAdmin {
 
 	/**
 	 * This method is used to delete a slide on PMA.core
-	 * 
+	 *
 	 * @param admSessionID an admin session ID
 	 * @param path         path of the slide to delete
 	 * @return true if slide was successfully deleted, false otherwise
@@ -731,56 +754,44 @@ public class CoreAdmin {
 	/**
 	 * This method is used to create an Amazon S3 mounting point. A list of these is
 	 * to be used to supply method create_root_directory()
-	 * 
+	 *
 	 * @param accessKey  AWS Access key
 	 * @param secretKey  AWS secret key
 	 * @param path       path
 	 * @param instanceId instance ID
-	 * @param varargs    Array of optional arguments
-	 *                   <p>
-	 *                   chunkSize : First optional argument(Integer), default
-	 *                   value(1048576), chunk size
-	 *                   </p>
-	 *                   <p>
-	 *                   serviceUrl : Second optional argument(String), default
-	 *                   value(null), service URL
-	 *                   </p>
+	 * @param chunkSize  default value(1048576), chunk size
+	 * @param serviceUrl  default value(null), service URL
 	 * @return Amazon S3 mounting point
 	 */
 	public static String createAmazons3MountingPoint(String accessKey, String secretKey, String path,
-			Integer instanceId, Object... varargs) {
+													 Integer instanceId, Integer chunkSize, String serviceUrl) {
 		// setting the default values when arguments' values are omitted
-		Integer chunkSize = 1048576;
-		String serviceUrl = null;
-		if (varargs.length > 0) {
-			if (!(varargs[0] instanceof Integer) && varargs[0] != null) {
-				if (PMA.logger != null) {
-					PMA.logger.severe("createAmazons3MountingPoint() : Illegal argument");
-				}
-				throw new IllegalArgumentException("...");
-			}
-			chunkSize = (Integer) varargs[0];
-		}
-		if (varargs.length > 1) {
-			if (!(varargs[1] instanceof String) && varargs[1] != null) {
-				if (PMA.logger != null) {
-					PMA.logger.severe("createAmazons3MountingPoint() : Illegal argument");
-				}
-				throw new IllegalArgumentException("...");
-			}
-			serviceUrl = (String) varargs[1];
-		}
+
+		chunkSize = chunkSize == null ? DEFAULT_CHUNK_SIZE : chunkSize;
 		String s3MountingPoint = "{" + "\"AccessKey\": \"" + accessKey + "\"," + "\"SecretKey\": \"" + secretKey + "\","
-				+ (chunkSize == 1048576 ? "" : "\"ChunkSize\": " + chunkSize + ",")
+				+ (chunkSize == DEFAULT_CHUNK_SIZE ? "" : "\"ChunkSize\": " + chunkSize + ",")
 				+ (serviceUrl == null ? "" : "\"ServiceUrl\": \"" + serviceUrl + "\",") + "\"Path\": \"" + path + "\","
 				+ "\"InstanceId\": " + instanceId + "}";
 		return s3MountingPoint;
 	}
 
+	public static String createAmazons3MountingPoint(String accessKey, String secretKey, String path,
+													 Integer instanceId,
+													 Integer chunkSize) {
+		return createAmazons3MountingPoint(accessKey, secretKey, path,
+				instanceId, chunkSize, null);
+	}
+
+	public static String createAmazons3MountingPoint(String accessKey, String secretKey, String path,
+													 Integer instanceId) {
+		return createAmazons3MountingPoint(accessKey, secretKey, path,
+				instanceId, null, null);
+	}
+
 	/**
 	 * This method is used to create an FileSystem mounting point. A list of these
 	 * is to be used to supply method create_root_directory()
-	 * 
+	 *
 	 * @param username   user name
 	 * @param password   password
 	 * @param domainName domain name
@@ -789,7 +800,7 @@ public class CoreAdmin {
 	 * @return Filesystem mounting point
 	 */
 	public static String createFileSystemMountingPoint(String username, String password, String domainName, String path,
-			Integer instanceId) {
+													   Integer instanceId) {
 		String fileSystemMountingPoint = "{" + "\"Username\": \"" + username + "\"," + "\"Password\": \"" + password
 				+ "\"," + "\"DomainName\": \"" + domainName + "\"," + "\"Path\": \"" + path + "\"," + "\"InstanceId\": "
 				+ instanceId + "}";
@@ -797,90 +808,33 @@ public class CoreAdmin {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param admSessionID Admin session ID
 	 * @param alias        Root directory Alias
-	 * @param varargs      Array of optional arguments
-	 *                     <p>
-	 *                     amazonS3MountingPoints : First optional
-	 *                     argument(List{@literal <}String{@literal >}), default
-	 *                     value(null), List of amazon S3 mounting points
-	 *                     </p>
-	 *                     <p>
-	 *                     fileSystemMountingPoints : Second optional
-	 *                     argument(List{@literal <}String{@literal >}), default
-	 *                     value(null), List of file system mounting points
-	 *                     </p>
-	 *                     <p>
-	 *                     description : Third optional argument(String), default
+	 * @param amazonS3MountingPoints   List of amazon S3 mounting points
+	 * @param fileSystemMountingPoints List of file system mounting points
+	 * @param description  (String), default
 	 *                     value("Root dir created through pma_java"), Root
 	 *                     directory description
-	 *                     </p>
-	 *                     <p>
-	 *                     isPublic : Fourth optional argument(Boolean), default
-	 *                     value(false), defines whether the root directory is
+	 * @param isPublic     (Boolean) defines whether the root directory is
 	 *                     public or not
-	 *                     </p>
-	 *                     <p>
-	 *                     isOffline : Fifth optional argument(Boolean), default
-	 *                     value(null), defines whether the root directory is
+	 * @param isOffline    (Boolean) defines whether the root directory is
 	 *                     offline or not
-	 *                     </p>
 	 * @return Response code of the corresponding API call
 	 */
 	@SuppressWarnings("unchecked")
-	public static String createRootDirectory(String admSessionID, String alias, Object... varargs) {
-		// setting the default values when arguments' values are omitted
-		List<String> amazonS3MountingPoints = null;
-		List<String> fileSystemMountingPoints = null;
-		String description = "Root dir created through pma_java";
-		Boolean isPublic = false;
-		Boolean isOffline = false;
-		if (varargs.length > 0) {
-			if (!(varargs[0] instanceof List<?>) && varargs[0] != null) {
-				if (PMA.logger != null) {
-					PMA.logger.severe("createRootDirectory() : Illegal argument");
-				}
-				throw new IllegalArgumentException("...");
-			}
-			amazonS3MountingPoints = (List<String>) varargs[0];
-		}
-		if (varargs.length > 1) {
-			if (!(varargs[1] instanceof List<?>) && varargs[1] != null) {
-				if (PMA.logger != null) {
-					PMA.logger.severe("createRootDirectory() : Illegal argument");
-				}
-				throw new IllegalArgumentException("...");
-			}
-			fileSystemMountingPoints = (List<String>) varargs[1];
-		}
-		if (varargs.length > 2) {
-			if (!(varargs[2] instanceof String) && varargs[2] != null) {
-				if (PMA.logger != null) {
-					PMA.logger.severe("createRootDirectory() : Illegal argument");
-				}
-				throw new IllegalArgumentException("...");
-			}
-			description = (String) varargs[2];
-		}
-		if (varargs.length > 3) {
-			if (!(varargs[3] instanceof Boolean) && varargs[3] != null) {
-				if (PMA.logger != null) {
-					PMA.logger.severe("createRootDirectory() : Illegal argument");
-				}
-				throw new IllegalArgumentException("...");
-			}
-			isPublic = (Boolean) varargs[3];
-		}
-		if (varargs.length > 4) {
-			if (!(varargs[4] instanceof Boolean) && varargs[4] != null) {
-				if (PMA.logger != null) {
-					PMA.logger.severe("createRootDirectory() : Illegal argument");
-				}
-				throw new IllegalArgumentException("...");
-			}
-			isOffline = (Boolean) varargs[4];
-		}
+	public static String createRootDirectory(String admSessionID,
+											 String alias,
+											 List<String> amazonS3MountingPoints,
+											 List<String> fileSystemMountingPoints,
+											 String description,
+											 Boolean isPublic,
+											 Boolean isOffline
+	) {
+		description = description == null ? "Root dir created through " +
+				"pma_java" : description;
+		isPublic = isPublic == null ? false : isPublic;
+		isOffline = isOffline == null ? false : isOffline;
 		try {
 			String url = adminUrl(admSessionID, false) + "CreateRootDirectory";
 			System.out.println(url);
@@ -924,5 +878,61 @@ public class CoreAdmin {
 			}
 			return null;
 		}
+	}
+
+	public static String createRootDirectory(String admSessionID,
+											 String alias) {
+		return createRootDirectory(admSessionID, alias,
+				null,
+				null,
+				null,
+				false,
+				false);
+	}
+
+	public static String createRootDirectory(String admSessionID,
+											 String alias,
+											 List<String> amazonS3MountingPoints
+	) {
+		return createRootDirectory(admSessionID, alias, amazonS3MountingPoints,
+				null, null,
+				false,
+				false);
+	}
+
+	public static String createRootDirectory(String admSessionID,
+											 String alias,
+											 List<String> amazonS3MountingPoints,
+											 List<String> fileSystemMountingPoints) {
+		return createRootDirectory(admSessionID, alias,
+				amazonS3MountingPoints, fileSystemMountingPoints,
+				null,
+				false,
+				false);
+	}
+
+	public static String createRootDirectory(String admSessionID,
+											 String alias,
+											 List<String> amazonS3MountingPoints,
+											 List<String> fileSystemMountingPoints,
+											 String description) {
+		return createRootDirectory(admSessionID, alias,
+				amazonS3MountingPoints, fileSystemMountingPoints,
+				description,
+				false,
+				false);
+	}
+
+	public static String createRootDirectory(String admSessionID,
+											 String alias,
+											 List<String> amazonS3MountingPoints,
+											 List<String> fileSystemMountingPoints,
+											 String description,
+											 Boolean isPublic) {
+		return createRootDirectory(admSessionID, alias,
+				amazonS3MountingPoints, fileSystemMountingPoints,
+				description,
+				isPublic,
+				false);
 	}
 }
