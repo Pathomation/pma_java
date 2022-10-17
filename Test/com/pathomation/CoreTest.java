@@ -97,7 +97,7 @@ public class CoreTest {
 
     @Test
     public void getVersionInfoCore() {
-        String exp = "2.1.1.2022";
+        String exp = "2.1.1.2027";
         assertEquals(exp, Core.getVersionInfo());
         System.out.println("***getVersionInfo()***");
         System.out.println(Core.getVersionInfo());
@@ -161,7 +161,7 @@ public class CoreTest {
     @Test
     public void getRootDirectoriesCore() {
         List<String> directories = Core.getRootDirectories(coreSessionId);
-        int res = 11;
+        int res = 12;
         assertEquals(directories.size(), res);
     }
 
@@ -180,7 +180,7 @@ public class CoreTest {
         int sizeOfDirectories = expectedCoreDirectories.size();
         assertTrue(expectedCoreDirectories.get(0), true);
         assertTrue(expectedCoreDirectories.get(41), true);
-        assertEquals(sizeOfDirectories, 42);
+        assertEquals(sizeOfDirectories, 43);
     }
 
     @Test
@@ -221,20 +221,6 @@ public class CoreTest {
     }
 
     @Test
-    public void getUidCore() throws Exception {
-        String exp1 = "\"XDK8WKOZJV\"";
-        String exp2 = "\"MCL5UX72N4\"";
-        String res1 = Core.getUid("_sys_aws_s3/CMU-2.mrxs");
-        String res2 = Core.getUid("_sys_aws_s3/2DollarBill.szi");
-        assertEquals(exp1, res1);
-        assertEquals(exp2, res2);
-        System.out.println("***getUid()***");
-        System.out.println(res1);
-        System.out.println(res2);
-        System.out.println();
-    }
-
-    @Test
     public void getFingerPrintCore() {
         String exp1 = "YrbDCBwr7NlIk50AGFzGODC5IAQ1";
         String exp2 = "PZX3v0NVng0dVEi2ag2ydfBk5rQ1";
@@ -266,6 +252,29 @@ public class CoreTest {
         System.out.println(username);
         System.out.println();
 
+    }
+
+    @Test
+    public void lastModifiedAndPhysicalSizeCore() {
+        List<String> listSlides = null;
+        List<String> listDirectories = Core.getDirectories("_sys_aws_s3/(TO DELETE) test PMATransfer Mehdi", coreSessionId);
+        for (String directory : listDirectories) {
+            assertNotNull(directory);
+            listSlides = Core.getSlides(directory, coreSessionId, true);
+            assertNotNull(listSlides);
+        }
+        for (String slide : listSlides) {
+            Object lastModified = Core.getSlideInfo(slide, coreSessionId).get("LastModified");
+            Object physicalSize = Core.getSlideInfo(slide, coreSessionId).get("PhysicalSize");
+            assertNotNull(listDirectories);
+            assertNotNull(slide);
+            assertNotNull(lastModified);
+            assertNotNull(physicalSize);
+            System.out.println("***lastModifiedAndPhysicalSize***");
+            System.out.println(lastModified);
+            System.out.println(physicalSize);
+            System.out.println();
+        }
     }
 
     @Test
