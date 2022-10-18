@@ -3,6 +3,7 @@ package com.pathomation;
 import org.json.JSONArray;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -275,6 +276,37 @@ public class CoreTest {
             System.out.println(physicalSize);
             System.out.println();
         }
+    }
+
+    @Test
+    public void getZoomLevelListCore() {
+        List<Integer> zoomLevel = Core.getZoomLevelsList("_sys_aws_s3/(TO DELETE) test PMATransfer Mehdi/" +
+                "testing PMA.transfer v2.2.3.f8f8ff49e2/to download/single slide/large/K_250_Slide19-R01-Slice09.tif",
+                coreSessionId);
+        System.out.println("***getZoomLevelList***");
+        int exp = 0;
+        int zoomZeroLevel = zoomLevel.get(0);
+        for (int zoom : zoomLevel) {
+            assertNotNull(zoomLevel);
+            assertNotNull(zoom);
+            System.out.println(zoom);
+        }
+        assertEquals(exp, zoomZeroLevel);
+        System.out.println();
+    }
+
+    @Test
+    public void getSlideInfoCore() {
+        Map<String, Object> info = Core.getSlideInfo("_sys_aws_s3/(TO DELETE) test PMATransfer Mehdi/testing PMA.transfer v2.2.3.f8f8ff49e2/to download/single slide/large/K_250_Slide19-R01-Slice09.tif", coreSessionId);
+        List<String> exp = new ArrayList<>();
+        System.out.println("***getSlideInfo***");
+        for (Map.Entry entry: info.entrySet()) {
+            exp.add(entry.toString());
+            assertNotNull(info);
+            assertNotNull(entry);
+            System.out.println(entry);
+        }
+        System.out.println();
     }
 
     @Test
