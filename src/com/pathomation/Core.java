@@ -7,16 +7,11 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -40,7 +35,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
-import static com.pathomation.PMA.getJSONArrayResponse;
 import static java.lang.System.out;
 
 /**
@@ -284,7 +278,7 @@ public class Core {
 	 *            string to be encoded
 	 * @return String encoded String to be compatible as a url
 	 */
-	private static String pmaQ(String arg) {
+	public static String pmaQ(String arg) {
 		if (arg == null) {
 			return "";
 		} else {
@@ -4685,6 +4679,651 @@ public class Core {
 	}
 
 	/**
+	 * Uploads a slide to a PMA.core server. Requires a PMA.start installation
+	 * :param str local_source_slide: The local PMA.start relative file to upload
+	 * :param str target_folder: The root directory and path to upload to the PMA.core server
+	 * :param str target_pma_core_sessionID: A valid session id for a PMA.core server
+	 * :param function|boolean callback: If True a default progress will be printed.
+	 * If a function is passed it will be called for progress on each file upload.
+	 * The function has the following signature:
+	 * `callback(bytes_read, bytes_length, filename)`
+	 *
+	 * @param localSourceSlide
+	 * @param targetFolder
+	 * @param sessionId
+	 * @param callBack
+	 * @return
+	 */
+
+	//unfinished
+	public static boolean upload(String localSourceSlide, String targetFolder, String sessionId, boolean callBack) throws Exception {
+		String url;
+		String path;
+		if (!pmaIsLite()) {
+			throw new RuntimeException("No PMA.start found on localhost. Are you sure it is running?");
+		}
+		if (targetFolder == null) {
+			throw new RuntimeException("target_folder cannot be empty");
+		}
+		if (targetFolder.startsWith("/")) {
+			targetFolder = targetFolder.substring(1);
+		}
+
+		Map<String, Map<String, String>> files = getFilesForSlide(localSourceSlide, pmaCoreLiteSessionID);
+		sessionId = sessionId(sessionId);
+		url = pmaUrl(sessionId) + "transfer/Upload?sessionID=" + PMA.pmaQ(sessionId);
+		String mainDirectory = "";
+
+		for (String file : files.keySet()) {
+			path = file;
+			if (file == null || path.length() < mainDirectory.length()) {
+				mainDirectory = path;
+			}
+		}
+		JSONObject valuesObject = new JSONObject();
+		for (String filepath : files.keySet()) {
+			if (filepath.length() > 0) {
+			}
+		}
+		return callBack;
+	}
+
+	/**
+	 * This method downloads one slide and also .mrxs and .vsi slides formats with subfolders.
+	 *
+	 * @param saveDirectory is a directory where slide will be saved.
+	 * @param slideRef is full path begins from the root folder including slide name and extension.
+	 * @param sessionID
+	 * @return
+	 * @throws Exception
+	 */
+	public static boolean download(String saveDirectory, String slideRef, String sessionID) throws Exception {
+		if (sessionID == null) {
+			throw new NullPointerException("SessionID is null.");
+		}
+		if (!ping(sessionID)) {
+			throw new Exception("SessionID is not valid.");
+		}
+		if (Objects.equals(slideRef, "") || slideRef == null) {
+			throw new Exception("Please,  write the path of your slide starting from the root folder.");
+		}
+		if (Objects.equals(saveDirectory, "") || saveDirectory == null) {
+			throw new Exception("Please,  write the path of your save directory starting from the root folder.");
+		} else {
+			String makeDirectory = saveDirectory;
+			saveDirectory = (saveDirectory.endsWith("/") ? saveDirectory : saveDirectory + "/") + Core.getSlideFileName(slideRef);
+			sessionID = sessionId(sessionID);
+			String server = pmaUrl(sessionID);
+			Map<String, Object> info = Core.getSlideInfo(slideRef);
+			Object physicalSize = info.get("PhysicalSize");
+			List<Map<String, String>> slideEnumRelatedFiles = Core.enumerateFilesForSlidePMACore(slideRef, sessionID);
+			DataInputStream inputStreamToRequestBody = null;
+			FileOutputStream outputStreamToLogFile = null;
+			File downloadFile = new File(saveDirectory);
+			HttpURLConnection con = null;
+			if (slideEnumRelatedFiles.size() == 1) {
+				try {
+					if (Core.ping(sessionID)) {
+						String url = (server.endsWith("/") ? server : server + "/") + "transfer/Download" + "?sessionId="
+								+ sessionID + "&image=" + PMA.pmaQ(slideRef) + "&path=" + PMA.pmaQ(Core.getSlideFileName(slideRef));
+						URL urlResource = new URL(url);
+						if (url.startsWith("https")) {
+							con = (HttpsURLConnection) urlResource.openConnection();
+						} else {
+							con = (HttpURLConnection) urlResource.openConnection();
+						}
+
+						con.setConnectTimeout(0);
+						con.setReadTimeout(0);
+						con.setRequestMethod("GET");
+						con.setRequestProperty("Connection", "Keep-Alive");
+						con.setRequestProperty("Cache-Control", "no-cache");
+						con.setDoOutput(true);
+						con.setUseCaches(false);
+						con.connect();
+
+						// if the response code is 303 this means there will be a redirect to aws presigned download URL
+						if (con.getResponseCode() == 303) {
+							url = con.getHeaderField("Location");
+							urlResource = new URL(url);
+							con.disconnect();
+							con = null;
+							if (url.startsWith("https")) {
+								con = (HttpsURLConnection) urlResource.openConnection();
+							} else {
+								con = (HttpURLConnection) urlResource.openConnection();
+							}
+							con.setConnectTimeout(0); // infinite timeout
+							con.setReadTimeout(0); // infinite timeout
+							con.setRequestMethod("GET");
+							con.setRequestProperty("Connection", "Keep-Alive");
+							con.setRequestProperty("Cache-Control", "no-cache");
+							con.setDoOutput(true);
+							con.setUseCaches(false);
+							con.connect();
+						}
+						inputStreamToRequestBody = new DataInputStream(con.getInputStream());
+						outputStreamToLogFile = new FileOutputStream(downloadFile);
+						byte[] buffer = new byte[4 * 1024];
+						int bytesRead = -1;
+						long totalBytesRead = 0, bytesReadForSpeedCalculationCycle = 0;
+						long fileSize = Long.parseLong(physicalSize.toString());
+						long current = 0, currentUpdated = 0;
+						double speed = 0;
+						int i = 0;
+						boolean firstCalculationDone = false;
+						int calculationInterations = 32;
+						long totalBytesReadForWholeDownload = 0;
+						while ((bytesRead = inputStreamToRequestBody.read(buffer)) != -1) {
+
+							if (Thread.currentThread().isInterrupted()) {
+								return false;
+							}
+							System.out.println(Core.getSlideFileName(slideRef) + " " + totalBytesRead);
+							if (i == 0) {
+								current = System.currentTimeMillis();
+								bytesReadForSpeedCalculationCycle = totalBytesRead;
+							}
+							outputStreamToLogFile.write(buffer, 0, bytesRead);
+							totalBytesRead += bytesRead;
+
+							double progressValue = ((double) totalBytesRead / ((double) fileSize));
+							i++;
+							if (i == calculationInterations) {
+								currentUpdated = System.currentTimeMillis();
+								bytesReadForSpeedCalculationCycle = totalBytesRead - bytesReadForSpeedCalculationCycle;
+								speed = ((double) bytesReadForSpeedCalculationCycle / ((double) (currentUpdated - current)));
+								i = 0;
+								firstCalculationDone = true;
+								//transfer speed is fast, let's make less frequent calculations
+								if ((currentUpdated - current) < 500) {
+									calculationInterations = calculationInterations * 2;
+								}
+								//transfer speed is slow, let's make more frequent calculations
+								if ((currentUpdated - current) > 1500) {
+									if (calculationInterations > 2) {
+										calculationInterations = calculationInterations / 2;
+									}
+								}
+							}
+						}
+
+						inputStreamToRequestBody.close();
+						outputStreamToLogFile.flush();
+						outputStreamToLogFile.close();
+						con.getResponseCode();
+						return true;
+					}
+				} catch(Exception e){
+					e.printStackTrace();
+					if (inputStreamToRequestBody != null) {
+						inputStreamToRequestBody.close();
+					}
+					if (outputStreamToLogFile != null) {
+						outputStreamToLogFile.flush();
+						outputStreamToLogFile.close();
+					}
+					con.getResponseCode();
+					return false;
+				}
+			}
+			else if (slideEnumRelatedFiles.size() > 1) {
+				if (Core.getSlideFileExtension(slideRef).equals("mrxs")) {
+					try {
+						if (Core.ping(sessionID)) {
+							String slideFileMane = Core.getSlideFileName(slideRef);
+							String folderToCreate = slideFileMane.substring(slideFileMane.indexOf(""), slideFileMane.indexOf("."));
+							new File(makeDirectory + "\\" + folderToCreate).mkdir();
+							List<String> relatedSlides = new ArrayList<>();
+							for (Map<String, String> sl : slideEnumRelatedFiles) {
+								relatedSlides.add(sl.get("Path"));
+							}
+							String url = (server.endsWith("/") ? server : server + "/") + "transfer/Download" + "?sessionId="
+									+ sessionID + "&image=" + PMA.pmaQ(slideRef) + "&path=" + PMA.pmaQ(Core.getSlideFileName(slideRef));
+							URL urlResource = new URL(url);
+							if (url.startsWith("https")) {
+								con = (HttpsURLConnection) urlResource.openConnection();
+							} else {
+								con = (HttpURLConnection) urlResource.openConnection();
+							}
+
+							con.setConnectTimeout(0);
+							con.setReadTimeout(0);
+							con.setRequestMethod("GET");
+							con.setRequestProperty("Connection", "Keep-Alive");
+							con.setRequestProperty("Cache-Control", "no-cache");
+							con.setDoOutput(true);
+							con.setUseCaches(false);
+							con.connect();
+
+							// if the response code is 303 this means there will be a redirect to aws presigned download URL
+							if (con.getResponseCode() == 303) {
+								url = con.getHeaderField("Location");
+								urlResource = new URL(url);
+								con.disconnect();
+								con = null;
+								if (url.startsWith("https")) {
+									con = (HttpsURLConnection) urlResource.openConnection();
+								} else {
+									con = (HttpURLConnection) urlResource.openConnection();
+								}
+								con.setConnectTimeout(0); // infinite timeout
+								con.setReadTimeout(0); // infinite timeout
+								con.setRequestMethod("GET");
+								con.setRequestProperty("Connection", "Keep-Alive");
+								con.setRequestProperty("Cache-Control", "no-cache");
+								con.setDoOutput(true);
+								con.setUseCaches(false);
+								con.connect();
+							}
+							inputStreamToRequestBody = new DataInputStream(con.getInputStream());
+							outputStreamToLogFile = new FileOutputStream(downloadFile);
+							byte[] buffer = new byte[4 * 1024];
+							int bytesRead = -1;
+							long totalBytesRead = 0, bytesReadForSpeedCalculationCycle = 0;
+							long fileSize = Long.parseLong(physicalSize.toString());
+							long current = 0, currentUpdated = 0;
+							double speed = 0;
+							int i = 0;
+							boolean firstCalculationDone = false;
+							int calculationInterations = 32;
+							long totalBytesReadForWholeDownload = 0;
+							while ((bytesRead = inputStreamToRequestBody.read(buffer)) != -1) {
+
+								if (Thread.currentThread().isInterrupted()) {
+									return false;
+								}
+								System.out.println(Core.getSlideFileName(slideRef) + " " + totalBytesRead);
+								if (i == 0) {
+									current = System.currentTimeMillis();
+									bytesReadForSpeedCalculationCycle = totalBytesRead;
+								}
+								outputStreamToLogFile.write(buffer, 0, bytesRead);
+								totalBytesRead += bytesRead;
+
+								double progressValue = ((double) totalBytesRead / ((double) fileSize));
+								i++;
+								if (i == calculationInterations) {
+									currentUpdated = System.currentTimeMillis();
+									bytesReadForSpeedCalculationCycle = totalBytesRead - bytesReadForSpeedCalculationCycle;
+									speed = ((double) bytesReadForSpeedCalculationCycle / ((double) (currentUpdated - current)));
+									i = 0;
+									firstCalculationDone = true;
+									//transfer speed is fast, let's make less frequent calculations
+									if ((currentUpdated - current) < 500) {
+										calculationInterations = calculationInterations * 2;
+									}
+									//transfer speed is slow, let's make more frequent calculations
+									if ((currentUpdated - current) > 1500) {
+										if (calculationInterations > 2) {
+											calculationInterations = calculationInterations / 2;
+										}
+									}
+								}
+							}
+
+							inputStreamToRequestBody.close();
+							outputStreamToLogFile.flush();
+							outputStreamToLogFile.close();
+							con.getResponseCode();
+
+							/**
+							 * send .mrxs file data
+							 */
+							relatedSlides.remove(relatedSlides.size() - 1);
+
+							String directoryForData = makeDirectory + "\\" + folderToCreate + "\\";
+							Map<String, Map<String, String>> files = Core.getFilesForSlide(slideRef, sessionID);
+							for (Map.Entry<String, Map<String, String>> file : files.entrySet()) {
+								out.println(file + "      file ***********");
+							}
+							for (String rSlides : relatedSlides) {
+								slideFileMane = Core.getSlideFileName(rSlides);
+								String saveDirectoryData = directoryForData + slideFileMane;
+								downloadFile = new File(saveDirectoryData);
+								url = (server.endsWith("/") ? server : server + "/") + "transfer/Download" + "?sessionId="
+										+ sessionID + "&image=" + PMA.pmaQ(slideRef) + "&path=" + PMA.pmaQ(folderToCreate) + "%2F" + PMA.pmaQ(Core.getSlideFileName(rSlides));
+								urlResource = new URL(url);
+								if (url.startsWith("https")) {
+									con = (HttpsURLConnection) urlResource.openConnection();
+								} else {
+									con = (HttpURLConnection) urlResource.openConnection();
+								}
+
+								con.setConnectTimeout(0);
+								con.setReadTimeout(0);
+								con.setRequestMethod("GET");
+								con.setRequestProperty("Connection", "Keep-Alive");
+								con.setRequestProperty("Cache-Control", "no-cache");
+								con.setDoOutput(true);
+								con.setUseCaches(false);
+								con.connect();
+								out.println(con.getResponseCode() + "   con.getResponseCode() ******* ");
+
+								// if the response code is 303 this means there will be a redirect to aws presigned download URL
+								if (con.getResponseCode() == 303) {
+									url = con.getHeaderField("Location");
+									urlResource = new URL(url);
+									con.disconnect();
+									con = null;
+									if (url.startsWith("https")) {
+										con = (HttpsURLConnection) urlResource.openConnection();
+									} else {
+										con = (HttpURLConnection) urlResource.openConnection();
+									}
+									con.setConnectTimeout(0); // infinite timeout
+									con.setReadTimeout(0); // infinite timeout
+									con.setRequestMethod("GET");
+									con.setRequestProperty("Connection", "Keep-Alive");
+									con.setRequestProperty("Cache-Control", "no-cache");
+									con.setDoOutput(true);
+									con.setUseCaches(false);
+									con.connect();
+								}
+								inputStreamToRequestBody = new DataInputStream(con.getInputStream());
+								outputStreamToLogFile = new FileOutputStream(downloadFile);
+								buffer = new byte[4 * 1024];
+								bytesRead = -1;
+								totalBytesRead = 0;
+								bytesReadForSpeedCalculationCycle = 0;
+								fileSize = Long.parseLong(physicalSize.toString());
+								current = 0;
+								currentUpdated = 0;
+								speed = 0;
+								i = 0;
+								firstCalculationDone = false;
+								calculationInterations = 32;
+								totalBytesReadForWholeDownload = 0;
+								while ((bytesRead = inputStreamToRequestBody.read(buffer)) != -1) {
+
+									if (Thread.currentThread().isInterrupted()) {
+										return false;
+									}
+									System.out.println(Core.getSlideFileName(slideRef) + " " + totalBytesRead);
+									if (i == 0) {
+										current = System.currentTimeMillis();
+										bytesReadForSpeedCalculationCycle = totalBytesRead;
+									}
+									outputStreamToLogFile.write(buffer, 0, bytesRead);
+									totalBytesRead += bytesRead;
+
+									double progressValue = ((double) totalBytesRead / ((double) fileSize));
+									i++;
+									if (i == calculationInterations) {
+										currentUpdated = System.currentTimeMillis();
+										bytesReadForSpeedCalculationCycle = totalBytesRead - bytesReadForSpeedCalculationCycle;
+										speed = ((double) bytesReadForSpeedCalculationCycle / ((double) (currentUpdated - current)));
+										i = 0;
+										firstCalculationDone = true;
+										//transfer speed is fast, let's make less frequent calculations
+										if ((currentUpdated - current) < 500) {
+											calculationInterations = calculationInterations * 2;
+										}
+										//transfer speed is slow, let's make more frequent calculations
+										if ((currentUpdated - current) > 1500) {
+											if (calculationInterations > 2) {
+												calculationInterations = calculationInterations / 2;
+											}
+										}
+									}
+								}
+
+								inputStreamToRequestBody.close();
+								outputStreamToLogFile.flush();
+								outputStreamToLogFile.close();
+								con.getResponseCode();
+							}
+							/**
+							 * end send filedata
+							 */
+							return true;
+						}
+					}
+					catch(Exception e){
+						e.printStackTrace();
+						if (inputStreamToRequestBody != null) {
+							inputStreamToRequestBody.close();
+						}
+						if (outputStreamToLogFile != null) {
+							outputStreamToLogFile.flush();
+							outputStreamToLogFile.close();
+						}
+						con.getResponseCode();
+						return false;
+					}
+				}
+				if (Core.getSlideFileExtension(slideRef).equals("vsi")) {
+					try {
+						if (Core.ping(sessionID)) {
+							String slideFileName = Core.getSlideFileName(slideRef);
+							String folderToCreate = slideFileName.substring(slideFileName.indexOf(""), slideFileName.indexOf("."));
+							new File(makeDirectory + "\\" + folderToCreate).mkdir();
+							List<String> relatedSlides = new ArrayList<>();
+							for (Map<String, String> sl : slideEnumRelatedFiles) {
+								out.println(sl.get("Path"));
+								relatedSlides.add(sl.get("Path"));
+							}
+							String url = (server.endsWith("/") ? server : server + "/") + "transfer/Download" + "?sessionId="
+									+ sessionID + "&image=" + PMA.pmaQ(slideRef) + "&path=" + PMA.pmaQ(Core.getSlideFileName(slideRef));
+							URL urlResource = new URL(url);
+							if (url.startsWith("https")) {
+								con = (HttpsURLConnection) urlResource.openConnection();
+							} else {
+								con = (HttpURLConnection) urlResource.openConnection();
+							}
+
+							con.setConnectTimeout(0);
+							con.setReadTimeout(0);
+							con.setRequestMethod("GET");
+							con.setRequestProperty("Connection", "Keep-Alive");
+							con.setRequestProperty("Cache-Control", "no-cache");
+							con.setDoOutput(true);
+							con.setUseCaches(false);
+							con.connect();
+
+							// if the response code is 303 this means there will be a redirect to aws presigned download URL
+							if (con.getResponseCode() == 303) {
+								url = con.getHeaderField("Location");
+								urlResource = new URL(url);
+								con.disconnect();
+								con = null;
+								if (url.startsWith("https")) {
+									con = (HttpsURLConnection) urlResource.openConnection();
+								} else {
+									con = (HttpURLConnection) urlResource.openConnection();
+								}
+								con.setConnectTimeout(0); // infinite timeout
+								con.setReadTimeout(0); // infinite timeout
+								con.setRequestMethod("GET");
+								con.setRequestProperty("Connection", "Keep-Alive");
+								con.setRequestProperty("Cache-Control", "no-cache");
+								con.setDoOutput(true);
+								con.setUseCaches(false);
+								con.connect();
+							}
+							inputStreamToRequestBody = new DataInputStream(con.getInputStream());
+							outputStreamToLogFile = new FileOutputStream(downloadFile);
+							byte[] buffer = new byte[4 * 1024];
+							int bytesRead = -1;
+							long totalBytesRead = 0, bytesReadForSpeedCalculationCycle = 0;
+							long fileSize = Long.parseLong(physicalSize.toString());
+							long current = 0, currentUpdated = 0;
+							double speed = 0;
+							int i = 0;
+							boolean firstCalculationDone = false;
+							int calculationInterations = 32;
+							long totalBytesReadForWholeDownload = 0;
+							while ((bytesRead = inputStreamToRequestBody.read(buffer)) != -1) {
+
+								if (Thread.currentThread().isInterrupted()) {
+									return false;
+								}
+								System.out.println(Core.getSlideFileName(slideRef) + " " + totalBytesRead);
+								if (i == 0) {
+									current = System.currentTimeMillis();
+									bytesReadForSpeedCalculationCycle = totalBytesRead;
+								}
+								outputStreamToLogFile.write(buffer, 0, bytesRead);
+								totalBytesRead += bytesRead;
+
+								double progressValue = ((double) totalBytesRead / ((double) fileSize));
+								i++;
+								if (i == calculationInterations) {
+									currentUpdated = System.currentTimeMillis();
+									bytesReadForSpeedCalculationCycle = totalBytesRead - bytesReadForSpeedCalculationCycle;
+									speed = ((double) bytesReadForSpeedCalculationCycle / ((double) (currentUpdated - current)));
+									i = 0;
+									firstCalculationDone = true;
+									//transfer speed is fast, let's make less frequent calculations
+									if ((currentUpdated - current) < 500) {
+										calculationInterations = calculationInterations * 2;
+									}
+									//transfer speed is slow, let's make more frequent calculations
+									if ((currentUpdated - current) > 1500) {
+										if (calculationInterations > 2) {
+											calculationInterations = calculationInterations / 2;
+										}
+									}
+								}
+							}
+
+							inputStreamToRequestBody.close();
+							outputStreamToLogFile.flush();
+							outputStreamToLogFile.close();
+							con.getResponseCode();
+
+							/**
+							 * send file data Vsi
+							 */
+							relatedSlides.remove(relatedSlides.size() - 1);
+							for (String stackFolders : relatedSlides) {
+								String folderRaw = stackFolders.
+										substring(stackFolders.indexOf("/"), stackFolders.lastIndexOf("/stack1"));
+								String folderForUrlWith_andWithout_ = folderRaw.
+										substring(folderRaw.lastIndexOf("/") + 1, folderRaw.lastIndexOf(""));
+								String stackFolder = stackFolders.substring(stackFolders.indexOf("/s") + 1, stackFolders.lastIndexOf("/"));
+								String directoryForData = makeDirectory + "\\" + folderToCreate + "\\" + stackFolder;
+								slideFileName = Core.getSlideFileName(stackFolders);
+								new File(directoryForData).mkdir();
+								downloadFile = new File(directoryForData + "\\" + slideFileName);
+								url = (server.endsWith("/") ? server : server + "/") + "transfer/Download" + "?sessionId="
+										+ sessionID + "&image=" + PMA.pmaQ(slideRef) + "&path=" + PMA.pmaQ(folderForUrlWith_andWithout_)
+										+ "%2F" + PMA.pmaQ(stackFolder) + "%2F" + PMA.pmaQ(slideFileName);
+								urlResource = new URL(url);
+								if (url.startsWith("https")) {
+									con = (HttpsURLConnection) urlResource.openConnection();
+								} else {
+									con = (HttpURLConnection) urlResource.openConnection();
+								}
+
+								con.setConnectTimeout(0);
+								con.setReadTimeout(0);
+								con.setRequestMethod("GET");
+								con.setRequestProperty("Connection", "Keep-Alive");
+								con.setRequestProperty("Cache-Control", "no-cache");
+								con.setDoOutput(true);
+								con.setUseCaches(false);
+								con.connect();
+
+								// if the response code is 303 this means there will be a redirect to aws presigned download URL
+								if (con.getResponseCode() == 303) {
+									url = con.getHeaderField("Location");
+									urlResource = new URL(url);
+									con.disconnect();
+									con = null;
+									if (url.startsWith("https")) {
+										con = (HttpsURLConnection) urlResource.openConnection();
+									} else {
+										con = (HttpURLConnection) urlResource.openConnection();
+									}
+									con.setConnectTimeout(0); // infinite timeout
+									con.setReadTimeout(0); // infinite timeout
+									con.setRequestMethod("GET");
+									con.setRequestProperty("Connection", "Keep-Alive");
+									con.setRequestProperty("Cache-Control", "no-cache");
+									con.setDoOutput(true);
+									con.setUseCaches(false);
+									con.connect();
+								}
+								inputStreamToRequestBody = new DataInputStream(con.getInputStream());
+								outputStreamToLogFile = new FileOutputStream(downloadFile);
+								buffer = new byte[4 * 1024];
+								bytesRead = -1;
+								totalBytesRead = 0;
+								bytesReadForSpeedCalculationCycle = 0;
+								fileSize = Long.parseLong(physicalSize.toString());
+								current = 0;
+								currentUpdated = 0;
+								speed = 0;
+								i = 0;
+								firstCalculationDone = false;
+								calculationInterations = 32;
+								totalBytesReadForWholeDownload = 0;
+								while ((bytesRead = inputStreamToRequestBody.read(buffer)) != -1) {
+
+									if (Thread.currentThread().isInterrupted()) {
+										return false;
+									}
+									System.out.println(Core.getSlideFileName(slideRef) + " " + totalBytesRead);
+									if (i == 0) {
+										current = System.currentTimeMillis();
+										bytesReadForSpeedCalculationCycle = totalBytesRead;
+									}
+									outputStreamToLogFile.write(buffer, 0, bytesRead);
+									totalBytesRead += bytesRead;
+
+									double progressValue = ((double) totalBytesRead / ((double) fileSize));
+									i++;
+									if (i == calculationInterations) {
+										currentUpdated = System.currentTimeMillis();
+										bytesReadForSpeedCalculationCycle = totalBytesRead - bytesReadForSpeedCalculationCycle;
+										speed = ((double) bytesReadForSpeedCalculationCycle / ((double) (currentUpdated - current)));
+										i = 0;
+										firstCalculationDone = true;
+										//transfer speed is fast, let's make less frequent calculations
+										if ((currentUpdated - current) < 500) {
+											calculationInterations = calculationInterations * 2;
+										}
+										//transfer speed is slow, let's make more frequent calculations
+										if ((currentUpdated - current) > 1500) {
+											if (calculationInterations > 2) {
+												calculationInterations = calculationInterations / 2;
+											}
+										}
+									}
+								}
+
+								inputStreamToRequestBody.close();
+								outputStreamToLogFile.flush();
+								outputStreamToLogFile.close();
+								con.getResponseCode();
+							}
+							/**
+							 * end send filedata Vsi
+							 */
+							return true;
+						}
+					}
+					catch(Exception e){
+						e.printStackTrace();
+						if (inputStreamToRequestBody != null) {
+							inputStreamToRequestBody.close();
+						}
+						if (outputStreamToLogFile != null) {
+							outputStreamToLogFile.flush();
+							outputStreamToLogFile.close();
+						}
+						con.getResponseCode();
+						return false;
+					}
+				}
+			}
+		}
+		return true;
+	}
+
+
+	/**
 	 * This method returns a boolean result based on the input parameters.
 	 * @param sessionId
 	 * @param url
@@ -4742,6 +5381,12 @@ public class Core {
 			String sessionId = obj.getString("session_id");
 			String serverUrl = obj.getJSONArray("selected_nodes").getJSONObject(0).getString("Uri");
 			String folder = obj.getString("folder");
+			pmaUsernames.put(sessionId, username);
+			pmaSessions.put(sessionId, serverUrl);
+			if (!pmaSlideInfos.containsKey(sessionId)) {
+				pmaSlideInfos.put(sessionId, new HashMap<String, Object>());
+			}
+			pmaAmountOfDataDownloaded.put(sessionId, obj.length());
 			return new CloudServerData(serverUrl, sessionId, folder, response.length(), true, null);
 		} catch (Exception e) {
 			return null;
