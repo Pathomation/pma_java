@@ -4690,15 +4690,16 @@ public class Core {
 	 *
 	 * @param localSourceSlide
 	 * @param targetFolder
-	 * @param sessionId
+	 * @param sessionID
 	 * @param callBack
 	 * @return
 	 */
 
 	//unfinished
-	public static boolean upload(String localSourceSlide, String targetFolder, String sessionId, boolean callBack) throws Exception {
+	public static boolean upload(String uploadID, String localSourceSlide, String targetFolder, String sessionID, boolean callBack) throws Exception {
 		String url;
 		String path;
+		String server = pmaUrl(sessionID);
 		if (!pmaIsLite()) {
 			throw new RuntimeException("No PMA.start found on localhost. Are you sure it is running?");
 		}
@@ -4710,8 +4711,9 @@ public class Core {
 		}
 
 		Map<String, Map<String, String>> files = getFilesForSlide(localSourceSlide, pmaCoreLiteSessionID);
-		sessionId = sessionId(sessionId);
-		url = pmaUrl(sessionId) + "transfer/Upload?sessionID=" + PMA.pmaQ(sessionId);
+		sessionID = sessionId(sessionID);
+//		url = (server.endsWith("/") ? server : server + "/") + "transfer/Upload/" + uploadID + "?sessionId=" +
+//				sessionID + "&path=" + ;
 		String mainDirectory = "";
 
 		for (String file : files.keySet()) {
@@ -4752,6 +4754,10 @@ public class Core {
 		} else {
 			String makeDirectory = saveDirectory;
 			saveDirectory = (saveDirectory.endsWith("/") ? saveDirectory : saveDirectory + "/") + Core.getSlideFileName(slideRef);
+			out.println(saveDirectory + "       Core.getSlideFileName(slideRef)  ****************");
+			if (new File(saveDirectory).exists()) {
+				throw new Exception(" A file with the same name already exists in the selected folder.");
+			}
 			sessionID = sessionId(sessionID);
 			String server = pmaUrl(sessionID);
 			Map<String, Object> info = Core.getSlideInfo(slideRef);
