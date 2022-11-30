@@ -7,8 +7,8 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -22,6 +22,7 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.json.JSONArray;
@@ -537,8 +538,7 @@ public class Core {
 	 *
 	 * @param root
 	 *            XML document
-	 * @param limit
-	 *            it's an optional argument (int), default value set to "0"
+	 * @param limit it's an optional argument (int), default value set to "0"
 	 * @return List{@literal <}String{@literal >} a list of the values of "String"
 	 *         tags of a XML document
 	 */
@@ -4696,38 +4696,181 @@ public class Core {
 	 */
 
 	//unfinished
-	public static boolean upload(String uploadID, String localSourceSlide, String targetFolder, String sessionID, boolean callBack) throws Exception {
-		String url;
-		String path;
+	public static boolean upload(String slideRef, String localSourceSlide, String targetFolder, String sessionID, boolean callBack) throws Exception {
+		sessionID = sessionId(sessionID);
 		String server = pmaUrl(sessionID);
 		if (!pmaIsLite()) {
 			throw new RuntimeException("No PMA.start found on localhost. Are you sure it is running?");
 		}
+		if (slideRef == null) {
+			throw new RuntimeException("Slide name is empty");
+		}
 		if (targetFolder == null) {
-			throw new RuntimeException("target_folder cannot be empty");
+			throw new RuntimeException("Target destination  cannot be empty");
 		}
 		if (targetFolder.startsWith("/")) {
 			targetFolder = targetFolder.substring(1);
 		}
-
-		Map<String, Map<String, String>> files = getFilesForSlide(localSourceSlide, pmaCoreLiteSessionID);
-		sessionID = sessionId(sessionID);
-//		url = (server.endsWith("/") ? server : server + "/") + "transfer/Upload/" + uploadID + "?sessionId=" +
-//				sessionID + "&path=" + ;
-		String mainDirectory = "";
-
-		for (String file : files.keySet()) {
-			path = file;
-			if (file == null || path.length() < mainDirectory.length()) {
-				mainDirectory = path;
+		List<String> slidesList = Core.getSlides(targetFolder, sessionID);
+		for (String slide : slidesList) {
+			if (slideRef.equals(Core.getSlideFileName(targetFolder + "\\" + slide))) {
+				throw new RuntimeException("The slide with the same name attends in the destination directory.");
 			}
 		}
-		JSONObject valuesObject = new JSONObject();
-		for (String filepath : files.keySet()) {
-			if (filepath.length() > 0) {
-			}
+
+		int uploadType;
+		JSONObject jsonResponse = PMA.getJSONObjectResponse(generateUploadID(sessionID, slideRef, localSourceSlide, targetFolder));
+		if (jsonResponse == null) {
+			throw new NullPointerException("jsonResponse == null");
+		} else {
+			uploadType = jsonResponse.getInt("UploadType");
 		}
+		DataOutputStream outputStreamToRequestBody = null;
+		FileInputStream inputStreamToLogFile = null;
+
 		return callBack;
+	}
+
+	/**
+	 * This method is used to retrieve an upload ID for the whole upload (like a
+	 * header) for an upload directed to PMA.core
+	 *
+	 * @param
+	 * @return String upload ID
+	 */
+	public static String generateUploadID(String sessionID, String fileToUpload, String filesLocation, String pathToUpload) throws Exception {
+		String server = pmaUrl(sessionID);
+		Map<String, String> uploadFileData = new HashMap<>();
+		String fileLength = null;
+		String filename = null;
+		String filenameWithoutExtention = null;
+		File dir = new File(filesLocation = filesLocation.endsWith("/") ? filesLocation : filesLocation + "\\");
+		JSONObject jo = new JSONObject();
+		FilenameFilter filter = new FilenameFilter() {
+			public boolean accept (File dir, String name) {
+				return name.startsWith(fileToUpload);
+			}
+		};
+		String[] children = dir.list(filter);
+		if (children == null) {
+			System.out.println("Either dir does not exist or is not a directory");
+		}
+		else {
+			for (int i = 0; i< children.length; i++) {
+				filename = children[i];
+				fileLength = String.valueOf(new File(dir + "\\" + filename).length());
+				filenameWithoutExtention = filename.substring(filename.indexOf(""),
+						filename.lastIndexOf("."));
+			}
+		}
+		dir = new File(filesLocation + "\\" + filenameWithoutExtention );
+		String url = (server.endsWith("/") ? server : server + "/") + "transfer/Upload?sessionID=" + sessionID;
+		URL urlResource = new URL(url);
+		HttpURLConnection con = null;
+		if (!dir.isDirectory()) {
+			out.println(fileLength);
+			uploadFileData.put("Path", filename);
+			uploadFileData.put("Length", fileLength);
+			uploadFileData.put("IsMain", "true");
+			jo.put("Path", pathToUpload);
+			jo.put("Files", new Object[]{uploadFileData});
+			try {
+				if (url.startsWith("https")) {
+					con = (HttpsURLConnection) urlResource.openConnection();
+				} else {
+					con = (HttpURLConnection) urlResource.openConnection();
+				}
+				con.setRequestProperty("Content-Length", String.valueOf(jo));
+				con.setRequestMethod("POST");
+				con.setRequestProperty("Accept", "application/json");
+				con.setRequestProperty("Content-Type", "application/json");
+				con.setUseCaches(false);
+				con.setDoOutput(true);
+
+				// we set the json string as the request body
+				OutputStream os = con.getOutputStream();
+				os.write(jo.toString().getBytes(StandardCharsets.UTF_8));
+				os.close();
+				return PMA.getJSONAsStringBuffer(con).toString();
+			} catch (Exception e) {
+				e.printStackTrace();
+					StringWriter sw = new StringWriter();
+					e.printStackTrace(new PrintWriter(sw));
+				return null;
+			}
+		} else {
+			if (filename.contains(".vsi")) {
+				String directory = FilenameUtils.removeExtension(fileToUpload);
+				List<Map<String, String>> filesMaps = new ArrayList<>();
+
+				List<Path> listSubFiles = Files.walk(Paths.get(filesLocation + directory)).collect(Collectors.toList());
+				JSONObject rootObject = new JSONObject();
+				rootObject.put("Path", pathToUpload);
+				listSubFiles.add((new File(filesLocation + fileToUpload))
+						.toPath());
+				for (Path p : listSubFiles) {
+					File current = p.toFile();
+					BasicFileAttributes basicFileAttributes = Files.readAttributes(current.toPath(), BasicFileAttributes.class);
+					if (basicFileAttributes.isRegularFile()) {
+						Map<String, String> fileMap = new HashMap<>();
+						fileMap.put("Path", current.getName());
+						fileMap.put("Length", String.valueOf(basicFileAttributes.size()));
+						fileMap.put("IsMain", Boolean.toString(current.getName().equals(fileToUpload)));
+						filesMaps.add(fileMap);
+					}
+				}
+				rootObject.put("Files", filesMaps);
+				String json = rootObject.toString();
+				out.println(json + "   json **********");
+			}
+			else if (filename.contains(".mrxs")) {
+				String directory = FilenameUtils.removeExtension(fileToUpload);
+				List<Map<String, String>> filesMaps = new ArrayList<>();
+				List<Path> paths =
+						Files.list(new File(filesLocation + directory).toPath()).collect(Collectors.toList());
+				JSONObject rootObject = new JSONObject();
+				rootObject.put("Path", pathToUpload);
+				paths.add((new File(filesLocation + fileToUpload))
+						.toPath());
+				for (Path p : paths) {
+					File current = p.toFile();
+					Map<String, String> fileMap = new HashMap<>();
+					fileMap.put("Path", current.getName().contains(fileToUpload) ? current.getName() : directory + "/" + current.getName());
+					fileMap.put("Length", String.valueOf(current.length()));
+					fileMap.put("IsMain", Boolean.toString(current.getName().equals(fileToUpload)));
+					filesMaps.add(fileMap);
+				}
+				rootObject.put("Files", filesMaps);
+				String json = rootObject.toString();
+				try {
+					if (!Core.ping(sessionID)) {
+						throw new Exception("SessionID is not valid.");
+					}
+					url = (server.endsWith("/") ? server : server + "/") + "transfer/Upload?sessionID=" + sessionID;
+					urlResource = new URL(url);
+					if (url.startsWith("https")) {
+						con = (HttpsURLConnection) urlResource.openConnection();
+					} else {
+						con = (HttpURLConnection) urlResource.openConnection();
+					}
+					con.setRequestProperty("Content-Length", String.valueOf(json.getBytes(StandardCharsets.UTF_8)));
+					con.setRequestMethod("POST");
+					con.setRequestProperty("Accept", "application/json");
+					con.setRequestProperty("Content-Type", "application/json");
+					con.setUseCaches(false);
+					con.setDoOutput(true);
+
+					// we set the json string as the request body
+					OutputStream os = con.getOutputStream();
+					os.write(json.getBytes("UTF-8"));
+					os.close();
+					return PMA.getJSONAsStringBuffer(con).toString();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		return null;
 	}
 
 	/**
