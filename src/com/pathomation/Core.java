@@ -6,6 +6,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -25,6 +26,28 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpException;
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpRequestInterceptor;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.entity.HttpEntityWrapper;
+import org.apache.http.entity.mime.FormBodyPart;
+import org.apache.http.entity.mime.HttpMultipart;
+import org.apache.http.entity.mime.HttpMultipartMode;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.entity.mime.content.FileBody;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.message.BasicHeader;
+import org.apache.http.protocol.HTTP;
+import org.apache.http.protocol.HttpContext;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -32,6 +55,7 @@ import org.json.JSONObject;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
@@ -257,7 +281,7 @@ public class Core {
 	 * This method is used to parse a XML content
 	 *
 	 * @param s
-	 *            XML content to parse
+	 *          XML content to parse
 	 * @return Document parsed XML
 	 */
 	public static Document domParser(String s) {
@@ -296,9 +320,9 @@ public class Core {
 	 * This method is used to get the list of sessions
 	 *
 	 * @param pmaControlURL
-	 *            URL for PMA.Control
+	 *                         URL for PMA.Control
 	 * @param pmaCoreSessionID
-	 *            PMA.core session ID
+	 *                         PMA.core session ID
 	 * @return JSONArray containing the list of sessions
 	 */
 	public static JSONArray getSessions(String pmaControlURL, String pmaCoreSessionID) {
@@ -328,9 +352,9 @@ public class Core {
 	 * This method is used to get the list of sessions' IDs
 	 *
 	 * @param pmaControlURL
-	 *            URL for PMA.Control
+	 *                         URL for PMA.Control
 	 * @param pmaCoreSessionID
-	 *            PMA.core session ID
+	 *                         PMA.core session ID
 	 * @return Map<String, Map<String, String>> containing the sessions' IDs
 	 */
 	public static Map<String, Map<String, String>> getSessionIds(String pmaControlURL, String pmaCoreSessionID) {
@@ -356,9 +380,9 @@ public class Core {
 	 * This method is used to get case collections
 	 *
 	 * @param pmaControlURL
-	 *            URL for PMA.Control
+	 *                         URL for PMA.Control
 	 * @param pmaCoreSessionID
-	 *            PMA.core session ID
+	 *                         PMA.core session ID
 	 * @return JSONArray containing the list of case sessions
 	 */
 	public static JSONArray getCaseCollections(String pmaControlURL, String pmaCoreSessionID) {
@@ -387,9 +411,9 @@ public class Core {
 	 * This method is used to get the list of projects
 	 *
 	 * @param pmaControlURL
-	 *            URL for PMA.Control
+	 *                         URL for PMA.Control
 	 * @param pmaCoreSessionID
-	 *            PMA.core session ID
+	 *                         PMA.core session ID
 	 * @return JSONArray containing the list of projects
 	 */
 	public static JSONArray getProjects(String pmaControlURL, String pmaCoreSessionID) {
@@ -516,6 +540,7 @@ public class Core {
 
 	/**
 	 * This method concatenates strings with "/"
+	 * 
 	 * @param s
 	 * @return
 	 */
@@ -537,7 +562,7 @@ public class Core {
 	 * document
 	 *
 	 * @param root
-	 *            XML document
+	 *              XML document
 	 * @param limit it's an optional argument (int), default value set to "0"
 	 * @return List{@literal <}String{@literal >} a list of the values of "String"
 	 *         tags of a XML document
@@ -666,9 +691,9 @@ public class Core {
 				version = jsonString.replaceAll("\"$|^\"", "");
 			}
 
-			if (version.startsWith("3.0")){
+			if (version.startsWith("3.0")) {
 				String revision = getBuildRevision(pmaCoreURL);
-				if (!revision.isEmpty()){
+				if (!revision.isEmpty()) {
 					version += "." + revision;
 				}
 			}
@@ -690,7 +715,7 @@ public class Core {
 	 * pmacontrolURL
 	 *
 	 * @param pmaControlURL
-	 *            PMA Control's URL
+	 *                      PMA Control's URL
 	 * @return JSONObject containing the version info
 	 */
 	public static JSONObject getVersionInfoPmaControl(String pmaControlURL) {
@@ -719,6 +744,7 @@ public class Core {
 
 	/**
 	 * This method checks the spelling of the server version, namely the length.
+	 * 
 	 * @param serverVersion
 	 * @return
 	 */
@@ -726,7 +752,6 @@ public class Core {
 		if (serverVersion == null || serverVersion.length() == 0) {
 			return false;
 		}
-
 
 		String[] version = serverVersion.split("\\.");
 		if (version.length != 4) {
@@ -1744,6 +1769,7 @@ public class Core {
 			}
 		}
 		return (Map<String, Object>) ((Map<String, Object>) pmaSlideInfos.get(sessionID)).get(slideRef);
+
 	}
 
 	/**
@@ -1857,6 +1883,7 @@ public class Core {
 				return null;
 			}
 		}
+
 		// if for all the slides, the image info data has been already stored on
 		// pmaSlideInfos
 		Map<String, Map<String, Object>> results = new HashMap<String, Map<String, Object>>();
@@ -4121,15 +4148,15 @@ public class Core {
 	/**
 	 * This method is used to add the annotations for slide
 	 *
-	 * @param  sessionID session's ID
-	 * @param  pathOrUid slide's path
-	 * @param classification slide's  classification
-	 * @param layerID slide's layer id
-	 * @param notes "Annotation" + number or app name.
-	 * @param geometry annotation's geometry
-	 * @param color annotation's color
+	 * @param sessionID      session's ID
+	 * @param pathOrUid      slide's path
+	 * @param classification slide's classification
+	 * @param layerID        slide's layer id
+	 * @param notes          "Annotation" + number or app name.
+	 * @param geometry       annotation's geometry
+	 * @param color          annotation's color
 	 */
-	public static JSONArray add_Annotations (
+	public static JSONArray add_Annotations(
 			String sessionID,
 			String pathOrUid,
 			String classification,
@@ -4252,9 +4279,9 @@ public class Core {
 	/**
 	 * This method is used to delete all the annotations for slide
 	 *
-	 * @param  sessionID session's ID
-	 * @param  slideRef slide's path
-	 * @param layerID slide's layer id
+	 * @param sessionID session's ID
+	 * @param slideRef  slide's path
+	 * @param layerID   slide's layer id
 	 */
 	public static boolean clear_annotations(String slideRef, int layerID, String sessionID) throws Exception {
 		sessionID = sessionId(sessionID);
@@ -4436,7 +4463,9 @@ public class Core {
 				}
 			}
 			return result;
-		} catch (Exception e) {
+		} catch (
+
+		Exception e) {
 			e.printStackTrace();
 			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
@@ -4680,29 +4709,31 @@ public class Core {
 
 	/**
 	 * Uploads a slide to a PMA.core server. Requires a PMA.start installation
-	 * :param str local_source_slide: The local PMA.start relative file to upload
-	 * :param str target_folder: The root directory and path to upload to the PMA.core server
-	 * :param str target_pma_core_sessionID: A valid session id for a PMA.core server
-	 * :param function|boolean callback: If True a default progress will be printed.
+	 * :param str localSourceSlide: The local PMA.start relative file to upload
+	 * :param str targetFolder: The root directory and path to upload to the
+	 * PMA.core server
+	 * :param str sessionID: A valid session id for a PMA.core
+	 * :param function callback: If True a default progress will be printed.
 	 * If a function is passed it will be called for progress on each file upload.
 	 * The function has the following signature:
-	 * `callback(bytes_read, bytes_length, filename)`
+	 * `callback(float progress)`
 	 *
 	 * @param localSourceSlide
 	 * @param targetFolder
 	 * @param sessionID
-	 * @param callBack
+	 * @param progressCallback
 	 * @return
 	 */
 
-	//unfinished
-	public static boolean upload(String slideRef, String localSourceSlide, String targetFolder, String sessionID, boolean callBack) throws Exception {
+	// unfinished
+	public static boolean upload(String localSourceSlide, String targetFolder, String sessionID,
+			ProgressHttpEntityWrapper.ProgressCallback progressCallback)
+			throws Exception {
 		sessionID = sessionId(sessionID);
-		String server = pmaUrl(sessionID);
 		if (!pmaIsLite()) {
 			throw new RuntimeException("No PMA.start found on localhost. Are you sure it is running?");
 		}
-		if (slideRef == null) {
+		if (localSourceSlide == null) {
 			throw new RuntimeException("Slide name is empty");
 		}
 		if (targetFolder == null) {
@@ -4711,173 +4742,183 @@ public class Core {
 		if (targetFolder.startsWith("/")) {
 			targetFolder = targetFolder.substring(1);
 		}
-		List<String> slidesList = Core.getSlides(targetFolder, sessionID);
-		for (String slide : slidesList) {
-			if (slideRef.equals(Core.getSlideFileName(targetFolder + "\\" + slide))) {
-				throw new RuntimeException("The slide with the same name attends in the destination directory.");
+
+		Map<String, Map<String, String>> files = Core.getFilesForSlide(localSourceSlide, pmaCoreLiteSessionID);
+
+		String mainDirectory = "";
+		for (Map.Entry<String, Map<String, String>> entry : files.entrySet()) {
+			String key = entry.getKey();
+			Map<String, String> value = entry.getValue();
+			File file = new File(key);
+			String md = file.getParent();
+
+			if (mainDirectory.length() == 0 || md.length() < mainDirectory.length()) {
+				mainDirectory = md;
 			}
 		}
 
-		int uploadType;
-		JSONObject jsonResponse = PMA.getJSONObjectResponse(generateUploadID(sessionID, slideRef, localSourceSlide, targetFolder));
-		if (jsonResponse == null) {
-			throw new NullPointerException("jsonResponse == null");
-		} else {
-			uploadType = jsonResponse.getInt("UploadType");
-		}
-		DataOutputStream outputStreamToRequestBody = null;
-		FileInputStream inputStreamToLogFile = null;
+		mainDirectory = mainDirectory.replace("\\", "/");
 
-		return callBack;
-	}
+		List<HashMap<String, String>> uploadFiles = new ArrayList<HashMap<String, String>>();
+		boolean isFirst = true;
+		for (Map.Entry<String, Map<String, String>> entry : files.entrySet()) {
+			String key = entry.getKey();
+			Map<String, String> value = entry.getValue();
+			long s = (new File(key)).length();
+			if (s <= 0) {
+				continue;
+			}
 
-	/**
-	 * This method is used to retrieve an upload ID for the whole upload (like a
-	 * header) for an upload directed to PMA.core
-	 *
-	 * @param
-	 * @return String upload ID
-	 */
-	public static String generateUploadID(String sessionID, String fileToUpload, String filesLocation, String pathToUpload) throws Exception {
-		String server = pmaUrl(sessionID);
-		Map<String, String> uploadFileData = new HashMap<>();
-		String fileLength = null;
-		String filename = null;
-		String filenameWithoutExtention = null;
-		File dir = new File(filesLocation = filesLocation.endsWith("/") ? filesLocation : filesLocation + "\\");
-		JSONObject jo = new JSONObject();
-		FilenameFilter filter = new FilenameFilter() {
-			public boolean accept (File dir, String name) {
-				return name.startsWith(fileToUpload);
-			}
-		};
-		String[] children = dir.list(filter);
-		if (children == null) {
-			System.out.println("Either dir does not exist or is not a directory");
+			String path = key.replace(mainDirectory, "").replaceAll("^\\+|\\+$/g", "")
+					.replaceAll("^/+|/+$/g", "");
+
+			HashMap<String, String> fileObj = new HashMap<String, String>();
+			fileObj.put("Path", path);
+			fileObj.put("Length", Long.toString(s));
+			fileObj.put("IsMain", Boolean.toString(isFirst));
+			fileObj.put("FullPath", key);
+			uploadFiles.add(fileObj);
+			isFirst = false;
 		}
-		else {
-			for (int i = 0; i< children.length; i++) {
-				filename = children[i];
-				fileLength = String.valueOf(new File(dir + "\\" + filename).length());
-				filenameWithoutExtention = filename.substring(filename.indexOf(""),
-						filename.lastIndexOf("."));
-			}
-		}
-		dir = new File(filesLocation + "\\" + filenameWithoutExtention );
-		String url = (server.endsWith("/") ? server : server + "/") + "transfer/Upload?sessionID=" + sessionID;
+
+		JSONObject data = new JSONObject();
+		data.put("Path", targetFolder);
+		data.put("Files", new JSONArray(uploadFiles));
+		String url = pmaUrl(sessionID) + "transfer/Upload?sessionID=" + PMA.pmaQ((sessionID));
+
 		URL urlResource = new URL(url);
-		HttpURLConnection con = null;
-		if (!dir.isDirectory()) {
-			out.println(fileLength);
-			uploadFileData.put("Path", filename);
-			uploadFileData.put("Length", fileLength);
-			uploadFileData.put("IsMain", "true");
-			jo.put("Path", pathToUpload);
-			jo.put("Files", new Object[]{uploadFileData});
-			try {
-				if (url.startsWith("https")) {
-					con = (HttpsURLConnection) urlResource.openConnection();
-				} else {
-					con = (HttpURLConnection) urlResource.openConnection();
-				}
-				con.setRequestProperty("Content-Length", String.valueOf(jo));
-				con.setRequestMethod("POST");
-				con.setRequestProperty("Accept", "application/json");
-				con.setRequestProperty("Content-Type", "application/json");
-				con.setUseCaches(false);
-				con.setDoOutput(true);
+		URLConnection con = urlResource.openConnection();
+		HttpURLConnection http = (HttpURLConnection) con;
+		http.setRequestMethod("POST");
+		http.setDoOutput(true);
 
-				// we set the json string as the request body
-				OutputStream os = con.getOutputStream();
-				os.write(jo.toString().getBytes(StandardCharsets.UTF_8));
-				os.close();
-				return PMA.getJSONAsStringBuffer(con).toString();
-			} catch (Exception e) {
-				e.printStackTrace();
-					StringWriter sw = new StringWriter();
-					e.printStackTrace(new PrintWriter(sw));
-				return null;
-			}
-		} else {
-			if (filename.contains(".vsi")) {
-				String directory = FilenameUtils.removeExtension(fileToUpload);
-				List<Map<String, String>> filesMaps = new ArrayList<>();
+		byte[] out = data.toString().getBytes(StandardCharsets.UTF_8);
+		int length = out.length;
 
-				List<Path> listSubFiles = Files.walk(Paths.get(filesLocation + directory)).collect(Collectors.toList());
-				JSONObject rootObject = new JSONObject();
-				rootObject.put("Path", pathToUpload);
-				listSubFiles.add((new File(filesLocation + fileToUpload))
-						.toPath());
-				for (Path p : listSubFiles) {
-					File current = p.toFile();
-					BasicFileAttributes basicFileAttributes = Files.readAttributes(current.toPath(), BasicFileAttributes.class);
-					if (basicFileAttributes.isRegularFile()) {
-						Map<String, String> fileMap = new HashMap<>();
-						fileMap.put("Path", current.getName());
-						fileMap.put("Length", String.valueOf(basicFileAttributes.size()));
-						fileMap.put("IsMain", Boolean.toString(current.getName().equals(fileToUpload)));
-						filesMaps.add(fileMap);
-					}
-				}
-				rootObject.put("Files", filesMaps);
-				String json = rootObject.toString();
-				out.println(json + "   json **********");
-			}
-			else if (filename.contains(".mrxs")) {
-				String directory = FilenameUtils.removeExtension(fileToUpload);
-				List<Map<String, String>> filesMaps = new ArrayList<>();
-				List<Path> paths =
-						Files.list(new File(filesLocation + directory).toPath()).collect(Collectors.toList());
-				JSONObject rootObject = new JSONObject();
-				rootObject.put("Path", pathToUpload);
-				paths.add((new File(filesLocation + fileToUpload))
-						.toPath());
-				for (Path p : paths) {
-					File current = p.toFile();
-					Map<String, String> fileMap = new HashMap<>();
-					fileMap.put("Path", current.getName().contains(fileToUpload) ? current.getName() : directory + "/" + current.getName());
-					fileMap.put("Length", String.valueOf(current.length()));
-					fileMap.put("IsMain", Boolean.toString(current.getName().equals(fileToUpload)));
-					filesMaps.add(fileMap);
-				}
-				rootObject.put("Files", filesMaps);
-				String json = rootObject.toString();
-				try {
-					if (!Core.ping(sessionID)) {
-						throw new Exception("SessionID is not valid.");
-					}
-					url = (server.endsWith("/") ? server : server + "/") + "transfer/Upload?sessionID=" + sessionID;
-					urlResource = new URL(url);
-					if (url.startsWith("https")) {
-						con = (HttpsURLConnection) urlResource.openConnection();
-					} else {
-						con = (HttpURLConnection) urlResource.openConnection();
-					}
-					con.setRequestProperty("Content-Length", String.valueOf(json.getBytes(StandardCharsets.UTF_8)));
-					con.setRequestMethod("POST");
-					con.setRequestProperty("Accept", "application/json");
-					con.setRequestProperty("Content-Type", "application/json");
-					con.setUseCaches(false);
-					con.setDoOutput(true);
-
-					// we set the json string as the request body
-					OutputStream os = con.getOutputStream();
-					os.write(json.getBytes("UTF-8"));
-					os.close();
-					return PMA.getJSONAsStringBuffer(con).toString();
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
+		http.setFixedLengthStreamingMode(length);
+		http.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+		http.connect();
+		try (OutputStream os = http.getOutputStream()) {
+			os.write(out);
 		}
-		return null;
+
+		int rCode = http.getResponseCode();
+		if (rCode != HttpURLConnection.HTTP_OK) {
+			throw new Exception("Error uploading file to PMA.core");
+		}
+
+		String jsonString = PMA.getJSONAsStringBuffer(http).toString();
+		if (!PMA.isJSONObject(jsonString)) {
+			throw new Exception("Error uploading " + localSourceSlide + " to PMA.core");
+		}
+
+		JSONObject uploadHeader = PMA.getJSONObjectResponse(jsonString);
+		int i = 0;
+		for (HashMap<String, String> entry : uploadFiles) {
+			File file = new File(entry.get("FullPath"));
+			String fileName = FilenameUtils.getName(entry.get("Path"));
+
+			List<FormBodyPart> list = new ArrayList<FormBodyPart>();
+			list.add(new FormBodyPart(fileName, new FileBody(file)));
+			HttpCustomMultipart form = new HttpCustomMultipart("form-data", null, "----", list);
+			HttpEntity entity = new MultipartCustomEntity(form, "", form.getTotalLength());
+
+			String uploadUrl = pmaUrl(sessionID) + "transfer/Upload/" + uploadHeader.get("Id").toString()
+					+ "?sessionID="
+					+ PMA.pmaQ((sessionID)) + "&path=" +
+					PMA.pmaQ(entry.get("Path"));
+
+			HttpRequestBase request = null;
+
+			if (uploadHeader.getInt("UploadType") == 1) {
+				// Amazon upload
+				JSONArray jsonarray = uploadHeader.getJSONArray("Urls");
+				uploadUrl = jsonarray.getString(i);
+
+				request = (HttpRequestBase) new HttpPut(uploadUrl);
+				request.setHeader("Content-Type", "multipart/form-data");
+
+				if (progressCallback == null) {
+					((HttpPut) request).setEntity(entity);
+				} else {
+					((HttpPut) request).setEntity(new ProgressHttpEntityWrapper(entity, entry.get("Path").toString(), progressCallback));
+				}
+			} else if (uploadHeader.getInt("UploadType") == 2) {
+				// Azure upload
+				JSONArray jsonarray = uploadHeader.getJSONArray("Urls");
+				uploadUrl = jsonarray.getString(i);
+
+				request = (HttpRequestBase) new HttpPut(uploadUrl);
+				if (progressCallback == null) {
+					((HttpPut) request).setEntity(entity);
+				} else {
+					((HttpPut) request).setEntity(new ProgressHttpEntityWrapper(entity, entry.get("Path").toString(), progressCallback));
+				}
+				request.setHeader("x-ms-blob-type", "BlockBlob");
+				request.setHeader("Content-Type", "multipart/form-data");
+			} else {
+				entity = MultipartEntityBuilder.create()
+						.setMode(HttpMultipartMode.STRICT)
+						.addPart(fileName, new FileBody(file))
+						.build();
+
+				request = (HttpRequestBase) new HttpPost(uploadUrl);
+				if (progressCallback == null) {
+					((HttpPost) request).setEntity(entity);
+				} else {
+					((HttpPost) request).setEntity(new ProgressHttpEntityWrapper(entity, entry.get("Path").toString(), progressCallback));
+				}
+			}
+			
+			HttpRequestInterceptor requestInterceptor = new HttpRequestInterceptor() {
+				@Override
+				public void process(HttpRequest request, HttpContext context) throws HttpException, IOException {
+					if (uploadHeader.getInt("UploadType") == 0){
+						return;
+					}
+
+					if (request.containsHeader("Content-Length")) {
+						request.removeHeaders("Content-Length");
+					}
+
+					request.addHeader("Content-Length", entry.get("Length").toString());
+				}
+			};
+
+			HttpClient client = HttpClientBuilder.create()
+					.addInterceptorLast(requestInterceptor)
+					.disableContentCompression()
+					.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE).disableAutomaticRetries().build();
+
+			HttpResponse response = client.execute(request);
+
+			String uploadResult = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8);
+			System.out.println(uploadResult);
+			i++;
+		}
+
+		String finalizeUrl = pmaUrl(sessionID) + "transfer/Upload/" + uploadHeader.get("Id").toString() + "?sessionID="
+				+ PMA.pmaQ(sessionID);
+		HttpGet finalizeRequest = new HttpGet(finalizeUrl);
+		HttpClient client = HttpClientBuilder.create().setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE).build();
+		HttpResponse response = client.execute(finalizeRequest);
+
+		int responseCode = response.getStatusLine().getStatusCode();
+		if (responseCode < 200 || responseCode >= 300) {
+			String result = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8);
+			throw new Exception("Error uploading" + result);
+		}
+
+		return true;
 	}
 
 	/**
-	 * This method downloads one slide and also .mrxs and .vsi slides formats with subfolders.
+	 * This method downloads one slide and also .mrxs and .vsi slides formats with
+	 * subfolders.
 	 *
 	 * @param saveDirectory is a directory where slide will be saved.
-	 * @param slideRef is full path begins from the root folder including slide name and extension.
+	 * @param slideRef      is full path begins from the root folder including slide
+	 *                      name and extension.
 	 * @param sessionID
 	 * @return
 	 * @throws Exception
@@ -4896,7 +4937,8 @@ public class Core {
 			throw new Exception("Please,  write the path of your save directory starting from the root folder.");
 		} else {
 			String makeDirectory = saveDirectory;
-			saveDirectory = (saveDirectory.endsWith("/") ? saveDirectory : saveDirectory + "/") + Core.getSlideFileName(slideRef);
+			saveDirectory = (saveDirectory.endsWith("/") ? saveDirectory : saveDirectory + "/")
+					+ Core.getSlideFileName(slideRef);
 			out.println(saveDirectory + "       Core.getSlideFileName(slideRef)  ****************");
 			if (new File(saveDirectory).exists()) {
 				throw new Exception(" A file with the same name already exists in the selected folder.");
@@ -4913,8 +4955,10 @@ public class Core {
 			if (slideEnumRelatedFiles.size() == 1) {
 				try {
 					if (Core.ping(sessionID)) {
-						String url = (server.endsWith("/") ? server : server + "/") + "transfer/Download" + "?sessionId="
-								+ sessionID + "&image=" + PMA.pmaQ(slideRef) + "&path=" + PMA.pmaQ(Core.getSlideFileName(slideRef));
+						String url = (server.endsWith("/") ? server : server + "/") + "transfer/Download"
+								+ "?sessionId="
+								+ sessionID + "&image=" + PMA.pmaQ(slideRef) + "&path="
+								+ PMA.pmaQ(Core.getSlideFileName(slideRef));
 						URL urlResource = new URL(url);
 						if (url.startsWith("https")) {
 							con = (HttpsURLConnection) urlResource.openConnection();
@@ -4931,7 +4975,8 @@ public class Core {
 						con.setUseCaches(false);
 						con.connect();
 
-						// if the response code is 303 this means there will be a redirect to aws presigned download URL
+						// if the response code is 303 this means there will be a redirect to aws
+						// presigned download URL
 						if (con.getResponseCode() == 303) {
 							url = con.getHeaderField("Location");
 							urlResource = new URL(url);
@@ -4981,14 +5026,15 @@ public class Core {
 							if (i == calculationInterations) {
 								currentUpdated = System.currentTimeMillis();
 								bytesReadForSpeedCalculationCycle = totalBytesRead - bytesReadForSpeedCalculationCycle;
-								speed = ((double) bytesReadForSpeedCalculationCycle / ((double) (currentUpdated - current)));
+								speed = ((double) bytesReadForSpeedCalculationCycle
+										/ ((double) (currentUpdated - current)));
 								i = 0;
 								firstCalculationDone = true;
-								//transfer speed is fast, let's make less frequent calculations
+								// transfer speed is fast, let's make less frequent calculations
 								if ((currentUpdated - current) < 500) {
 									calculationInterations = calculationInterations * 2;
 								}
-								//transfer speed is slow, let's make more frequent calculations
+								// transfer speed is slow, let's make more frequent calculations
 								if ((currentUpdated - current) > 1500) {
 									if (calculationInterations > 2) {
 										calculationInterations = calculationInterations / 2;
@@ -5003,7 +5049,7 @@ public class Core {
 						con.getResponseCode();
 						return true;
 					}
-				} catch(Exception e){
+				} catch (Exception e) {
 					e.printStackTrace();
 					if (inputStreamToRequestBody != null) {
 						inputStreamToRequestBody.close();
@@ -5015,20 +5061,22 @@ public class Core {
 					con.getResponseCode();
 					return false;
 				}
-			}
-			else if (slideEnumRelatedFiles.size() > 1) {
+			} else if (slideEnumRelatedFiles.size() > 1) {
 				if (Core.getSlideFileExtension(slideRef).equals("mrxs")) {
 					try {
 						if (Core.ping(sessionID)) {
 							String slideFileMane = Core.getSlideFileName(slideRef);
-							String folderToCreate = slideFileMane.substring(slideFileMane.indexOf(""), slideFileMane.indexOf("."));
+							String folderToCreate = slideFileMane.substring(slideFileMane.indexOf(""),
+									slideFileMane.indexOf("."));
 							new File(makeDirectory + "\\" + folderToCreate).mkdir();
 							List<String> relatedSlides = new ArrayList<>();
 							for (Map<String, String> sl : slideEnumRelatedFiles) {
 								relatedSlides.add(sl.get("Path"));
 							}
-							String url = (server.endsWith("/") ? server : server + "/") + "transfer/Download" + "?sessionId="
-									+ sessionID + "&image=" + PMA.pmaQ(slideRef) + "&path=" + PMA.pmaQ(Core.getSlideFileName(slideRef));
+							String url = (server.endsWith("/") ? server : server + "/") + "transfer/Download"
+									+ "?sessionId="
+									+ sessionID + "&image=" + PMA.pmaQ(slideRef) + "&path="
+									+ PMA.pmaQ(Core.getSlideFileName(slideRef));
 							URL urlResource = new URL(url);
 							if (url.startsWith("https")) {
 								con = (HttpsURLConnection) urlResource.openConnection();
@@ -5045,7 +5093,8 @@ public class Core {
 							con.setUseCaches(false);
 							con.connect();
 
-							// if the response code is 303 this means there will be a redirect to aws presigned download URL
+							// if the response code is 303 this means there will be a redirect to aws
+							// presigned download URL
 							if (con.getResponseCode() == 303) {
 								url = con.getHeaderField("Location");
 								urlResource = new URL(url);
@@ -5094,15 +5143,17 @@ public class Core {
 								i++;
 								if (i == calculationInterations) {
 									currentUpdated = System.currentTimeMillis();
-									bytesReadForSpeedCalculationCycle = totalBytesRead - bytesReadForSpeedCalculationCycle;
-									speed = ((double) bytesReadForSpeedCalculationCycle / ((double) (currentUpdated - current)));
+									bytesReadForSpeedCalculationCycle = totalBytesRead
+											- bytesReadForSpeedCalculationCycle;
+									speed = ((double) bytesReadForSpeedCalculationCycle
+											/ ((double) (currentUpdated - current)));
 									i = 0;
 									firstCalculationDone = true;
-									//transfer speed is fast, let's make less frequent calculations
+									// transfer speed is fast, let's make less frequent calculations
 									if ((currentUpdated - current) < 500) {
 										calculationInterations = calculationInterations * 2;
 									}
-									//transfer speed is slow, let's make more frequent calculations
+									// transfer speed is slow, let's make more frequent calculations
 									if ((currentUpdated - current) > 1500) {
 										if (calculationInterations > 2) {
 											calculationInterations = calculationInterations / 2;
@@ -5130,8 +5181,10 @@ public class Core {
 								slideFileMane = Core.getSlideFileName(rSlides);
 								String saveDirectoryData = directoryForData + slideFileMane;
 								downloadFile = new File(saveDirectoryData);
-								url = (server.endsWith("/") ? server : server + "/") + "transfer/Download" + "?sessionId="
-										+ sessionID + "&image=" + PMA.pmaQ(slideRef) + "&path=" + PMA.pmaQ(folderToCreate) + "%2F" + PMA.pmaQ(Core.getSlideFileName(rSlides));
+								url = (server.endsWith("/") ? server : server + "/") + "transfer/Download"
+										+ "?sessionId="
+										+ sessionID + "&image=" + PMA.pmaQ(slideRef) + "&path="
+										+ PMA.pmaQ(folderToCreate) + "%2F" + PMA.pmaQ(Core.getSlideFileName(rSlides));
 								urlResource = new URL(url);
 								if (url.startsWith("https")) {
 									con = (HttpsURLConnection) urlResource.openConnection();
@@ -5149,7 +5202,8 @@ public class Core {
 								con.connect();
 								out.println(con.getResponseCode() + "   con.getResponseCode() ******* ");
 
-								// if the response code is 303 this means there will be a redirect to aws presigned download URL
+								// if the response code is 303 this means there will be a redirect to aws
+								// presigned download URL
 								if (con.getResponseCode() == 303) {
 									url = con.getHeaderField("Location");
 									urlResource = new URL(url);
@@ -5200,15 +5254,17 @@ public class Core {
 									i++;
 									if (i == calculationInterations) {
 										currentUpdated = System.currentTimeMillis();
-										bytesReadForSpeedCalculationCycle = totalBytesRead - bytesReadForSpeedCalculationCycle;
-										speed = ((double) bytesReadForSpeedCalculationCycle / ((double) (currentUpdated - current)));
+										bytesReadForSpeedCalculationCycle = totalBytesRead
+												- bytesReadForSpeedCalculationCycle;
+										speed = ((double) bytesReadForSpeedCalculationCycle
+												/ ((double) (currentUpdated - current)));
 										i = 0;
 										firstCalculationDone = true;
-										//transfer speed is fast, let's make less frequent calculations
+										// transfer speed is fast, let's make less frequent calculations
 										if ((currentUpdated - current) < 500) {
 											calculationInterations = calculationInterations * 2;
 										}
-										//transfer speed is slow, let's make more frequent calculations
+										// transfer speed is slow, let's make more frequent calculations
 										if ((currentUpdated - current) > 1500) {
 											if (calculationInterations > 2) {
 												calculationInterations = calculationInterations / 2;
@@ -5227,8 +5283,7 @@ public class Core {
 							 */
 							return true;
 						}
-					}
-					catch(Exception e){
+					} catch (Exception e) {
 						e.printStackTrace();
 						if (inputStreamToRequestBody != null) {
 							inputStreamToRequestBody.close();
@@ -5245,15 +5300,18 @@ public class Core {
 					try {
 						if (Core.ping(sessionID)) {
 							String slideFileName = Core.getSlideFileName(slideRef);
-							String folderToCreate = slideFileName.substring(slideFileName.indexOf(""), slideFileName.indexOf("."));
+							String folderToCreate = slideFileName.substring(slideFileName.indexOf(""),
+									slideFileName.indexOf("."));
 							new File(makeDirectory + "\\" + folderToCreate).mkdir();
 							List<String> relatedSlides = new ArrayList<>();
 							for (Map<String, String> sl : slideEnumRelatedFiles) {
 								out.println(sl.get("Path"));
 								relatedSlides.add(sl.get("Path"));
 							}
-							String url = (server.endsWith("/") ? server : server + "/") + "transfer/Download" + "?sessionId="
-									+ sessionID + "&image=" + PMA.pmaQ(slideRef) + "&path=" + PMA.pmaQ(Core.getSlideFileName(slideRef));
+							String url = (server.endsWith("/") ? server : server + "/") + "transfer/Download"
+									+ "?sessionId="
+									+ sessionID + "&image=" + PMA.pmaQ(slideRef) + "&path="
+									+ PMA.pmaQ(Core.getSlideFileName(slideRef));
 							URL urlResource = new URL(url);
 							if (url.startsWith("https")) {
 								con = (HttpsURLConnection) urlResource.openConnection();
@@ -5270,7 +5328,8 @@ public class Core {
 							con.setUseCaches(false);
 							con.connect();
 
-							// if the response code is 303 this means there will be a redirect to aws presigned download URL
+							// if the response code is 303 this means there will be a redirect to aws
+							// presigned download URL
 							if (con.getResponseCode() == 303) {
 								url = con.getHeaderField("Location");
 								urlResource = new URL(url);
@@ -5319,15 +5378,17 @@ public class Core {
 								i++;
 								if (i == calculationInterations) {
 									currentUpdated = System.currentTimeMillis();
-									bytesReadForSpeedCalculationCycle = totalBytesRead - bytesReadForSpeedCalculationCycle;
-									speed = ((double) bytesReadForSpeedCalculationCycle / ((double) (currentUpdated - current)));
+									bytesReadForSpeedCalculationCycle = totalBytesRead
+											- bytesReadForSpeedCalculationCycle;
+									speed = ((double) bytesReadForSpeedCalculationCycle
+											/ ((double) (currentUpdated - current)));
 									i = 0;
 									firstCalculationDone = true;
-									//transfer speed is fast, let's make less frequent calculations
+									// transfer speed is fast, let's make less frequent calculations
 									if ((currentUpdated - current) < 500) {
 										calculationInterations = calculationInterations * 2;
 									}
-									//transfer speed is slow, let's make more frequent calculations
+									// transfer speed is slow, let's make more frequent calculations
 									if ((currentUpdated - current) > 1500) {
 										if (calculationInterations > 2) {
 											calculationInterations = calculationInterations / 2;
@@ -5346,17 +5407,20 @@ public class Core {
 							 */
 							relatedSlides.remove(relatedSlides.size() - 1);
 							for (String stackFolders : relatedSlides) {
-								String folderRaw = stackFolders.
-										substring(stackFolders.indexOf("/"), stackFolders.lastIndexOf("/stack1"));
-								String folderForUrlWith_andWithout_ = folderRaw.
-										substring(folderRaw.lastIndexOf("/") + 1, folderRaw.lastIndexOf(""));
-								String stackFolder = stackFolders.substring(stackFolders.indexOf("/s") + 1, stackFolders.lastIndexOf("/"));
+								String folderRaw = stackFolders.substring(stackFolders.indexOf("/"),
+										stackFolders.lastIndexOf("/stack1"));
+								String folderForUrlWith_andWithout_ = folderRaw
+										.substring(folderRaw.lastIndexOf("/") + 1, folderRaw.lastIndexOf(""));
+								String stackFolder = stackFolders.substring(stackFolders.indexOf("/s") + 1,
+										stackFolders.lastIndexOf("/"));
 								String directoryForData = makeDirectory + "\\" + folderToCreate + "\\" + stackFolder;
 								slideFileName = Core.getSlideFileName(stackFolders);
 								new File(directoryForData).mkdir();
 								downloadFile = new File(directoryForData + "\\" + slideFileName);
-								url = (server.endsWith("/") ? server : server + "/") + "transfer/Download" + "?sessionId="
-										+ sessionID + "&image=" + PMA.pmaQ(slideRef) + "&path=" + PMA.pmaQ(folderForUrlWith_andWithout_)
+								url = (server.endsWith("/") ? server : server + "/") + "transfer/Download"
+										+ "?sessionId="
+										+ sessionID + "&image=" + PMA.pmaQ(slideRef) + "&path="
+										+ PMA.pmaQ(folderForUrlWith_andWithout_)
 										+ "%2F" + PMA.pmaQ(stackFolder) + "%2F" + PMA.pmaQ(slideFileName);
 								urlResource = new URL(url);
 								if (url.startsWith("https")) {
@@ -5374,7 +5438,8 @@ public class Core {
 								con.setUseCaches(false);
 								con.connect();
 
-								// if the response code is 303 this means there will be a redirect to aws presigned download URL
+								// if the response code is 303 this means there will be a redirect to aws
+								// presigned download URL
 								if (con.getResponseCode() == 303) {
 									url = con.getHeaderField("Location");
 									urlResource = new URL(url);
@@ -5425,15 +5490,17 @@ public class Core {
 									i++;
 									if (i == calculationInterations) {
 										currentUpdated = System.currentTimeMillis();
-										bytesReadForSpeedCalculationCycle = totalBytesRead - bytesReadForSpeedCalculationCycle;
-										speed = ((double) bytesReadForSpeedCalculationCycle / ((double) (currentUpdated - current)));
+										bytesReadForSpeedCalculationCycle = totalBytesRead
+												- bytesReadForSpeedCalculationCycle;
+										speed = ((double) bytesReadForSpeedCalculationCycle
+												/ ((double) (currentUpdated - current)));
 										i = 0;
 										firstCalculationDone = true;
-										//transfer speed is fast, let's make less frequent calculations
+										// transfer speed is fast, let's make less frequent calculations
 										if ((currentUpdated - current) < 500) {
 											calculationInterations = calculationInterations * 2;
 										}
-										//transfer speed is slow, let's make more frequent calculations
+										// transfer speed is slow, let's make more frequent calculations
 										if ((currentUpdated - current) > 1500) {
 											if (calculationInterations > 2) {
 												calculationInterations = calculationInterations / 2;
@@ -5452,8 +5519,7 @@ public class Core {
 							 */
 							return true;
 						}
-					}
-					catch(Exception e){
+					} catch (Exception e) {
 						e.printStackTrace();
 						if (inputStreamToRequestBody != null) {
 							inputStreamToRequestBody.close();
@@ -5471,9 +5537,9 @@ public class Core {
 		return true;
 	}
 
-
 	/**
 	 * This method returns a boolean result based on the input parameters.
+	 * 
 	 * @param sessionId
 	 * @param url
 	 * @param length
@@ -5489,6 +5555,7 @@ public class Core {
 
 	/**
 	 * This method returns pmaSessions.
+	 * 
 	 * @return
 	 */
 	public static Map<String, Object> sessions() {
@@ -5497,6 +5564,7 @@ public class Core {
 
 	/**
 	 * This method connect to cloud with json data.
+	 * 
 	 * @param username
 	 * @param password
 	 * @return
@@ -5544,6 +5612,7 @@ public class Core {
 
 	/**
 	 * This method makes DataOutputStream connection to send data to cloud.
+	 * 
 	 * @param url
 	 * @param payload
 	 * @return
@@ -5553,10 +5622,10 @@ public class Core {
 			URL urlResource = new URL(url);
 			URLConnection conn = urlResource.openConnection();
 			conn.setDoOutput(true);
-			conn.setRequestProperty( "Content-Type", "application/json");
-			conn.setRequestProperty( "charset", "utf-8");
-			conn.setUseCaches( false );
-			try(DataOutputStream wr = new DataOutputStream( conn.getOutputStream())) {
+			conn.setRequestProperty("Content-Type", "application/json");
+			conn.setRequestProperty("charset", "utf-8");
+			conn.setUseCaches(false);
+			try (DataOutputStream wr = new DataOutputStream(conn.getOutputStream())) {
 				wr.write(payload.getBytes());
 			}
 
@@ -5568,6 +5637,7 @@ public class Core {
 
 	/**
 	 * This method make authorization with token to connect cloud
+	 * 
 	 * @param accessToken
 	 * @return
 	 */
@@ -5575,8 +5645,8 @@ public class Core {
 		try {
 			URL urlResource = new URL("https://myapi.pathomation.com/api/v1/authenticate");
 			URLConnection conn = urlResource.openConnection();
-			conn.setRequestProperty( "Authorization", "Bearer " + accessToken);
-			conn.setUseCaches( false );
+			conn.setRequestProperty("Authorization", "Bearer " + accessToken);
+			conn.setUseCaches(false);
 			return getResponseString(conn);
 		} catch (Exception e) {
 			return null;
@@ -5585,6 +5655,7 @@ public class Core {
 
 	/**
 	 * This method reads and returns the input string data
+	 * 
 	 * @param conn
 	 * @return
 	 * @throws IOException
@@ -5592,13 +5663,14 @@ public class Core {
 	private static String getResponseString(URLConnection conn) throws IOException {
 		Reader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
 		StringBuilder sb = new StringBuilder();
-		for (int c; (c = in.read()) >= 0; )
+		for (int c; (c = in.read()) >= 0;)
 			sb.append((char) c);
 		return sb.toString();
 	}
 
 	/**
 	 * This method reads and returns the input json data
+	 * 
 	 * @param value
 	 * @return
 	 */
@@ -5644,7 +5716,7 @@ public class Core {
 	/**
 	 *
 	 * @param value
-	 * json returned as String
+	 *              json returned as String
 	 * @return Boolean true if it's a JSONObject, false if it's an Array
 	 */
 	public static Boolean isJSONObject(String value) {
@@ -5659,7 +5731,7 @@ public class Core {
 	 * This method is used to get a JSONArray from a String argument
 	 *
 	 * @param value
-	 *            String argument
+	 *              String argument
 	 * @return JSONArray converts String argument to JSONArray
 	 */
 	public static JSONArray getJSONArrayResponse(String value) {
@@ -5670,5 +5742,69 @@ public class Core {
 			return null;
 		}
 		return jsonResponse;
+	}
+}
+
+/**
+ * HttpEntityWrapper with a progress callback
+ *
+ */
+
+class ProgressHttpEntityWrapper extends HttpEntityWrapper {
+
+	private final ProgressCallback progressCallback;
+	private String filename;
+
+	public static interface ProgressCallback {
+		public void progress(float progress, String filename);
+	}
+
+	public ProgressHttpEntityWrapper(final HttpEntity entity, String filename, final ProgressCallback progressCallback) {
+		super(entity);
+		this.progressCallback = progressCallback;
+		this.filename = filename;
+	}
+
+	@Override
+	public void writeTo(final OutputStream out) throws IOException {
+		this.wrappedEntity.writeTo(out instanceof ProgressFilterOutputStream ? out
+				: new ProgressFilterOutputStream(out, this.progressCallback, getContentLength(), this.filename));
+	}
+
+	static class ProgressFilterOutputStream extends FilterOutputStream {
+
+		private final ProgressCallback progressCallback;
+		private long transferred;
+		private long totalBytes;
+		private String filename;
+
+		ProgressFilterOutputStream(final OutputStream out, final ProgressCallback progressCallback,
+				final long totalBytes, String filename) {
+			super(out);
+			this.progressCallback = progressCallback;
+			this.transferred = 0;
+			this.totalBytes = totalBytes;
+			this.filename = filename;
+		}
+
+		@Override
+		public void write(final byte[] b, final int off, final int len) throws IOException {
+			// super.write(byte b[], int off, int len) calls write(int b)
+			out.write(b, off, len);
+			this.transferred += len;
+			this.progressCallback.progress(getCurrentProgress(), this.filename);
+		}
+
+		@Override
+		public void write(final int b) throws IOException {
+			out.write(b);
+			this.transferred++;
+			this.progressCallback.progress(getCurrentProgress(), this.filename);
+		}
+
+		private float getCurrentProgress() {
+			return ((float) this.transferred / this.totalBytes) * 100;
+		}
+
 	}
 }
