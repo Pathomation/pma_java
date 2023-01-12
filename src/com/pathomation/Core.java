@@ -4775,6 +4775,7 @@ public class Core {
 			String path = key.replace(mainDirectory, "").replaceAll("^\\+|\\+$/g", "")
 					.replaceAll("^/+|/+$/g", "");
 
+			isFirst = FilenameUtils.getName(path).toLowerCase().equals(FilenameUtils.getName(localSourceSlide).toLowerCase());
 			HashMap<String, String> fileObj = new HashMap<String, String>();
 			fileObj.put("Path", path);
 			fileObj.put("Length", Long.toString(s));
