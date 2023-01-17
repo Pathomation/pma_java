@@ -145,23 +145,6 @@ public class Core {
 	 * Readable bytes for upload and download methods. To integrate into the progress bar.
 	 */
 	public static BlockingQueue<Integer> bytes = new LinkedBlockingQueue<>();
-	public static BlockingQueue<String> remoteFile = new LinkedBlockingQueue<>();
-	public static BlockingQueue<String> localFile = new LinkedBlockingQueue<>();
-	public static BlockingQueue<String> fileSize = new LinkedBlockingQueue<>();
-
-	public static class TransferFileInfo {
-		public String remoteFile;
-		public String localFile;
-		public Long fileSize;
-
-		public TransferFileInfo(String remoteFile, String localFile, Long fileSize) {
-			this.remoteFile = remoteFile;
-			this.localFile = localFile;
-			this.fileSize = fileSize;
-		}
-	}
-
-	public static BlockingQueue<TransferFileInfo> transferFiles = new LinkedBlockingQueue<>();
 
 	/**
 	 * This method is used to determine whether the Java SDK runs in debugging mode
@@ -4927,29 +4910,27 @@ public class Core {
 	}
 
 	/**
-	 * * This method downloads single slides and slides with sub folders.
+	 * * This method downloads single slides and multi-assembled slides.
 	 *
 	 * Downloads a slide from a PMA.core server. Requires a PMA.start installation
-	 * @param  varargs 0:  mainSlideFile is full path of the slide.
-	 * @param varargs 1: saveDirectory  is a directory where slide will be saved.
-	 * @param varargs 2: sessionID
-	 * @param varargs 3: boolean
-	 * @return true if download is done
+	 * @param varargs 0:  mainSlideFile is full path of the slide. Is a required income parameter!
+	 * @param varargs 1: saveDirectory  is a directory where slide will be saved. Is a required income parameter!
+	 * @param varargs 2: sessionID Is a required income parameter!
+	 * @param varargs 3: is the callback to return readable bytes. Is NOT a required income parameter!
+	 * @param varargs 4: is boolean sortedFiles. False by default
+	 *                  to download multi-assembled  and single files or true to download sorted multi-assembled files one by one.
+	 *                Is NOT a required income parameter!
 	 * @throws Exception if incoming parameters are not valid
+	 * @return true if download is done.
 	 *
-	 * Call back methods of slide information for UI integration:
-	 * getRemoteFile(), getLocalFile(), getFileSize(), getBytes()
 	 */
-	public static boolean download(ProgressHttpEntityWrapper.ProgressCallback progressCallback, Object... varargs) throws Exception {
+	public static boolean download(Object... varargs) throws Exception {
 		String mainSlideFile = varargs.length > 0 ? (String) varargs[0] : null;
 		String saveDirectory = varargs.length > 1 ? (String) varargs[1] : null;
 		String sessionID = varargs.length > 2 ? (String) varargs[2] : null;
-		boolean sortedFiles = varargs.length > 3 && (boolean) varargs[3];
-		if (sortedFiles) {
-			out.println("true");
-		} else {
-			out.println("false");
-		}
+		ProgressHttpEntityWrapper.ProgressCallback progressCallback = varargs.length > 3
+				? (ProgressHttpEntityWrapper.ProgressCallback) varargs[3] : null;
+//		String relativePath = varargs.length > 4 ? (String) varargs[4] : null;
 		if (Objects.equals(mainSlideFile, "") || mainSlideFile == null) {
 			throw new NullPointerException("mainSlideFile is null");
 		}
@@ -4969,41 +4950,43 @@ public class Core {
 			HttpURLConnection con = null;
 			sessionID = sessionId(sessionID);
 			String server = pmaUrl(sessionID);
-			String relativePath = null;
-
-			if (!transferFiles.isEmpty())
-				transferFiles.clear();
-
+			File downloadFile = null;
+			long size = 0;
+			String mainFile = null;
+			String rootPath;
+			boolean relPathAndSizeChecked = false;
 			List<Map<String, String>> slideRelatedFiles = Core.enumerateFilesForSlidePMACore(mainSlideFile, sessionID);
 			for (Map<String, String> element : slideRelatedFiles) {
-				remoteFile.put(element.get("Path"));
-				fileSize.put(element.get("Size"));
-				String mainFile = slideRelatedFiles.get(slideRelatedFiles.size() - 1).get("Path").toString();
-				String rootPath = mainFile.substring(0, mainFile.lastIndexOf("/") + 1);
+				String relativePath = varargs.length > 4 ? (String) varargs[4] : null;
+				mainFile = slideRelatedFiles.get(slideRelatedFiles.size() - 1).get("Path").toString();
+				rootPath = mainFile.substring(0, mainFile.lastIndexOf("/") + 1);
+				if (relativePath == null) {
 				relativePath = element.get("Path").replace(rootPath, "");
-				localFile.put(saveDirectory + relativePath);
-				transferFiles.put(
-						new TransferFileInfo(
-								element.get("Path"),
-								saveDirectory + relativePath,
-								Long.valueOf(element.get("Size"))));
-
 				if (relativePath.contains("/")) {
-					String relativePathFrBnTillLtSlash = relativePath.substring(relativePath.indexOf(""), relativePath.lastIndexOf("/"));
-					String[] folderToCreate = relativePathFrBnTillLtSlash.split("/");
-					new File(saveDirectory + folderToCreate[0]).mkdir();
-					for (int i = 0; i < folderToCreate.length; i++) {
-						if (!folderToCreate[i].contains(folderToCreate[0])) {
-							new File(saveDirectory + folderToCreate[0] + "/" + folderToCreate[i]).mkdir();
+						String relativePathFrBnTillLtSlash = relativePath.substring(relativePath.indexOf(""), relativePath.lastIndexOf("/"));
+						String[] folderToCreate = relativePathFrBnTillLtSlash.split("/");
+						new File(saveDirectory + folderToCreate[0]).mkdir();
+						for (int i = 0; i < folderToCreate.length; i++) {
+							if (!folderToCreate[i].contains(folderToCreate[0])) {
+								new File(saveDirectory + folderToCreate[0] + "/" + folderToCreate[i]).mkdir();
+							}
+						}
+					}
+					size = Long.parseLong(element.get("Size"));
+					downloadFile = new File(saveDirectory + relativePath);
+				} else if (!relPathAndSizeChecked) {
+					for (Map<String, String> pathAndSize : slideRelatedFiles) {
+						//					relativePath = mainSlideFile.substring(mainSlideFile.lastIndexOf("/") + 1, mainSlideFile.lastIndexOf(""));
+						if (pathAndSize.get("Path").equals(rootPath + relativePath)) {
+							size = Long.parseLong(pathAndSize.get("Size"));
+							out.println(rootPath + relativePath + " else if");
+							out.println(size + " else if");
+							out.println();
+							downloadFile = new File(saveDirectory);
+							relPathAndSizeChecked = true;
 						}
 					}
 				}
-			}
-			for (Map<String, String> element : slideRelatedFiles) {
-				String mainFile = slideRelatedFiles.get(slideRelatedFiles.size() - 1).get("Path").toString();
-				String rootPath = mainFile.substring(0, mainFile.lastIndexOf("/") + 1);
-				relativePath = element.get("Path").replace(rootPath, "");
-				File downloadFile = new File(saveDirectory + relativePath);
 				try {
 					String url = server + "transfer/Download" + "?sessionId="
 							+ sessionID + "&image=" + PMA.pmaQ(mainSlideFile) + "&path=" + PMA.pmaQ(relativePath);
@@ -5042,35 +5025,22 @@ public class Core {
 						con.connect();
 					}
 					inputStreamToRequestBody = new DataInputStream(con.getInputStream());
-
-					progressCallback = new ProgressHttpEntityWrapper.ProgressCallback() {
-						@Override
-						public void progress(float progress, String filename) {
-							System.out.println(filename + ": " + progress);
-						}
-					};
-
 					outputStreamToLogFile = new FileOutputStream(downloadFile);
 					outputStreamToLogFile = progressCallback != null
 							? new ProgressHttpEntityWrapper.ProgressFilterOutputStream(
-									outputStreamToLogFile, progressCallback, Long.valueOf(element.get("Size")), relativePath)
+							outputStreamToLogFile, progressCallback, size, relativePath)
 							: outputStreamToLogFile;
-
 					byte[] buffer = new byte[4 * 1024];
 					int bytesRead = -1;
 					long totalBytesRead = 0;
 					while ((bytesRead = inputStreamToRequestBody.read(buffer)) != -1) {
-//						System.out.println(relativePath + " " + totalBytesRead);
-						bytes.put(bytesRead);
+						System.out.println(relativePath + " " + totalBytesRead);
+//						bytes.put(bytesRead);
+//						out.println(bytesRead + "  bytesRead");
 						outputStreamToLogFile.write(buffer, 0, bytesRead);
 						totalBytesRead += bytesRead;
 					}
-					inputStreamToRequestBody.close();
-					outputStreamToLogFile.flush();
-					outputStreamToLogFile.close();
-					con.getResponseCode();
-				}
-				catch (Exception e) {
+				} catch (Exception e) {
 					e.printStackTrace();
 					if (inputStreamToRequestBody != null) {
 						inputStreamToRequestBody.close();
@@ -5082,60 +5052,17 @@ public class Core {
 					con.getResponseCode();
 					return false;
 				}
+				if (relPathAndSizeChecked) {
+					break;
+				}
 			}
-			bytes.put(-1);
+			inputStreamToRequestBody.close();
+			outputStreamToLogFile.flush();
+			outputStreamToLogFile.close();
+			con.getResponseCode();
 		}
 		return true;
 	}
-
-	/**
-	 * This get-methods to read slide information(remote slide path, localPath, size, bytes) in the download process.
-	 * Designed to integrate the progress bar scale.
-	 * Must be used with download method in parallel threads.
-	 * When incoming bytes equal -1 download is finished.
-	 * @return total downloaded Bytes.
-	 */
-
-	public static int getBytes() {
-		try {
-			return bytes.take();
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	public static String getRemoteFile() {
-		try {
-			return remoteFile.take();
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	public static String getLocalFile() {
-		try {
-			return localFile.take();
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	public static String getFileSize() {
-		try {
-			return fileSize.take();
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	public static TransferFileInfo getTransferFileInfo() {
-		try {
-			return transferFiles.take();
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
 
 	/**
 	 * This method returns a boolean result based on the input parameters.
