@@ -4916,13 +4916,27 @@ public class Core {
 	 * @param varargs 0:  mainSlideFile is full path of the slide. Is a required income parameter!
 	 * @param varargs 1: saveDirectory  is a directory where slide will be saved. Is a required income parameter!
 	 * @param varargs 2: sessionID Is a required income parameter!
-	 * @param varargs 3: is the callback to return readable bytes. Is NOT a required income parameter!
-	 * @param varargs 4: is boolean sortedFiles. False by default
-	 *                  to download multi-assembled  and single files or true to download sorted multi-assembled files one by one.
+	 * @param varargs 3: is the callback to return readable bytes.
+	 *                   Is NOT a required income parameter if there is no fourth relativePath parameter after it.
+	 *                   If relativePath is present then the callback is required or null.
+	 * @param varargs 4: is relativePath used when downloading files that include a folder and subfolders with compound files one by one.
+	 *                In this case, the folders and subfolders must be prepared in advance before the download method,
+	 *                and the saveDirectory parameter must be the full path including the folders, subfolders, file, and extension.
 	 *                Is NOT a required income parameter!
 	 * @throws Exception if incoming parameters are not valid
 	 * @return true if download is done.
 	 *
+	 * Callback usage model:
+	 * ProgressHttpEntityWrapper.ProgressCallback progressCallback = new ProgressHttpEntityWrapper.ProgressCallback() {
+	 *             @Override
+	 *             public void progress(long bytesRead, long transferred, long totalBytes, String filename) {
+	 *                 /* bytesRead - readable bytes
+	 *                 /* transferred - total in %
+	 *                 /* totalBytes - += bytesRead
+	 *                 /* filename - name of downloaded file
+	 *             }
+	 *         };
+	 *		Core.download(***);
 	 */
 	public static boolean download(Object... varargs) throws Exception {
 		String mainSlideFile = varargs.length > 0 ? (String) varargs[0] : null;
@@ -4930,7 +4944,6 @@ public class Core {
 		String sessionID = varargs.length > 2 ? (String) varargs[2] : null;
 		ProgressHttpEntityWrapper.ProgressCallback progressCallback = varargs.length > 3
 				? (ProgressHttpEntityWrapper.ProgressCallback) varargs[3] : null;
-//		String relativePath = varargs.length > 4 ? (String) varargs[4] : null;
 		if (Objects.equals(mainSlideFile, "") || mainSlideFile == null) {
 			throw new NullPointerException("mainSlideFile is null");
 		}
@@ -4976,12 +4989,8 @@ public class Core {
 					downloadFile = new File(saveDirectory + relativePath);
 				} else if (!relPathAndSizeChecked) {
 					for (Map<String, String> pathAndSize : slideRelatedFiles) {
-						//					relativePath = mainSlideFile.substring(mainSlideFile.lastIndexOf("/") + 1, mainSlideFile.lastIndexOf(""));
 						if (pathAndSize.get("Path").equals(rootPath + relativePath)) {
 							size = Long.parseLong(pathAndSize.get("Size"));
-							out.println(rootPath + relativePath + " else if");
-							out.println(size + " else if");
-							out.println();
 							downloadFile = new File(saveDirectory);
 							relPathAndSizeChecked = true;
 						}
@@ -5035,8 +5044,6 @@ public class Core {
 					long totalBytesRead = 0;
 					while ((bytesRead = inputStreamToRequestBody.read(buffer)) != -1) {
 						System.out.println(relativePath + " " + totalBytesRead);
-//						bytes.put(bytesRead);
-//						out.println(bytesRead + "  bytesRead");
 						outputStreamToLogFile.write(buffer, 0, bytesRead);
 						totalBytesRead += bytesRead;
 					}
