@@ -30,10 +30,7 @@ import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.client.methods.*;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.entity.mime.FormBodyPart;
 import org.apache.http.entity.mime.HttpMultipartMode;
@@ -144,7 +141,7 @@ public class Core {
 	/**
 	 * Readable bytes for upload and download methods. To integrate into the progress bar.
 	 */
-	public static BlockingQueue<Integer> bytes = new LinkedBlockingQueue<>();
+	public static BlockingQueue<Long> bytes = new LinkedBlockingQueue<>();
 
 	/**
 	 * This method is used to determine whether the Java SDK runs in debugging mode
@@ -4722,7 +4719,7 @@ public class Core {
 	 * @return true if upload is done
 	 */
 
-	public static boolean upload(String localSourceSlide, String targetFolder, String sessionID,
+	public static boolean uploadX(String localSourceSlide, String targetFolder, String sessionID,
 								 ProgressHttpEntityWrapper.ProgressCallback progressCallback)
 			throws Exception {
 		sessionID = sessionId(sessionID);
@@ -4767,7 +4764,6 @@ public class Core {
 			if (s <= 0) {
 				continue;
 			}
-
 			String path = key.replace(mainDirectory, "").replaceAll("^\\+|\\+$/g", "")
 					.replaceAll("^/+|/+$/g", "");
 			HashMap<String, String> fileObj = new HashMap<String, String>();
@@ -4831,10 +4827,8 @@ public class Core {
 				// Amazon upload
 				JSONArray jsonarray = uploadHeader.getJSONArray("Urls");
 				uploadUrl = jsonarray.getString(i);
-
 				request = (HttpRequestBase) new HttpPut(uploadUrl);
 				request.setHeader("Content-Type", "multipart/form-data");
-
 				if (progressCallback == null) {
 					((HttpPut) request).setEntity(entity);
 				} else {
@@ -4844,8 +4838,6 @@ public class Core {
 				// Azure upload
 				JSONArray jsonarray = uploadHeader.getJSONArray("Urls");
 				uploadUrl = jsonarray.getString(i);
-
-
 				request = (HttpRequestBase) new HttpPut(uploadUrl);
 				if (progressCallback == null) {
 					((HttpPut) request).setEntity(entity);
@@ -4866,6 +4858,7 @@ public class Core {
 				} else {
 					((HttpPost) request).setEntity(new ProgressHttpEntityWrapper(entity, entry.get("Path").toString(), progressCallback));
 				}
+
 			}
 
 			HttpRequestInterceptor requestInterceptor = new HttpRequestInterceptor() {
@@ -4889,7 +4882,6 @@ public class Core {
 					.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE).disableAutomaticRetries().build();
 
 			HttpResponse response = client.execute(request);
-
 			String uploadResult = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8);
 			i++;
 		}
@@ -4905,8 +4897,306 @@ public class Core {
 			String result = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8);
 			throw new Exception("Error uploading" + result);
 		}
-
 		return true;
+	}
+
+	/**
+	 *
+	 */
+	public static boolean upload(String localSourceSlide, String targetFolder, String sessionID,
+								 ProgressHttpEntityWrapper.ProgressCallback progressCallback, boolean transfer)
+			throws Exception {
+		sessionID = sessionId(sessionID);
+		if (!pmaIsLite()) {
+			throw new RuntimeException("No PMA.start found on localhost. Are you sure it is running?");
+		}
+		if (localSourceSlide == null) {
+			throw new RuntimeException("Slide name is empty");
+		}
+		if (targetFolder == null) {
+			throw new RuntimeException("Target destination  cannot be empty");
+		}
+		if (targetFolder.startsWith("/")) {
+			targetFolder = targetFolder.substring(1);
+		}
+		for (String slide : Core.getSlides(targetFolder, sessionID)) {
+			if (slide.equals(targetFolder + Core.getSlideFileName(localSourceSlide))) {
+				throw new Exception("The file: ===" +  Core.getSlideFileName(localSourceSlide) +"=== with the same name and extension already exists in the target folder: " + targetFolder);
+			}
+		}
+		Map<String, Map<String, String>> files = Core.getFilesForSlide(localSourceSlide, pmaCoreLiteSessionID);
+
+		String mainDirectory = "";
+		for (Map.Entry<String, Map<String, String>> entry : files.entrySet()) {
+			String key = entry.getKey();
+			Map<String, String> value = entry.getValue();
+			File file = new File(key);
+			String md = file.getParent();
+
+			if (mainDirectory.length() == 0 || md.length() < mainDirectory.length()) {
+				mainDirectory = md;
+			}
+		}
+
+		mainDirectory = mainDirectory.replace("\\", "/");
+
+		List<HashMap<String, String>> uploadFiles = new ArrayList<HashMap<String, String>>();
+		for (Map.Entry<String, Map<String, String>> entry : files.entrySet()) {
+			String key = entry.getKey();
+			Map<String, String> value = entry.getValue();
+			long s = (new File(key)).length();
+			if (s <= 0) {
+				continue;
+			}
+			String path = key.replace(mainDirectory, "").replaceAll("^\\+|\\+$/g", "")
+					.replaceAll("^/+|/+$/g", "");
+			HashMap<String, String> fileObj = new HashMap<String, String>();
+			fileObj.put("Path", path);
+			fileObj.put("Length", Long.toString(s));
+			fileObj.put("IsMain", Boolean.toString(path.equals(Core.getSlideFileName(localSourceSlide))));
+			fileObj.put("FullPath", key);
+			uploadFiles.add(fileObj);
+		}
+
+		JSONObject data = new JSONObject();
+		data.put("Path", targetFolder);
+		data.put("Files", new JSONArray(uploadFiles));
+		String url = pmaUrl(sessionID) + "transfer/Upload?sessionID=" + PMA.pmaQ((sessionID));
+
+		URL urlResource = new URL(url);
+		URLConnection con = urlResource.openConnection();
+		HttpURLConnection http = (HttpURLConnection) con;
+		http.setRequestMethod("POST");
+		http.setDoOutput(true);
+
+		byte[] out = data.toString().getBytes(StandardCharsets.UTF_8);
+		int length = out.length;
+
+		http.setFixedLengthStreamingMode(length);
+		http.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+		http.connect();
+		try (OutputStream os = http.getOutputStream()) {
+			os.write(out);
+		}
+
+		int rCode = http.getResponseCode();
+		if (rCode != HttpURLConnection.HTTP_OK) {
+			throw new Exception("Error uploading file to PMA.core");
+		}
+
+		String jsonString = PMA.getJSONAsStringBuffer(http).toString();
+		if (!PMA.isJSONObject(jsonString)) {
+			throw new Exception("Error uploading " + localSourceSlide + " to PMA.core");
+		}
+
+		JSONObject uploadHeader = PMA.getJSONObjectResponse(jsonString);
+		int i = 0;
+		if (!transfer)  {
+			for (HashMap<String, String> entry : uploadFiles) {
+				File file = new File(entry.get("FullPath"));
+				String fileName = FilenameUtils.getName(entry.get("Path"));
+
+				List<FormBodyPart> list = new ArrayList<FormBodyPart>();
+				list.add(new FormBodyPart(fileName, new FileBody(file)));
+				HttpCustomMultipart form = new HttpCustomMultipart("form-data", null, "----", list);
+				HttpEntity entity = new MultipartCustomEntity(form, "", form.getTotalLength());
+
+				String uploadUrl = pmaUrl(sessionID) + "transfer/Upload/" + uploadHeader.get("Id").toString()
+						+ "?sessionID="
+						+ PMA.pmaQ((sessionID)) + "&path=" +
+						PMA.pmaQ(entry.get("Path"));
+
+				HttpRequestBase request = null;
+
+				if (uploadHeader.getInt("UploadType") == 1) {
+					// Amazon upload
+					JSONArray jsonarray = uploadHeader.getJSONArray("Urls");
+					uploadUrl = jsonarray.getString(i);
+					request = (HttpRequestBase) new HttpPut(uploadUrl);
+					request.setHeader("Content-Type", "multipart/form-data");
+					if (progressCallback == null) {
+						((HttpPut) request).setEntity(entity);
+					} else {
+						((HttpPut) request).setEntity(new ProgressHttpEntityWrapper(entity, entry.get("Path").toString(), progressCallback));
+					}
+				} else if (uploadHeader.getInt("UploadType") == 2) {
+					// Azure upload
+					JSONArray jsonarray = uploadHeader.getJSONArray("Urls");
+					uploadUrl = jsonarray.getString(i);
+					request = (HttpRequestBase) new HttpPut(uploadUrl);
+					if (progressCallback == null) {
+						((HttpPut) request).setEntity(entity);
+					} else {
+						((HttpPut) request).setEntity(new ProgressHttpEntityWrapper(entity, entry.get("Path").toString(), progressCallback));
+					}
+					request.setHeader("x-ms-blob-type", "BlockBlob");
+					request.setHeader("Content-Type", "multipart/form-data");
+				} else {
+					entity = MultipartEntityBuilder.create()
+							.setMode(HttpMultipartMode.STRICT)
+							.addPart(fileName, new FileBody(file))
+							.build();
+
+					request = (HttpRequestBase) new HttpPost(uploadUrl);
+					if (progressCallback == null) {
+						((HttpPost) request).setEntity(entity);
+					} else {
+						((HttpPost) request).setEntity(new ProgressHttpEntityWrapper(entity, entry.get("Path").toString(), progressCallback));
+					}
+				}
+
+				HttpRequestInterceptor requestInterceptor = new HttpRequestInterceptor() {
+					@Override
+					public void process(HttpRequest request, HttpContext context) throws HttpException, IOException {
+						if (uploadHeader.getInt("UploadType") == 0){
+							return;
+						}
+
+						if (request.containsHeader("Content-Length")) {
+							request.removeHeaders("Content-Length");
+						}
+
+						request.addHeader("Content-Length", entry.get("Length").toString());
+					}
+				};
+
+				HttpClient client = HttpClientBuilder.create()
+						.addInterceptorLast(requestInterceptor)
+						.disableContentCompression()
+						.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE).disableAutomaticRetries().build();
+
+				HttpResponse response = client.execute(request);
+
+				String uploadResult = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8);
+				i++;
+			}
+
+			String finalizeUrl = pmaUrl(sessionID) + "transfer/Upload/" + uploadHeader.get("Id").toString() + "?sessionID="
+					+ PMA.pmaQ(sessionID);
+			HttpGet finalizeRequest = new HttpGet(finalizeUrl);
+			HttpClient client = HttpClientBuilder.create().setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE).build();
+			HttpResponse response = client.execute(finalizeRequest);
+			int responseCode = response.getStatusLine().getStatusCode();
+			if (responseCode < 200 || responseCode >= 300) {
+				String result = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8);
+				throw new Exception("Error uploading" + result);
+			}
+		}
+		else {
+			for (HashMap<String, String> entry : uploadFiles) {
+				File file = new File(entry.get("FullPath"));
+				String fileName = FilenameUtils.getName(entry.get("Path"));
+				List<FormBodyPart> list = new ArrayList<FormBodyPart>();
+				list.add(new FormBodyPart(fileName, new FileBody(file)));
+				HttpCustomMultipart form = new HttpCustomMultipart("form-data", null, "----", list);
+				HttpEntity entity = new MultipartCustomEntity(form, "", form.getTotalLength());
+
+				String uploadUrl = pmaUrl(sessionID) + "transfer/Upload/" + uploadHeader.get("Id").toString()
+						+ "?sessionID="
+						+ PMA.pmaQ((sessionID)) + "&path=" +
+						PMA.pmaQ(entry.get("Path"));
+
+
+				JSONArray jsonarray = uploadHeader.getJSONArray("Urls");
+				uploadUrl = jsonarray.getString(i);
+				System.out.println(uploadUrl);
+				uploadTransfer(String.valueOf(uploadHeader.getInt("UploadType")), file, fileName, uploadUrl, sessionID,
+						progressCallback);
+			}
+		}
+		return true;
+	}
+
+	public static boolean uploadTransfer(String uploadID, File uploadFile, String relativePath, String s3URL, String sessionID,
+									   ProgressHttpEntityWrapper.ProgressCallback progressCallback) throws Exception {
+		out.println(uploadID + " " + uploadFile.getName() + " " + relativePath + " " + s3URL);
+		System.out.println(uploadFile + "  uploadFile ***");
+		System.out.println(relativePath +  "   relativePath ***");
+
+		// test++;
+		DataOutputStream outputStreamToRequestBody = null;
+		FileInputStream inputStreamToLogFile = null;
+		HttpURLConnection con = null;
+		try {
+			URL urlResource = new URL(s3URL);
+			out.println(urlResource);
+			if (s3URL.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("PUT");
+			con.setConnectTimeout(0); // infinite timeout
+			con.setReadTimeout(0); // infinite timeout
+			con.setRequestProperty("Connection", "Keep-Alive");
+			con.setRequestProperty("Cache-Control", "no-cache");
+			con.setRequestProperty("Content-Length", String.valueOf(uploadFile.length()));
+			con.setDoOutput(true);
+			con.setUseCaches(false);
+			con.setFixedLengthStreamingMode(uploadFile.length());
+			con.connect();
+			outputStreamToRequestBody = new DataOutputStream(con.getOutputStream());
+			inputStreamToLogFile = new FileInputStream(uploadFile);
+//			outputStreamToRequestBody = progressCallback != null
+//					? new ProgressHttpEntityWrapper.ProgressFilterOutputStream(
+//					outputStreamToRequestBody, progressCallback, size, relativePath)
+//					: outputStreamToRequestBody;
+			byte[] buffer = new byte[4 * 1024];
+			int bytesRead = -1;
+			long totalBytesRead = 0;
+			while ((bytesRead = inputStreamToLogFile.read(buffer)) != -1) {
+				bytes.put((long) bytesRead);
+				System.out.println(relativePath + " " + totalBytesRead);
+				outputStreamToRequestBody.write(buffer, 0, bytesRead);
+				totalBytesRead += bytesRead;
+			}
+			outputStreamToRequestBody.flush();
+			outputStreamToRequestBody.close();
+			inputStreamToLogFile.close();
+			con.getResponseMessage();
+			con.disconnect();
+//			return true;
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (outputStreamToRequestBody != null) {
+				outputStreamToRequestBody.flush();
+				outputStreamToRequestBody.close();
+			}
+			if (inputStreamToLogFile != null) {
+				inputStreamToLogFile.close();
+			}
+			con.getResponseCode();
+			return false;
+		}
+		try {
+			out.println(pmaUrl(sessionID));
+			String url = (pmaUrl(sessionID).endsWith("/") ? pmaUrl(sessionID) : pmaUrl(sessionID) + "/") + "transfer/Upload/" + uploadID + "?sessionID="
+					+ sessionID;
+			URL urlResource = new URL(url);
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("GET");
+			con.setRequestProperty("Accept", "application/json");
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
+			if (PMA.isJSONObject(jsonString)) {
+				JSONObject jsonResponse = PMA.getJSONObjectResponse(jsonString);
+				JSONArray jsonArray = jsonResponse.optJSONArray("Files");
+				for (int i = 0; i < jsonArray.length(); i++) {
+					if (jsonArray.getJSONObject(i).optString("Path").equals(relativePath)) {
+						return jsonArray.getJSONObject(i).optBoolean("Complete");
+					}
+				}
+				return false;
+			} else {
+				return false;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
 	}
 
 	/**
@@ -5043,6 +5333,7 @@ public class Core {
 					int bytesRead = -1;
 					long totalBytesRead = 0;
 					while ((bytesRead = inputStreamToRequestBody.read(buffer)) != -1) {
+						bytes.put((long) bytesRead);
 						System.out.println(relativePath + " " + totalBytesRead);
 						outputStreamToLogFile.write(buffer, 0, bytesRead);
 						totalBytesRead += bytesRead;
@@ -5069,6 +5360,18 @@ public class Core {
 			con.getResponseCode();
 		}
 		return true;
+	}
+
+	/**
+	 * This method is for reading bytes in real-time for download and upload methods.
+	 * @return bytes
+	 */
+	public static Long readBytes() {
+		try {
+			return bytes.take();
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	/**
