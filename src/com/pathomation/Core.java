@@ -22,6 +22,8 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
@@ -4941,6 +4943,7 @@ public class Core {
 		mainDirectory = mainDirectory.replace("\\", "/");
 
 		List<HashMap<String, String>> uploadFiles = new ArrayList<HashMap<String, String>>();
+
 		for (Map.Entry<String, Map<String, String>> entry : files.entrySet()) {
 			String key = entry.getKey();
 			Map<String, String> value = entry.getValue();
@@ -4951,6 +4954,7 @@ public class Core {
 			String path = key.replace(mainDirectory, "").replaceAll("^\\+|\\+$/g", "")
 					.replaceAll("^/+|/+$/g", "");
 			HashMap<String, String> fileObj = new HashMap<String, String>();
+			fileObj = new HashMap<String, String>();
 			fileObj.put("Path", path);
 			fileObj.put("Length", Long.toString(s));
 			fileObj.put("IsMain", Boolean.toString(path.equals(Core.getSlideFileName(localSourceSlide))));
@@ -4962,7 +4966,6 @@ public class Core {
 		data.put("Path", targetFolder);
 		data.put("Files", new JSONArray(uploadFiles));
 		String url = pmaUrl(sessionID) + "transfer/Upload?sessionID=" + PMA.pmaQ((sessionID));
-
 		URL urlResource = new URL(url);
 		URLConnection con = urlResource.openConnection();
 		HttpURLConnection http = (HttpURLConnection) con;
@@ -4991,6 +4994,7 @@ public class Core {
 
 		JSONObject uploadHeader = PMA.getJSONObjectResponse(jsonString);
 		int i = 0;
+		String uploadUrl;
 		if (!transfer)  {
 			for (HashMap<String, String> entry : uploadFiles) {
 				File file = new File(entry.get("FullPath"));
@@ -5001,7 +5005,7 @@ public class Core {
 				HttpCustomMultipart form = new HttpCustomMultipart("form-data", null, "----", list);
 				HttpEntity entity = new MultipartCustomEntity(form, "", form.getTotalLength());
 
-				String uploadUrl = pmaUrl(sessionID) + "transfer/Upload/" + uploadHeader.get("Id").toString()
+				uploadUrl = pmaUrl(sessionID) + "transfer/Upload/" + uploadHeader.get("Id").toString()
 						+ "?sessionID="
 						+ PMA.pmaQ((sessionID)) + "&path=" +
 						PMA.pmaQ(entry.get("Path"));
@@ -5070,51 +5074,39 @@ public class Core {
 				String uploadResult = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8);
 				i++;
 			}
-
-			String finalizeUrl = pmaUrl(sessionID) + "transfer/Upload/" + uploadHeader.get("Id").toString() + "?sessionID="
-					+ PMA.pmaQ(sessionID);
-			HttpGet finalizeRequest = new HttpGet(finalizeUrl);
-			HttpClient client = HttpClientBuilder.create().setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE).build();
-			HttpResponse response = client.execute(finalizeRequest);
-			int responseCode = response.getStatusLine().getStatusCode();
-			if (responseCode < 200 || responseCode >= 300) {
-				String result = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8);
-				throw new Exception("Error uploading" + result);
-			}
 		}
 		else {
+			JSONObject jsonResponse = PMA.getJSONObjectResponse(generateUploadID(sessionID, data));
+			System.out.println(jsonResponse.get("Id"));
 			for (HashMap<String, String> entry : uploadFiles) {
 				File file = new File(entry.get("FullPath"));
 				String fileName = FilenameUtils.getName(entry.get("Path"));
-				List<FormBodyPart> list = new ArrayList<FormBodyPart>();
-				list.add(new FormBodyPart(fileName, new FileBody(file)));
-				HttpCustomMultipart form = new HttpCustomMultipart("form-data", null, "----", list);
-				HttpEntity entity = new MultipartCustomEntity(form, "", form.getTotalLength());
-
-				String uploadUrl = pmaUrl(sessionID) + "transfer/Upload/" + uploadHeader.get("Id").toString()
-						+ "?sessionID="
-						+ PMA.pmaQ((sessionID)) + "&path=" +
-						PMA.pmaQ(entry.get("Path"));
-
-
 				JSONArray jsonarray = uploadHeader.getJSONArray("Urls");
 				uploadUrl = jsonarray.getString(i);
 				System.out.println(uploadUrl);
-				uploadTransfer(String.valueOf(uploadHeader.getInt("UploadType")), file, fileName, uploadUrl, sessionID,
-						progressCallback);
+				System.out.println(uploadHeader.getInt("UploadType"));
+				uploadTransfer(jsonResponse.get("Id").toString(), String.valueOf(uploadHeader.getInt("UploadType")),
+						file, fileName, uploadUrl, sessionID, progressCallback);
+				i++;
 			}
+		}
+		String finalizeUrl = pmaUrl(sessionID) + "transfer/Upload/" + uploadHeader.get("Id").toString() + "?sessionID="
+				+ PMA.pmaQ(sessionID);
+		HttpGet finalizeRequest = new HttpGet(finalizeUrl);
+		HttpClient client = HttpClientBuilder.create().setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE).build();
+		HttpResponse response = client.execute(finalizeRequest);
+		int responseCode = response.getStatusLine().getStatusCode();
+		if (responseCode < 200 || responseCode >= 300) {
+			String result = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8);
+			throw new Exception("Error uploading" + result);
 		}
 		return true;
 	}
 
-	public static boolean uploadTransfer(String uploadID, File uploadFile, String relativePath, String s3URL, String sessionID,
-									   ProgressHttpEntityWrapper.ProgressCallback progressCallback) throws Exception {
-		out.println(uploadID + " " + uploadFile.getName() + " " + relativePath + " " + s3URL);
-		System.out.println(uploadFile + "  uploadFile ***");
-		System.out.println(relativePath +  "   relativePath ***");
-
-		// test++;
-		DataOutputStream outputStreamToRequestBody = null;
+	public static boolean uploadTransfer(String uploadID, String uploadType, File uploadFile, String relativePath,
+										 String s3URL, String sessionID,
+										 ProgressHttpEntityWrapper.ProgressCallback progressCallback) throws Exception {
+		OutputStream outputStreamToRequestBody = null;
 		FileInputStream inputStreamToLogFile = null;
 		HttpURLConnection con = null;
 		try {
@@ -5137,25 +5129,22 @@ public class Core {
 			con.connect();
 			outputStreamToRequestBody = new DataOutputStream(con.getOutputStream());
 			inputStreamToLogFile = new FileInputStream(uploadFile);
-//			outputStreamToRequestBody = progressCallback != null
-//					? new ProgressHttpEntityWrapper.ProgressFilterOutputStream(
-//					outputStreamToRequestBody, progressCallback, size, relativePath)
-//					: outputStreamToRequestBody;
+
 			byte[] buffer = new byte[4 * 1024];
 			int bytesRead = -1;
 			long totalBytesRead = 0;
 			while ((bytesRead = inputStreamToLogFile.read(buffer)) != -1) {
 				bytes.put((long) bytesRead);
-				System.out.println(relativePath + " " + totalBytesRead);
 				outputStreamToRequestBody.write(buffer, 0, bytesRead);
 				totalBytesRead += bytesRead;
+				System.out.println(relativePath + " " + totalBytesRead);
 			}
 			outputStreamToRequestBody.flush();
 			outputStreamToRequestBody.close();
 			inputStreamToLogFile.close();
 			con.getResponseMessage();
 			con.disconnect();
-//			return true;
+			return checkUploadFile(sessionID, uploadID, relativePath);
 		} catch (Exception e) {
 			e.printStackTrace();
 			if (outputStreamToRequestBody != null) {
@@ -5168,11 +5157,13 @@ public class Core {
 			con.getResponseCode();
 			return false;
 		}
+	}
+
+	private static boolean checkUploadFile(String sessionID, String uploadID, String relativePath) {
 		try {
-			out.println(pmaUrl(sessionID));
-			String url = (pmaUrl(sessionID).endsWith("/") ? pmaUrl(sessionID) : pmaUrl(sessionID) + "/") + "transfer/Upload/" + uploadID + "?sessionID="
-					+ sessionID;
+			String url = (pmaUrl(sessionID).endsWith("/") ? pmaUrl(sessionID) : pmaUrl(sessionID) + "/") + "transfer/Upload/" + uploadID + "?sessionID=" + sessionID;
 			URL urlResource = new URL(url);
+			HttpURLConnection con;
 			if (url.startsWith("https")) {
 				con = (HttpsURLConnection) urlResource.openConnection();
 			} else {
@@ -5196,6 +5187,34 @@ public class Core {
 		} catch (Exception e) {
 			e.printStackTrace();
 			return false;
+		}
+	}
+
+	private static String generateUploadID(String sessionID, JSONObject jsonResponse) {
+		String json = String.valueOf(jsonResponse);
+		try {
+			String url = (pmaUrl(sessionID).endsWith("/") ? pmaUrl(sessionID) : pmaUrl(sessionID) + "/") + "transfer/Upload?sessionID=" + sessionID;
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestProperty("Content-Length", String.valueOf(json.getBytes("UTF-8")));
+			con.setRequestMethod("POST");
+			con.setRequestProperty("Accept", "application/json");
+			con.setRequestProperty("Content-Type", "application/json");
+			con.setUseCaches(false);
+			con.setDoOutput(true);
+			// we set the json string as the request body
+			OutputStream os = con.getOutputStream();
+			os.write(json.getBytes("UTF-8"));
+			os.close();
+			return PMA.getJSONAsStringBuffer(con).toString();
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
 		}
 	}
 
