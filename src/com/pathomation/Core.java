@@ -5128,8 +5128,11 @@ public class Core {
 			con.setFixedLengthStreamingMode(uploadFile.length());
 			con.connect();
 			outputStreamToRequestBody = new DataOutputStream(con.getOutputStream());
+			outputStreamToRequestBody = progressCallback != null
+					? new ProgressHttpEntityWrapper.ProgressFilterOutputStream(
+					outputStreamToRequestBody, progressCallback, uploadFile.length(), relativePath)
+					: outputStreamToRequestBody;
 			inputStreamToLogFile = new FileInputStream(uploadFile);
-
 			byte[] buffer = new byte[4 * 1024];
 			int bytesRead = -1;
 			long totalBytesRead = 0;
@@ -5144,6 +5147,7 @@ public class Core {
 			inputStreamToLogFile.close();
 			con.getResponseMessage();
 			con.disconnect();
+//			return true;
 			return checkUploadFile(sessionID, uploadID, relativePath);
 		} catch (Exception e) {
 			e.printStackTrace();
