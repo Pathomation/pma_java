@@ -2,6 +2,7 @@ package com.pathomation;
 
 import java.awt.Image;
 import java.io.*;
+import java.lang.reflect.Array;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
@@ -53,6 +54,8 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
 import static java.lang.System.out;
+import static java.util.Comparator.comparingInt;
+import static java.util.Map.Entry.comparingByValue;
 
 /**
  * <h1>Java SDK</h1>
@@ -4906,96 +4909,111 @@ public class Core {
 	 *
 	 */
 	public static boolean upload(String localSourceSlide, String targetFolder, String sessionID,
-								 ProgressHttpEntityWrapper.ProgressCallback progressCallback, boolean transfer)
+								 ProgressHttpEntityWrapper.ProgressCallback progressCallback, Object... varargs)
 			throws Exception {
 		sessionID = sessionId(sessionID);
-		if (!pmaIsLite()) {
-			throw new RuntimeException("No PMA.start found on localhost. Are you sure it is running?");
-		}
-		if (localSourceSlide == null) {
-			throw new RuntimeException("Slide name is empty");
-		}
-		if (targetFolder == null) {
-			throw new RuntimeException("Target destination  cannot be empty");
-		}
-		if (targetFolder.startsWith("/")) {
-			targetFolder = targetFolder.substring(1);
-		}
-		for (String slide : Core.getSlides(targetFolder, sessionID)) {
-			if (slide.equals(targetFolder + Core.getSlideFileName(localSourceSlide))) {
-				throw new Exception("The file: ===" +  Core.getSlideFileName(localSourceSlide) +"=== with the same name and extension already exists in the target folder: " + targetFolder);
+
+		if (varargs == null) {
+			if (!pmaIsLite()) {
+				throw new RuntimeException("No PMA.start found on localhost. Are you sure it is running?");
 			}
-		}
-		Map<String, Map<String, String>> files = Core.getFilesForSlide(localSourceSlide, pmaCoreLiteSessionID);
-
-		String mainDirectory = "";
-		for (Map.Entry<String, Map<String, String>> entry : files.entrySet()) {
-			String key = entry.getKey();
-			Map<String, String> value = entry.getValue();
-			File file = new File(key);
-			String md = file.getParent();
-
-			if (mainDirectory.length() == 0 || md.length() < mainDirectory.length()) {
-				mainDirectory = md;
+			if (localSourceSlide == null) {
+				throw new RuntimeException("Slide name is empty");
 			}
-		}
-
-		mainDirectory = mainDirectory.replace("\\", "/");
-
-		List<HashMap<String, String>> uploadFiles = new ArrayList<HashMap<String, String>>();
-
-		for (Map.Entry<String, Map<String, String>> entry : files.entrySet()) {
-			String key = entry.getKey();
-			Map<String, String> value = entry.getValue();
-			long s = (new File(key)).length();
-			if (s <= 0) {
-				continue;
+			if (targetFolder == null) {
+				throw new RuntimeException("Target destination  cannot be empty");
 			}
-			String path = key.replace(mainDirectory, "").replaceAll("^\\+|\\+$/g", "")
-					.replaceAll("^/+|/+$/g", "");
-			HashMap<String, String> fileObj = new HashMap<String, String>();
-			fileObj = new HashMap<String, String>();
-			fileObj.put("Path", path);
-			fileObj.put("Length", Long.toString(s));
-			fileObj.put("IsMain", Boolean.toString(path.equals(Core.getSlideFileName(localSourceSlide))));
-			fileObj.put("FullPath", key);
-			uploadFiles.add(fileObj);
-		}
+			if (targetFolder.startsWith("/")) {
+				targetFolder = targetFolder.substring(1);
+			}
+			for (String slide : Core.getSlides(targetFolder, sessionID)) {
+				if (slide.equals(targetFolder + Core.getSlideFileName(localSourceSlide))) {
+					throw new Exception("The file: ===" +  Core.getSlideFileName(localSourceSlide) +"=== with the same name and extension already exists in the target folder: " + targetFolder);
+				}
+			}
+			Map<String, Map<String, String>> files = Core.getFilesForSlide(localSourceSlide, pmaCoreLiteSessionID);
 
-		JSONObject data = new JSONObject();
-		data.put("Path", targetFolder);
-		data.put("Files", new JSONArray(uploadFiles));
-		String url = pmaUrl(sessionID) + "transfer/Upload?sessionID=" + PMA.pmaQ((sessionID));
-		URL urlResource = new URL(url);
-		URLConnection con = urlResource.openConnection();
-		HttpURLConnection http = (HttpURLConnection) con;
-		http.setRequestMethod("POST");
-		http.setDoOutput(true);
+			String mainDirectory = "";
+			for (Map.Entry<String, Map<String, String>> entry : files.entrySet()) {
+				String key = entry.getKey();
+				Map<String, String> value = entry.getValue();
+				File file = new File(key);
+				String md = file.getParent();
 
-		byte[] out = data.toString().getBytes(StandardCharsets.UTF_8);
-		int length = out.length;
+				if (mainDirectory.length() == 0 || md.length() < mainDirectory.length()) {
+					mainDirectory = md;
+				}
+			}
 
-		http.setFixedLengthStreamingMode(length);
-		http.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-		http.connect();
-		try (OutputStream os = http.getOutputStream()) {
-			os.write(out);
-		}
+			mainDirectory = mainDirectory.replace("\\", "/");
+			List<HashMap<String, String>> uploadFiles = new ArrayList<HashMap<String, String>>();
+			Map<String,Long> hm = new HashMap<>();
+			LinkedHashMap<String, Long> reverseSortedMap = new LinkedHashMap<>();
+			for (Map.Entry<String, Map<String, String>> entry : files.entrySet()) {
+				String key = entry.getKey();
+				Map<String, String> value = entry.getValue();
+				long s = (new File(key)).length();
+				if (s <= 0) {
+					continue;
+				}
+				hm.put(key, s);
+			}
 
-		int rCode = http.getResponseCode();
-		if (rCode != HttpURLConnection.HTTP_OK) {
-			throw new Exception("Error uploading file to PMA.core");
-		}
+			hm.entrySet()
+					.stream()
+					.sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+					.forEachOrdered(x -> reverseSortedMap.put(x.getKey(), x.getValue()));
+			for (Map.Entry<String, Long> revers : reverseSortedMap.entrySet()) {
+				out.println(revers);
+				String key = revers.getKey();
+				long s = (new File(key)).length();
+				if (s <= 0) {
+					continue;
+				}
+				String path = key.replace(mainDirectory, "").replaceAll("^\\+|\\+$/g", "")
+						.replaceAll("^/+|/+$/g", "");
+				HashMap<String, String> fileObj = new HashMap<String, String>();
+				fileObj = new HashMap<String, String>();
+				fileObj.put("Path", path);
+				fileObj.put("Length", Long.toString(s));
+				fileObj.put("IsMain", Boolean.toString(path.equals(Core.getSlideFileName(localSourceSlide))));
+				fileObj.put("FullPath", key);
+				uploadFiles.add(fileObj);
+			}
 
-		String jsonString = PMA.getJSONAsStringBuffer(http).toString();
-		if (!PMA.isJSONObject(jsonString)) {
-			throw new Exception("Error uploading " + localSourceSlide + " to PMA.core");
-		}
+			JSONObject data = new JSONObject();
+			data.put("Path", targetFolder);
+			data.put("Files", new JSONArray(uploadFiles));
+			String url = pmaUrl(sessionID) + "transfer/Upload?sessionID=" + PMA.pmaQ((sessionID));
+			URL urlResource = new URL(url);
+			URLConnection con = urlResource.openConnection();
+			HttpURLConnection http = (HttpURLConnection) con;
+			http.setRequestMethod("POST");
+			http.setDoOutput(true);
 
-		JSONObject uploadHeader = PMA.getJSONObjectResponse(jsonString);
-		int i = 0;
-		String uploadUrl;
-		if (!transfer)  {
+			byte[] out = data.toString().getBytes(StandardCharsets.UTF_8);
+			int length = out.length;
+
+			http.setFixedLengthStreamingMode(length);
+			http.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+			http.connect();
+			try (OutputStream os = http.getOutputStream()) {
+				os.write(out);
+			}
+
+			int rCode = http.getResponseCode();
+			if (rCode != HttpURLConnection.HTTP_OK) {
+				throw new Exception("Error uploading file to PMA.core");
+			}
+
+			String jsonString = PMA.getJSONAsStringBuffer(http).toString();
+			if (!PMA.isJSONObject(jsonString)) {
+				throw new Exception("Error uploading " + localSourceSlide + " to PMA.core");
+			}
+
+			JSONObject uploadHeader = PMA.getJSONObjectResponse(jsonString);
+			int i = 0;
+			String uploadUrl;
 			for (HashMap<String, String> entry : uploadFiles) {
 				File file = new File(entry.get("FullPath"));
 				String fileName = FilenameUtils.getName(entry.get("Path"));
@@ -5074,45 +5092,166 @@ public class Core {
 				String uploadResult = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8);
 				i++;
 			}
+			String finalizeUrl = pmaUrl(sessionID) + "transfer/Upload/" + uploadHeader.get("Id").toString() + "?sessionID="
+					+ PMA.pmaQ(sessionID);
+			HttpGet finalizeRequest = new HttpGet(finalizeUrl);
+			HttpClient client = HttpClientBuilder.create().setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE).build();
+			HttpResponse response = client.execute(finalizeRequest);
+			int responseCode = response.getStatusLine().getStatusCode();
+			if (responseCode < 200 || responseCode >= 300) {
+				String result = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8);
+				throw new Exception("Error uploading" + result);
+			}
+			return true;
 		}
 		else {
-			JSONObject jsonResponse = PMA.getJSONObjectResponse(generateUploadID(sessionID, data));
-			System.out.println(jsonResponse.get("Id"));
-			for (HashMap<String, String> entry : uploadFiles) {
-				File file = new File(entry.get("FullPath"));
-				String fileName = FilenameUtils.getName(entry.get("Path"));
-				JSONArray jsonarray = uploadHeader.getJSONArray("Urls");
-				uploadUrl = jsonarray.getString(i);
-				System.out.println(uploadUrl);
-				System.out.println(uploadHeader.getInt("UploadType"));
-				uploadTransfer(jsonResponse.get("Id").toString(), String.valueOf(uploadHeader.getInt("UploadType")),
-						file, fileName, uploadUrl, sessionID, progressCallback);
-				i++;
+			String relativePath = varargs.length > 0? (String) varargs[0] : null;
+			String URL = varargs.length > 1 ? (String) varargs[1] : null;
+			String uploadID = varargs.length > 2 ? (String) varargs[2] : null;
+			File uploadFile = varargs.length > 3 ? (File) varargs[3] : null;
+			OutputStream outputStreamToRequestBody = null;
+			FileInputStream inputStreamToLogFile = null;
+			HttpURLConnection con = null;
+			try {
+				URL urlResource = new URL(URL);
+				if (URL.startsWith("https")) {
+					con = (HttpsURLConnection) urlResource.openConnection();
+				} else {
+					con = (HttpURLConnection) urlResource.openConnection();
+				}
+				con.setRequestMethod("PUT");
+				con.setConnectTimeout(0); // infinite timeout
+				con.setReadTimeout(0); // infinite timeout
+				con.setRequestProperty("Connection", "Keep-Alive");
+				con.setRequestProperty("Cache-Control", "no-cache");
+				con.setRequestProperty("x-ms-blob-type", "BlockBlob");
+				con.setRequestProperty("Content-Type", "multipart/form-data");
+				con.setRequestProperty("Content-Length", String.valueOf(uploadFile.length()));
+				con.setDoOutput(true);
+				con.setUseCaches(false);
+				con.setFixedLengthStreamingMode(uploadFile.length());
+				con.connect();
+				outputStreamToRequestBody = new DataOutputStream(con.getOutputStream());
+				outputStreamToRequestBody = progressCallback != null
+						? new ProgressHttpEntityWrapper.ProgressFilterOutputStream(
+						outputStreamToRequestBody, progressCallback, uploadFile.length(), relativePath)
+						: outputStreamToRequestBody;
+				inputStreamToLogFile = new FileInputStream(uploadFile);
+				byte[] buffer = new byte[4 * 1024];
+				int bytesRead = -1;
+				long totalBytesRead = 0;
+				while ((bytesRead = inputStreamToLogFile.read(buffer)) != -1) {
+					bytes.put((long) bytesRead);
+					outputStreamToRequestBody.write(buffer, 0, bytesRead);
+					totalBytesRead += bytesRead;
+					System.out.println(relativePath + " " + totalBytesRead);
+				}
+				outputStreamToRequestBody.flush();
+				outputStreamToRequestBody.close();
+				inputStreamToLogFile.close();
+				con.getResponseMessage();
+				con.disconnect();
+				return _pma_checkUploadedFile(sessionID, uploadID, relativePath);
+			} catch (Exception e) {
+				e.printStackTrace();
+				if (outputStreamToRequestBody != null) {
+					outputStreamToRequestBody.flush();
+					outputStreamToRequestBody.close();
+				}
+				if (inputStreamToLogFile != null) {
+					inputStreamToLogFile.close();
+				}
+				con.getResponseCode();
+				return false;
 			}
 		}
-		String finalizeUrl = pmaUrl(sessionID) + "transfer/Upload/" + uploadHeader.get("Id").toString() + "?sessionID="
-				+ PMA.pmaQ(sessionID);
-		HttpGet finalizeRequest = new HttpGet(finalizeUrl);
-		HttpClient client = HttpClientBuilder.create().setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE).build();
-		HttpResponse response = client.execute(finalizeRequest);
-		int responseCode = response.getStatusLine().getStatusCode();
-		if (responseCode < 200 || responseCode >= 300) {
-			String result = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8);
-			throw new Exception("Error uploading" + result);
-		}
-		return true;
 	}
 
-	public static boolean uploadTransfer(String uploadID, String uploadType, File uploadFile, String relativePath,
-										 String s3URL, String sessionID,
+	public static List<HashMap<String, String>> _pma_filesToUpload(String localSourceSlide, String targetFolder, String sessionID) {
+		if (localSourceSlide == null) {
+			throw new RuntimeException("Slide name is empty");
+		}
+		for (String slide : Core.getSlides(targetFolder, sessionID)) {
+			if (slide.equals(targetFolder + Core.getSlideFileName(localSourceSlide))) {
+				try {
+					throw new Exception("The file: ===" +  Core.getSlideFileName(localSourceSlide) +"=== with the same name and extension already exists in the target folder: " + targetFolder);
+				} catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}
+		Map<String, Map<String, String>> files = Core.getFilesForSlide(localSourceSlide, pmaCoreLiteSessionID);
+
+		String mainDirectory = "";
+		for (Map.Entry<String, Map<String, String>> entry : files.entrySet()) {
+			String key = entry.getKey();
+			Map<String, String> value = entry.getValue();
+			File file = new File(key);
+			String md = file.getParent();
+
+			if (mainDirectory.length() == 0 || md.length() < mainDirectory.length()) {
+				mainDirectory = md;
+			}
+		}
+
+		mainDirectory = mainDirectory.replace("\\", "/");
+		List<HashMap<String, String>> uploadFiles = new ArrayList<HashMap<String, String>>();
+		Map<String,Long> hm = new HashMap<>();
+		LinkedHashMap<String, Long> reverseSortedMap = new LinkedHashMap<>();
+		for (Map.Entry<String, Map<String, String>> entry : files.entrySet()) {
+			String key = entry.getKey();
+			Map<String, String> value = entry.getValue();
+			long s = (new File(key)).length();
+			if (s <= 0) {
+				continue;
+			}
+			hm.put(key, s);
+		}
+
+		hm.entrySet()
+				.stream()
+				.sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+				.forEachOrdered(x -> reverseSortedMap.put(x.getKey(), x.getValue()));
+		for (Map.Entry<String, Long> revers : reverseSortedMap.entrySet()) {
+			String key = revers.getKey();
+			long s = (new File(key)).length();
+			if (s <= 0) {
+				continue;
+			}
+			String path = key.replace(mainDirectory, "").replaceAll("^\\+|\\+$/g", "")
+					.replaceAll("^/+|/+$/g", "");
+			HashMap<String, String> fileObj = new HashMap<String, String>();
+			fileObj = new HashMap<String, String>();
+			fileObj.put("Path", path);
+			fileObj.put("Length", Long.toString(s));
+			fileObj.put("IsMain", Boolean.toString(path.equals(Core.getSlideFileName(localSourceSlide))));
+			fileObj.put("FullPath", key);
+			uploadFiles.add(fileObj);
+		}
+		return uploadFiles;
+	}
+
+	public static JSONObject _pma_get_DataIdTypeConString_forUpload(String localSourceSlide, String targetFolder, String sessionID) {
+		JSONObject data = new JSONObject();
+		data.put("Path", targetFolder);
+		data.put("Files", new JSONArray(_pma_filesToUpload(localSourceSlide, targetFolder, sessionID)));
+		JSONObject jsonResponse = PMA.getJSONObjectResponse(_pma_generateUploadID(sessionID, data));
+		return jsonResponse;
+	}
+
+	public static boolean _pma_uploadTransfer(String uploadID, String uploadType, File uploadFile, String relativePath,
+										 String URL, String sessionID,
 										 ProgressHttpEntityWrapper.ProgressCallback progressCallback) throws Exception {
+		out.println(uploadID);
+		out.println(uploadFile.getName());
+		out.println(relativePath);
+		out.println(URL);
 		OutputStream outputStreamToRequestBody = null;
 		FileInputStream inputStreamToLogFile = null;
 		HttpURLConnection con = null;
 		try {
-			URL urlResource = new URL(s3URL);
-			out.println(urlResource);
-			if (s3URL.startsWith("https")) {
+			URL urlResource = new URL(URL);
+			if (URL.startsWith("https")) {
 				con = (HttpsURLConnection) urlResource.openConnection();
 			} else {
 				con = (HttpURLConnection) urlResource.openConnection();
@@ -5147,8 +5286,7 @@ public class Core {
 			inputStreamToLogFile.close();
 			con.getResponseMessage();
 			con.disconnect();
-//			return true;
-			return checkUploadFile(sessionID, uploadID, relativePath);
+			return _pma_checkUploadedFile(sessionID, uploadID, relativePath);
 		} catch (Exception e) {
 			e.printStackTrace();
 			if (outputStreamToRequestBody != null) {
@@ -5163,7 +5301,7 @@ public class Core {
 		}
 	}
 
-	private static boolean checkUploadFile(String sessionID, String uploadID, String relativePath) {
+	private static boolean _pma_checkUploadedFile(String sessionID, String uploadID, String relativePath) {
 		try {
 			String url = (pmaUrl(sessionID).endsWith("/") ? pmaUrl(sessionID) : pmaUrl(sessionID) + "/") + "transfer/Upload/" + uploadID + "?sessionID=" + sessionID;
 			URL urlResource = new URL(url);
@@ -5194,7 +5332,7 @@ public class Core {
 		}
 	}
 
-	private static String generateUploadID(String sessionID, JSONObject jsonResponse) {
+	private static String _pma_generateUploadID(String sessionID, JSONObject jsonResponse) {
 		String json = String.valueOf(jsonResponse);
 		try {
 			String url = (pmaUrl(sessionID).endsWith("/") ? pmaUrl(sessionID) : pmaUrl(sessionID) + "/") + "transfer/Upload?sessionID=" + sessionID;
