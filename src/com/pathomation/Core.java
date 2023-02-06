@@ -4912,18 +4912,17 @@ public class Core {
 								 ProgressHttpEntityWrapper.ProgressCallback progressCallback, Object... varargs)
 			throws Exception {
 		sessionID = sessionId(sessionID);
-
 		if (varargs == null) {
 			if (!pmaIsLite()) {
 				throw new RuntimeException("No PMA.start found on localhost. Are you sure it is running?");
 			}
-			if (localSourceSlide == null) {
+			else if (localSourceSlide == null) {
 				throw new RuntimeException("Slide name is empty");
 			}
-			if (targetFolder == null) {
+			else if (targetFolder == null) {
 				throw new RuntimeException("Target destination  cannot be empty");
 			}
-			if (targetFolder.startsWith("/")) {
+			else if (targetFolder.startsWith("/")) {
 				targetFolder = targetFolder.substring(1);
 			}
 			for (String slide : Core.getSlides(targetFolder, sessionID)) {
@@ -4979,11 +4978,13 @@ public class Core {
 				fileObj.put("IsMain", Boolean.toString(path.equals(Core.getSlideFileName(localSourceSlide))));
 				fileObj.put("FullPath", key);
 				uploadFiles.add(fileObj);
+				out.println(fileObj + "   fileObj");
 			}
-
+			out.println(uploadFiles + "   uploadFiles");
 			JSONObject data = new JSONObject();
 			data.put("Path", targetFolder);
 			data.put("Files", new JSONArray(uploadFiles));
+			out.println(data + "   data");
 			String url = pmaUrl(sessionID) + "transfer/Upload?sessionID=" + PMA.pmaQ((sessionID));
 			URL urlResource = new URL(url);
 			URLConnection con = urlResource.openConnection();
@@ -5007,11 +5008,13 @@ public class Core {
 			}
 
 			String jsonString = PMA.getJSONAsStringBuffer(http).toString();
+			System.out.println(jsonString + "    jsonString");
 			if (!PMA.isJSONObject(jsonString)) {
 				throw new Exception("Error uploading " + localSourceSlide + " to PMA.core");
 			}
 
 			JSONObject uploadHeader = PMA.getJSONObjectResponse(jsonString);
+			System.out.println(uploadHeader + "   uploadHeader");
 			int i = 0;
 			String uploadUrl;
 			for (HashMap<String, String> entry : uploadFiles) {
@@ -5027,7 +5030,6 @@ public class Core {
 						+ "?sessionID="
 						+ PMA.pmaQ((sessionID)) + "&path=" +
 						PMA.pmaQ(entry.get("Path"));
-
 				HttpRequestBase request = null;
 
 				if (uploadHeader.getInt("UploadType") == 1) {
@@ -5058,8 +5060,8 @@ public class Core {
 							.setMode(HttpMultipartMode.STRICT)
 							.addPart(fileName, new FileBody(file))
 							.build();
-
 					request = (HttpRequestBase) new HttpPost(uploadUrl);
+					System.out.println(uploadUrl + "   uploadUrl");
 					if (progressCallback == null) {
 						((HttpPost) request).setEntity(entity);
 					} else {
@@ -5108,7 +5110,23 @@ public class Core {
 			String relativePath = varargs.length > 0? (String) varargs[0] : null;
 			String URL = varargs.length > 1 ? (String) varargs[1] : null;
 			String uploadID = varargs.length > 2 ? (String) varargs[2] : null;
-			File uploadFile = varargs.length > 3 ? (File) varargs[3] : null;
+			String uploadType = varargs.length > 3 ? (String) varargs[3] : null;
+			File uploadFile = varargs.length > 4 ? (File) varargs[4] : null;
+			if (relativePath == null) {
+				throw new RuntimeException("relativePath is empty");
+			}
+			if (URL == null) {
+				throw new RuntimeException("URL is empty");
+			}
+			if (uploadID == null) {
+				throw new RuntimeException("uploadID is empty");
+			}
+			if (uploadType == null) {
+				throw new RuntimeException("uploadType is empty");
+			}
+			if (uploadFile == null) {
+				throw new RuntimeException("uploadFile is empty");
+			}
 			OutputStream outputStreamToRequestBody = null;
 			FileInputStream inputStreamToLogFile = null;
 			HttpURLConnection con = null;
@@ -5124,8 +5142,13 @@ public class Core {
 				con.setReadTimeout(0); // infinite timeout
 				con.setRequestProperty("Connection", "Keep-Alive");
 				con.setRequestProperty("Cache-Control", "no-cache");
-				con.setRequestProperty("x-ms-blob-type", "BlockBlob");
-				con.setRequestProperty("Content-Type", "multipart/form-data");
+				if (uploadType.equals("0")) {
+					con.setRequestProperty("x-ms-blob-type", "BlockBlob");
+				}
+				if (uploadType.equals("2")) {
+					con.setRequestProperty("x-ms-blob-type", "BlockBlob");
+				}
+//				con.setRequestProperty("Content-Type", "multipart/form-data");
 				con.setRequestProperty("Content-Length", String.valueOf(uploadFile.length()));
 				con.setDoOutput(true);
 				con.setUseCaches(false);
