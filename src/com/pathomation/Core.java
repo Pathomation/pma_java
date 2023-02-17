@@ -50,8 +50,8 @@ import static java.lang.System.out;
  * imaging and microscopy
  * </p>
  * 
- * @author Yassine Iddaoui
- * @version 2.0.0.96
+ * @author Yassine Iddaoui, Vitalij Victor
+ * @version 2.0.0.97
  */
 public class Core {
 	/**
@@ -999,11 +999,11 @@ public class Core {
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Disconnect from a PMA.core instance; return True if session exists; return
 		// False if session didn't exist (anymore)
-		sessionID = sessionId(sessionID);
-		String url = apiUrl(sessionID, false) + "DeAuthenticate?sessionID=" + PMA.pmaQ((sessionID));
-		String contents = PMA.httpGet(url, "application/json");
-		pmaAmountOfDataDownloaded.put(sessionID, pmaAmountOfDataDownloaded.get(sessionID) + contents.length());
-		if (pmaSessions.size() > 0) {
+		if (pmaSessions.size() > 0 && pmaSessions.containsKey(sessionID)) {
+			sessionID = sessionId(sessionID);
+			String url = apiUrl(sessionID, false) + "DeAuthenticate?sessionID=" + PMA.pmaQ((sessionID));
+			String contents = PMA.httpGet(url, "application/json");
+			pmaAmountOfDataDownloaded.put(sessionID, pmaAmountOfDataDownloaded.get(sessionID) + contents.length());
 			// yes we do! This means that when there's a PMA.core active session AND
 			// PMA.core.lite version running,
 			// the PMA.core active will be selected and returned
