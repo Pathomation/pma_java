@@ -9,14 +9,9 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -29,6 +24,19 @@ import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.http.*;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.entity.mime.FormBodyPart;
+import org.apache.http.entity.mime.HttpMultipartMode;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.entity.mime.content.FileBody;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.protocol.HttpContext;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -127,6 +135,11 @@ public class Core {
 	public static Map<String, Integer> getPmaAmountOfDataDownloaded() {
 		return pmaAmountOfDataDownloaded;
 	}
+
+	/**
+	 * Readable bytes for upload and download methods. To integrate into the progress bar.
+	 */
+	public static BlockingQueue<Long> bytes = new LinkedBlockingQueue<>();
 
 	/**
 	 * This method is used to determine whether the Java SDK runs in debugging mode
@@ -543,8 +556,8 @@ public class Core {
 	 *
 	 * @param root
 	 *            XML document
-	 * @param limit
-	 *            it's an optional argument (int), default value set to "0"
+	 * @param
+	 *            's an optional argument (int), default value set to "0"
 	 * @return List{@literal <}String{@literal >} a list of the values of "String"
 	 *         tags of a XML document
 	 */
@@ -999,11 +1012,11 @@ public class Core {
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		// Disconnect from a PMA.core instance; return True if session exists; return
 		// False if session didn't exist (anymore)
-		sessionID = sessionId(sessionID);
-		String url = apiUrl(sessionID, false) + "DeAuthenticate?sessionID=" + PMA.pmaQ((sessionID));
-		String contents = PMA.httpGet(url, "application/json");
-		pmaAmountOfDataDownloaded.put(sessionID, pmaAmountOfDataDownloaded.get(sessionID) + contents.length());
-		if (pmaSessions.size() > 0) {
+		if (pmaSessions.size() > 0 && pmaSessions.containsKey(sessionID)) {
+			sessionID = sessionId(sessionID);
+			String url = apiUrl(sessionID, false) + "DeAuthenticate?sessionID=" + PMA.pmaQ((sessionID));
+			String contents = PMA.httpGet(url, "application/json");
+			pmaAmountOfDataDownloaded.put(sessionID, pmaAmountOfDataDownloaded.get(sessionID) + contents.length());
 			// yes we do! This means that when there's a PMA.core active session AND
 			// PMA.core.lite version running,
 			// the PMA.core active will be selected and returned
@@ -4685,6 +4698,169 @@ public class Core {
 	}
 
 	/**
+	 * * This method downloads single slides and multi-assembled slides.
+	 *
+	 * Downloads a slide from a PMA.core server. Requires a PMA.start installation
+	 * @param varargs 0:  mainSlideFile is full path of the slide. Is a required income parameter!
+	 * @param varargs 1: saveDirectory  is a directory where slide will be saved. Is a required income parameter!
+	 * @param varargs 2: sessionID Is a required income parameter!
+	 * @param varargs 3: is the callback to return readable bytes.
+	 *                   Is NOT a required income parameter if there is no fourth relativePath parameter after it.
+	 *                   If relativePath is present then the callback is required or null.
+	 * @param varargs 4: is relativePath used when downloading files that include a folder and subfolders with compound files one by one.
+	 *                In this case, the folders and subfolders must be prepared in advance before the download method,
+	 *                and the saveDirectory parameter must be the full path including the folders, subfolders, file, and extension.
+	 *                Is NOT a required income parameter!
+	 * @throws Exception if incoming parameters are not valid
+	 * @return true if download is done.
+	 *
+	 * Callback usage model:
+	 * ProgressHttpEntityWrapper.ProgressCallback progressCallback = new ProgressHttpEntityWrapper.ProgressCallback() {
+	 *             @Override
+	 *             public void progress(long bytesRead, long transferred, long totalBytes, String filename) {
+	 *                 /* bytesRead - readable bytes
+	 *                 /* transferred - total in %
+	 *                 /* totalBytes - += bytesRead
+	 *                 /* filename - name of downloaded file
+	 *             }
+	 *         };
+	 *		Core.download(***);
+	 */
+	public static boolean download(Object... varargs) throws Exception {
+		String mainSlideFile = varargs.length > 0 ? (String) varargs[0] : null;
+		String saveDirectory = varargs.length > 1 ? (String) varargs[1] : null;
+		String sessionID = varargs.length > 2 ? (String) varargs[2] : null;
+		ProgressHttpEntityWrapper.ProgressCallback progressCallback = varargs.length > 3
+				? (ProgressHttpEntityWrapper.ProgressCallback) varargs[3] : null;
+		if (Objects.equals(mainSlideFile, "") || mainSlideFile == null) {
+			throw new NullPointerException("mainSlideFile is null");
+		}
+		if (Objects.equals(saveDirectory, "") || saveDirectory == null) {
+			throw new NullPointerException("saveDirectory is null");
+		}
+		if (Objects.equals(sessionID, "") || sessionID == null || !ping(sessionID)) {
+			throw new NullPointerException("sessionID is null");
+		}
+		saveDirectory = (saveDirectory.endsWith("\\") ? saveDirectory : saveDirectory + "\\");
+		if (new File(saveDirectory + Core.getSlideFileName(mainSlideFile)).exists()) {
+			throw new Exception(" A file with the same name: " + Core.getSlideFileName(mainSlideFile) + " already exists in the selected folder.");
+		}
+		else {
+			DataInputStream inputStreamToRequestBody = null;
+			OutputStream outputStreamToLogFile = null;
+			HttpURLConnection con = null;
+			sessionID = sessionId(sessionID);
+			String server = pmaUrl(sessionID);
+			File downloadFile = null;
+			long size = 0;
+			String mainFile = null;
+			String rootPath;
+			boolean relPathAndSizeChecked = false;
+			List<Map<String, String>> slideRelatedFiles = Core.enumerateFilesForSlidePMACore(mainSlideFile, sessionID);
+			for (Map<String, String> element : slideRelatedFiles) {
+				String relativePath = varargs.length > 4 ? (String) varargs[4] : null;
+				mainFile = slideRelatedFiles.get(slideRelatedFiles.size() - 1).get("Path").toString();
+				rootPath = mainFile.substring(0, mainFile.lastIndexOf("/") + 1);
+				if (relativePath == null) {
+					relativePath = element.get("Path").replace(rootPath, "");
+					if (relativePath.contains("/")) {
+						String relativePathFrBnTillLtSlash = relativePath.substring(relativePath.indexOf(""), relativePath.lastIndexOf("/"));
+						String[] folderToCreate = relativePathFrBnTillLtSlash.split("/");
+						new File(saveDirectory + folderToCreate[0]).mkdir();
+						for (int i = 0; i < folderToCreate.length; i++) {
+							if (!folderToCreate[i].contains(folderToCreate[0])) {
+								new File(saveDirectory + folderToCreate[0] + "/" + folderToCreate[i]).mkdir();
+							}
+						}
+					}
+					size = Long.parseLong(element.get("Size"));
+					downloadFile = new File(saveDirectory + relativePath);
+				} else if (!relPathAndSizeChecked) {
+					for (Map<String, String> pathAndSize : slideRelatedFiles) {
+						if (pathAndSize.get("Path").equals(rootPath + relativePath)) {
+							size = Long.parseLong(pathAndSize.get("Size"));
+							downloadFile = new File(saveDirectory);
+							relPathAndSizeChecked = true;
+						}
+					}
+				}
+				try {
+					String url = server + "transfer/Download" + "?sessionId="
+							+ sessionID + "&image=" + PMA.pmaQ(mainSlideFile) + "&path=" + PMA.pmaQ(relativePath);
+					URL urlResource = new URL(url);
+					if (url.startsWith("https")) {
+						con = (HttpsURLConnection) urlResource.openConnection();
+					} else {
+						con = (HttpURLConnection) urlResource.openConnection();
+					}
+
+					con.setConnectTimeout(0); // infinite timeout
+					con.setReadTimeout(0); // infinite timeout
+					con.setRequestMethod("GET");
+					con.setRequestProperty("Connection", "Keep-Alive");
+					con.setRequestProperty("Cache-Control", "no-cache");
+					con.setDoOutput(true);
+					con.setUseCaches(false);
+					con.connect();
+					if (con.getResponseCode() == 303) {
+						url = con.getHeaderField("Location");
+						urlResource = new URL(url);
+						con.disconnect();
+						con = null;
+						if (url.startsWith("https")) {
+							con = (HttpsURLConnection) urlResource.openConnection();
+						} else {
+							con = (HttpURLConnection) urlResource.openConnection();
+						}
+						con.setConnectTimeout(0); // infinite timeout
+						con.setReadTimeout(0); // infinite timeout
+						con.setRequestMethod("GET");
+						con.setRequestProperty("Connection", "Keep-Alive");
+						con.setRequestProperty("Cache-Control", "no-cache");
+						con.setDoOutput(true);
+						con.setUseCaches(false);
+						con.connect();
+					}
+					inputStreamToRequestBody = new DataInputStream(con.getInputStream());
+					outputStreamToLogFile = new FileOutputStream(downloadFile);
+					outputStreamToLogFile = progressCallback != null
+							? new ProgressHttpEntityWrapper.ProgressFilterOutputStream(
+							outputStreamToLogFile, progressCallback, size, relativePath)
+							: outputStreamToLogFile;
+					byte[] buffer = new byte[4 * 1024];
+					int bytesRead = -1;
+					long totalBytesRead = 0;
+					while ((bytesRead = inputStreamToRequestBody.read(buffer)) != -1) {
+						bytes.put((long) bytesRead);
+						System.out.println(relativePath + " " + totalBytesRead);
+						outputStreamToLogFile.write(buffer, 0, bytesRead);
+						totalBytesRead += bytesRead;
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+					if (inputStreamToRequestBody != null) {
+						inputStreamToRequestBody.close();
+					}
+					if (outputStreamToLogFile != null) {
+						outputStreamToLogFile.flush();
+						outputStreamToLogFile.close();
+					}
+					con.getResponseCode();
+					return false;
+				}
+				if (relPathAndSizeChecked) {
+					break;
+				}
+			}
+			inputStreamToRequestBody.close();
+			outputStreamToLogFile.flush();
+			outputStreamToLogFile.close();
+			con.getResponseCode();
+		}
+		return true;
+	}
+
+	/**
 	 * This method returns a boolean result based on the input parameters.
 	 * @param sessionId
 	 * @param url
@@ -4697,6 +4873,599 @@ public class Core {
 		pmaAmountOfDataDownloaded.put(sessionId, length);
 
 		return true;
+	}
+
+	/**
+	 * Uploads a slide to a PMA.core server. Requires a PMA.start installation
+	 * :param str localSourceSlide: The local PMA.start relative file to upload
+	 * :param str targetFolder: The root directory and path to upload to the
+	 * PMA.core server
+	 * :param str sessionID: A valid session id for a PMA.core
+	 * :param function callback: If True a default progress will be printed.
+	 * If a function is passed it will be called for progress on each file upload.
+	 * The function has the following signature:
+	 * `callback(float progress)`
+	 *
+	 *
+	 * @param localSourceSlide
+	 * @param targetFolder
+	 * @param sessionID
+	 * @param progressCallback
+	 * @return true if upload is done
+	 */
+	public static boolean upload(String localSourceSlide, String targetFolder, String sessionID,
+								 ProgressHttpEntityWrapper.ProgressCallback progressCallback, Object... varargs)
+			throws Exception {
+		sessionID = sessionId(sessionID);
+		if (!pmaIsLite()) {
+			throw new RuntimeException("No PMA.start found on localhost. Are you sure it is running?");
+		}
+		else if (localSourceSlide == null) {
+			throw new RuntimeException("Slide name is empty");
+		}
+		else if (targetFolder == null) {
+			throw new RuntimeException("Target destination  cannot be empty");
+		}
+		else if (targetFolder.startsWith("/")) {
+			targetFolder = targetFolder.substring(1);
+		}
+		if (varargs == null) {
+			for (String slide : Core.getSlides(targetFolder, sessionID)) {
+				if (slide.equals(targetFolder + Core.getSlideFileName(localSourceSlide))) {
+					throw new Exception("The file: ===" +  Core.getSlideFileName(localSourceSlide) +"=== with the same name and extension already exists in the target folder: " + targetFolder);
+				}
+			}
+
+			Map<String, Map<String, String>> files = Core.getFilesForSlide(localSourceSlide, pmaCoreLiteSessionID);
+
+			String mainDirectory = "";
+			for (Map.Entry<String, Map<String, String>> entry : files.entrySet()) {
+				String key = entry.getKey();
+				Map<String, String> value = entry.getValue();
+				File file = new File(key);
+				String md = file.getParent();
+
+				if (mainDirectory.length() == 0 || md.length() < mainDirectory.length()) {
+					mainDirectory = md;
+				}
+			}
+
+			mainDirectory = mainDirectory.replace("\\", "/");
+
+			List<HashMap<String, String>> uploadFiles = new ArrayList<HashMap<String, String>>();
+			for (Map.Entry<String, Map<String, String>> entry : files.entrySet()) {
+				String key = entry.getKey();
+				Map<String, String> value = entry.getValue();
+				long s = (new File(key)).length();
+				if (s <= 0) {
+					continue;
+				}
+				String path = key.replace(mainDirectory, "").replaceAll("^\\+|\\+$/g", "")
+						.replaceAll("^/+|/+$/g", "");
+				HashMap<String, String> fileObj = new HashMap<String, String>();
+				fileObj.put("Path", path);
+				fileObj.put("Length", Long.toString(s));
+				fileObj.put("IsMain", Boolean.toString(path.equals(Core.getSlideFileName(localSourceSlide))));
+				fileObj.put("FullPath", key);
+				uploadFiles.add(fileObj);
+			}
+			JSONObject data = new JSONObject();
+			data.put("Path", targetFolder);
+			data.put("Files", new JSONArray(uploadFiles));
+			String url = pmaUrl(sessionID) + "transfer/Upload?sessionID=" + PMA.pmaQ((sessionID));
+
+			URL urlResource = new URL(url);
+			URLConnection con = urlResource.openConnection();
+			HttpURLConnection http = (HttpURLConnection) con;
+			http.setRequestMethod("POST");
+			http.setDoOutput(true);
+
+			byte[] out = data.toString().getBytes(StandardCharsets.UTF_8);
+			int length = out.length;
+
+			http.setFixedLengthStreamingMode(length);
+			http.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+			http.connect();
+			try (OutputStream os = http.getOutputStream()) {
+				os.write(out);
+			}
+
+			int rCode = http.getResponseCode();
+			if (rCode != HttpURLConnection.HTTP_OK) {
+				throw new Exception("Error uploading file to PMA.core");
+			}
+
+			String jsonString = PMA.getJSONAsStringBuffer(http).toString();
+			if (!PMA.isJSONObject(jsonString)) {
+				throw new Exception("Error uploading " + localSourceSlide + " to PMA.core");
+			}
+
+			JSONObject uploadHeader = PMA.getJSONObjectResponse(jsonString);
+			int i = 0;
+			String uploadUrl;
+			JSONArray jsonarray;
+			for (HashMap<String, String> entry : uploadFiles) {
+				File file = new File(entry.get("FullPath"));
+				String fileName = FilenameUtils.getName(entry.get("Path"));
+
+				List<FormBodyPart> list = new ArrayList<FormBodyPart>();
+				list.add(new FormBodyPart(fileName, new FileBody(file)));
+				HttpCustomMultipart form = new HttpCustomMultipart("form-data", null, "----", list);
+				HttpEntity entity = new MultipartCustomEntity(form, "", form.getTotalLength());
+
+				uploadUrl = pmaUrl(sessionID) + "transfer/Upload/" + uploadHeader.get("Id").toString()
+						+ "?sessionID="
+						+ PMA.pmaQ((sessionID)) + "&path=" +
+						PMA.pmaQ(entry.get("Path"));
+				HttpRequestBase request = null;
+				if (uploadHeader.getInt("UploadType") == 1) {
+					// Amazon upload
+					jsonarray = uploadHeader.getJSONArray("Urls");
+					uploadUrl = jsonarray.getString(i);
+					request = (HttpRequestBase) new HttpPut(uploadUrl);
+					request.setHeader("Content-Type", "multipart/form-data");
+					if (progressCallback == null) {
+						((HttpPut) request).setEntity(entity);
+					} else {
+						((HttpPut) request).setEntity(new ProgressHttpEntityWrapper(entity, entry.get("Path").toString(), progressCallback));
+					}
+				} else if (uploadHeader.getInt("UploadType") == 2) {
+					// Azure upload
+					jsonarray = uploadHeader.getJSONArray("Urls");
+					uploadUrl = jsonarray.getString(i);
+					request = (HttpRequestBase) new HttpPut(uploadUrl);
+					if (progressCallback == null) {
+						((HttpPut) request).setEntity(entity);
+					} else {
+						((HttpPut) request).setEntity(new ProgressHttpEntityWrapper(entity, entry.get("Path").toString(), progressCallback));
+					}
+					request.setHeader("x-ms-blob-type", "BlockBlob");
+					request.setHeader("Content-Type", "multipart/form-data");
+				} else {
+					entity = MultipartEntityBuilder.create()
+							.setMode(HttpMultipartMode.STRICT)
+							.addPart(fileName, new FileBody(file))
+							.build();
+					request = (HttpRequestBase) new HttpPost(uploadUrl);
+					if (progressCallback == null) {
+						((HttpPost) request).setEntity(entity);
+					} else {
+						((HttpPost) request).setEntity(new ProgressHttpEntityWrapper(entity, entry.get("Path").toString(), progressCallback));
+					}
+				}
+
+				HttpRequestInterceptor requestInterceptor = new HttpRequestInterceptor() {
+					@Override
+					public void process(HttpRequest request, HttpContext context) throws HttpException, IOException {
+						if (uploadHeader.getInt("UploadType") == 0){
+							return;
+						}
+
+						if (request.containsHeader("Content-Length")) {
+							request.removeHeaders("Content-Length");
+						}
+
+						request.addHeader("Content-Length", entry.get("Length").toString());
+					}
+				};
+
+				HttpClient client = HttpClientBuilder.create()
+						.addInterceptorLast(requestInterceptor)
+						.disableContentCompression()
+						.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE).disableAutomaticRetries().build();
+
+				HttpResponse response = client.execute(request);
+
+				String uploadResult = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8);
+				i++;
+			}
+			String finalizeUrl = pmaUrl(sessionID) + "transfer/Upload/" + uploadHeader.get("Id").toString() + "?sessionID="
+					+ PMA.pmaQ(sessionID);
+			HttpGet finalizeRequest = new HttpGet(finalizeUrl);
+			HttpClient client = HttpClientBuilder.create().setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE).build();
+			HttpResponse response = client.execute(finalizeRequest);
+			int responseCode = response.getStatusLine().getStatusCode();
+			if (responseCode < 200 || responseCode >= 300) {
+				String result = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8);
+				throw new Exception("Error uploading" + result);
+			}
+			return true;
+		}
+		else {
+			String relativePath = varargs.length > 0? (String) varargs[0] : null;
+			String URL = varargs.length > 1 ? (String) varargs[1] : null;
+			String uploadID = varargs.length > 2 ? (String) varargs[2] : null;
+			String uploadType = varargs.length > 3 ? (String) varargs[3] : null;
+			File uploadFile = varargs.length > 4 ? (File) varargs[4] : null;
+			if (relativePath == null) {
+				throw new RuntimeException("relativePath is empty");
+			}
+			if (URL == null) {
+				throw new RuntimeException("URL is empty");
+			}
+			if (uploadID == null) {
+				throw new RuntimeException("uploadID is empty");
+			}
+			if (uploadType == null) {
+				throw new RuntimeException("uploadType is empty");
+			}
+			if (uploadFile == null) {
+				throw new RuntimeException("uploadFile is empty");
+			}
+			OutputStream outputStreamToRequestBody = null;
+			FileInputStream inputStreamToLogFile = null;
+			HttpURLConnection conToSend = null;
+			String boundary = "*****";
+			String crlf = "\r\n";
+			String twoHyphens = "--";
+			int BUFFER_SIZE = 4 * 1024;
+			byte[] buffer = new byte[BUFFER_SIZE];
+			int bytesRead = -1;
+			long totalBytesRead = 0;
+			URL urlResource = null;
+			if (uploadType.equals("0")) {
+				try {
+					if (URL.startsWith("https")) {
+						urlResource = new URL(URL);
+						conToSend = (HttpsURLConnection) urlResource.openConnection();
+					} else {
+						conToSend = (HttpURLConnection) urlResource.openConnection();
+					}
+					conToSend.setConnectTimeout(0); // infinite timeout
+					conToSend.setReadTimeout(0);
+					conToSend.setRequestMethod("POST");
+					conToSend.setRequestProperty("Connection", "Keep-Alive");
+					conToSend.setRequestProperty("Cache-Control", "no-cache");
+					conToSend.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
+					conToSend.setUseCaches(false);
+					conToSend.setDoOutput(true);
+					conToSend.setDoInput(true);
+					conToSend.setChunkedStreamingMode(4096);
+					conToSend.connect();
+					outputStreamToRequestBody = new DataOutputStream(conToSend.getOutputStream());
+					((DataOutputStream) outputStreamToRequestBody).writeBytes(twoHyphens + boundary + crlf);
+					((DataOutputStream) outputStreamToRequestBody).writeBytes("Content-Disposition: form-data; name=\"" + "file" + "\";filename=\""
+							+ URLEncoder.encode(uploadFile.getName(), "UTF-8").replace("+", "%20") + "\"" + crlf);
+					((DataOutputStream) outputStreamToRequestBody).writeBytes(crlf);
+					if (!relativePath.contains(".ini")) {
+						outputStreamToRequestBody = progressCallback != null
+								? new ProgressHttpEntityWrapper.ProgressFilterOutputStream(
+								outputStreamToRequestBody, progressCallback, uploadFile.length(), relativePath)
+								: outputStreamToRequestBody;
+					}
+					inputStreamToLogFile = new FileInputStream(uploadFile);
+					while ((bytesRead = inputStreamToLogFile.read(buffer)) != -1) {
+						bytes.put((long) bytesRead);
+						outputStreamToRequestBody.write(buffer, 0, bytesRead);
+						totalBytesRead += bytesRead;
+						System.out.println(relativePath + " " + totalBytesRead);
+					}
+					if (relativePath.contains(".ini")) {
+						((DataOutputStream) outputStreamToRequestBody).writeBytes(crlf);
+						((DataOutputStream) outputStreamToRequestBody).writeBytes(twoHyphens + boundary + twoHyphens + crlf);
+					}
+					if (progressCallback == null) {
+						((DataOutputStream) outputStreamToRequestBody).writeBytes(crlf);
+						((DataOutputStream) outputStreamToRequestBody).writeBytes(twoHyphens + boundary + twoHyphens + crlf);
+					}
+					outputStreamToRequestBody.flush();
+					outputStreamToRequestBody.close();
+					inputStreamToLogFile.close();
+					conToSend.getResponseCode();
+					return _pma_checkUploadedFile(sessionID, uploadID, relativePath);
+				} catch (Exception e) {
+					e.printStackTrace();
+					if (outputStreamToRequestBody != null) {
+						outputStreamToRequestBody.flush();
+						((DataOutputStream) outputStreamToRequestBody).writeBytes(crlf);
+						((DataOutputStream) outputStreamToRequestBody).writeBytes(twoHyphens + boundary + twoHyphens + crlf);
+						outputStreamToRequestBody.flush();
+						// Close the stream
+						outputStreamToRequestBody.close();
+					}
+					if (inputStreamToLogFile != null) {
+						inputStreamToLogFile.close();
+					}
+					conToSend.getResponseCode();
+					return false;
+				}
+			}
+			if (uploadType.equals("1")) {
+				try {
+					urlResource = new URL(URL);
+					if (URL.startsWith("https")) {
+						conToSend = (HttpsURLConnection) urlResource.openConnection();
+					} else {
+						conToSend = (HttpURLConnection) urlResource.openConnection();
+					}
+					conToSend.setRequestMethod("PUT");
+					conToSend.setConnectTimeout(0); // infinite timeout
+					conToSend.setReadTimeout(0); // infinite timeout
+					conToSend.setRequestProperty("Connection", "Keep-Alive");
+					conToSend.setRequestProperty("Cache-Control", "no-cache");
+					conToSend.setRequestProperty("Content-Length", String.valueOf(uploadFile.length()));
+					conToSend.setDoOutput(true);
+					conToSend.setUseCaches(false);
+					conToSend.setFixedLengthStreamingMode(uploadFile.length());
+					conToSend.connect();
+					outputStreamToRequestBody = new DataOutputStream(conToSend.getOutputStream());
+					outputStreamToRequestBody = progressCallback != null
+							? new ProgressHttpEntityWrapper.ProgressFilterOutputStream(
+							outputStreamToRequestBody, progressCallback, uploadFile.length(), relativePath)
+							: outputStreamToRequestBody;
+					inputStreamToLogFile = new FileInputStream(uploadFile);
+					while ((bytesRead = inputStreamToLogFile.read(buffer)) != -1) {
+						bytes.put((long) bytesRead);
+						outputStreamToRequestBody.write(buffer, 0, bytesRead);
+						totalBytesRead += bytesRead;
+						System.out.println(relativePath + " " + totalBytesRead);
+					}
+					outputStreamToRequestBody.flush();
+					outputStreamToRequestBody.close();
+					inputStreamToLogFile.close();
+					conToSend.getResponseMessage();
+					conToSend.disconnect();
+					return _pma_checkUploadedFile(sessionID, uploadID, relativePath);
+				}  catch (Exception e) {
+					e.printStackTrace();
+					if (outputStreamToRequestBody != null) {
+						outputStreamToRequestBody.flush();
+						// Close the stream
+						outputStreamToRequestBody.close();
+					}
+					if (inputStreamToLogFile != null) {
+						inputStreamToLogFile.close();
+					}
+					conToSend.getResponseCode();
+					return false;
+				}
+			}
+			if (uploadType.equals("2")) {
+				try {
+					urlResource = new URL(URL);
+					if (URL.startsWith("https")) {
+						conToSend = (HttpsURLConnection) urlResource.openConnection();
+					} else {
+						conToSend = (HttpURLConnection) urlResource.openConnection();
+					}
+					conToSend.setRequestMethod("PUT");
+					conToSend.setConnectTimeout(0); // infinite timeout
+					conToSend.setReadTimeout(0); // infinite timeout
+					conToSend.setRequestProperty("Connection", "Keep-Alive");
+					conToSend.setRequestProperty("Cache-Control", "no-cache");
+					conToSend.setRequestProperty("x-ms-blob-type", "BlockBlob");
+					conToSend.setRequestProperty("Content-Length", String.valueOf(uploadFile.length()));
+					conToSend.setDoOutput(true);
+					conToSend.setUseCaches(false);
+					conToSend.setFixedLengthStreamingMode(uploadFile.length());
+					conToSend.connect();
+					outputStreamToRequestBody = new DataOutputStream(conToSend.getOutputStream());
+					outputStreamToRequestBody = progressCallback != null
+							? new ProgressHttpEntityWrapper.ProgressFilterOutputStream(
+							outputStreamToRequestBody, progressCallback, uploadFile.length(), relativePath)
+							: outputStreamToRequestBody;
+					inputStreamToLogFile = new FileInputStream(uploadFile);
+					while ((bytesRead = inputStreamToLogFile.read(buffer)) != -1) {
+						bytes.put((long) bytesRead);
+						outputStreamToRequestBody.write(buffer, 0, bytesRead);
+						totalBytesRead += bytesRead;
+						System.out.println(relativePath + " " + totalBytesRead);
+					}
+					outputStreamToRequestBody.flush();
+					outputStreamToRequestBody.close();
+					inputStreamToLogFile.close();
+					conToSend.getResponseMessage();
+					conToSend.disconnect();
+					return _pma_checkUploadedFile(sessionID, uploadID, relativePath);
+				}  catch (Exception e) {
+					e.printStackTrace();
+					if (outputStreamToRequestBody != null) {
+						outputStreamToRequestBody.flush();
+						// Close the stream
+						outputStreamToRequestBody.close();
+					}
+					if (inputStreamToLogFile != null) {
+						inputStreamToLogFile.close();
+					}
+					conToSend.getResponseCode();
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	public static List<HashMap<String, String>> _pma_filesToUpload(String localSourceSlide, String targetFolder, String sessionID) {
+		if (localSourceSlide == null) {
+			throw new RuntimeException("Slide name is empty");
+		}
+		for (String slide : Core.getSlides(targetFolder, sessionID)) {
+			if (slide.equals(targetFolder + Core.getSlideFileName(localSourceSlide))) {
+				try {
+					throw new Exception("The file: ===" +  Core.getSlideFileName(localSourceSlide) +"=== with the same name and extension already exists in the target folder: " + targetFolder);
+				} catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}
+		Map<String, Map<String, String>> files = Core.getFilesForSlide(localSourceSlide, pmaCoreLiteSessionID);
+
+		String mainDirectory = "";
+		for (Map.Entry<String, Map<String, String>> entry : files.entrySet()) {
+			String key = entry.getKey();
+			Map<String, String> value = entry.getValue();
+			File file = new File(key);
+			String md = file.getParent();
+
+			if (mainDirectory.length() == 0 || md.length() < mainDirectory.length()) {
+				mainDirectory = md;
+			}
+		}
+
+		mainDirectory = mainDirectory.replace("\\", "/");
+		List<HashMap<String, String>> uploadFiles = new ArrayList<HashMap<String, String>>();
+		Map<String,Long> hm = new HashMap<>();
+		LinkedHashMap<String, Long> reverseSortedMap = new LinkedHashMap<>();
+		for (Map.Entry<String, Map<String, String>> entry : files.entrySet()) {
+			String key = entry.getKey();
+			Map<String, String> value = entry.getValue();
+			long s = (new File(key)).length();
+			if (s <= 0) {
+				continue;
+			}
+			hm.put(key, s);
+		}
+
+		hm.entrySet()
+				.stream()
+				.sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+				.forEachOrdered(x -> reverseSortedMap.put(x.getKey(), x.getValue()));
+		for (Map.Entry<String, Long> revers : reverseSortedMap.entrySet()) {
+			String key = revers.getKey();
+			long s = (new File(key)).length();
+			if (s <= 0) {
+				continue;
+			}
+			String path = key.replace(mainDirectory, "").replaceAll("^\\+|\\+$/g", "")
+					.replaceAll("^/+|/+$/g", "");
+			HashMap<String, String> fileObj = new HashMap<String, String>();
+			fileObj = new HashMap<String, String>();
+			fileObj.put("Path", path);
+			fileObj.put("Length", Long.toString(s));
+			fileObj.put("IsMain", Boolean.toString(path.equals(Core.getSlideFileName(localSourceSlide))));
+			fileObj.put("FullPath", key);
+			uploadFiles.add(fileObj);
+		}
+		return uploadFiles;
+	}
+
+	public static JSONObject _pma_get_DataIdTypeConString_forUpload(String localSourceSlide, String targetFolder, String sessionID) {
+		JSONObject data = new JSONObject();
+		data.put("Path", targetFolder);
+		data.put("Files", new JSONArray(_pma_filesToUpload(localSourceSlide, targetFolder, sessionID)));
+		JSONObject jsonResponse = PMA.getJSONObjectResponse(_pma_generateUploadID(sessionID, data));
+		return jsonResponse;
+	}
+
+	public static boolean _pma_uploadTransfer(String uploadID, String uploadType, File uploadFile, String relativePath,
+											  String URL, String sessionID,
+											  ProgressHttpEntityWrapper.ProgressCallback progressCallback) throws Exception {
+		out.println(uploadID);
+		out.println(uploadFile.getName());
+		out.println(relativePath);
+		out.println(URL);
+		OutputStream outputStreamToRequestBody = null;
+		FileInputStream inputStreamToLogFile = null;
+		HttpURLConnection con = null;
+		try {
+			URL urlResource = new URL(URL);
+			if (URL.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("PUT");
+			con.setConnectTimeout(0); // infinite timeout
+			con.setReadTimeout(0); // infinite timeout
+			con.setRequestProperty("Connection", "Keep-Alive");
+			con.setRequestProperty("Cache-Control", "no-cache");
+			con.setRequestProperty("Content-Length", String.valueOf(uploadFile.length()));
+			con.setDoOutput(true);
+			con.setUseCaches(false);
+			con.setFixedLengthStreamingMode(uploadFile.length());
+			con.connect();
+			outputStreamToRequestBody = new DataOutputStream(con.getOutputStream());
+			outputStreamToRequestBody = progressCallback != null
+					? new ProgressHttpEntityWrapper.ProgressFilterOutputStream(
+					outputStreamToRequestBody, progressCallback, uploadFile.length(), relativePath)
+					: outputStreamToRequestBody;
+			inputStreamToLogFile = new FileInputStream(uploadFile);
+			byte[] buffer = new byte[4 * 1024];
+			int bytesRead = -1;
+			long totalBytesRead = 0;
+			while ((bytesRead = inputStreamToLogFile.read(buffer)) != -1) {
+				bytes.put((long) bytesRead);
+				outputStreamToRequestBody.write(buffer, 0, bytesRead);
+				totalBytesRead += bytesRead;
+				System.out.println(relativePath + " " + totalBytesRead);
+			}
+			outputStreamToRequestBody.flush();
+			outputStreamToRequestBody.close();
+			inputStreamToLogFile.close();
+			con.getResponseMessage();
+			con.disconnect();
+			return _pma_checkUploadedFile(sessionID, uploadID, relativePath);
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (outputStreamToRequestBody != null) {
+				outputStreamToRequestBody.flush();
+				outputStreamToRequestBody.close();
+			}
+			if (inputStreamToLogFile != null) {
+				inputStreamToLogFile.close();
+			}
+			con.getResponseCode();
+			return false;
+		}
+	}
+
+	private static boolean _pma_checkUploadedFile(String sessionID, String uploadID, String relativePath) {
+		try {
+			String url = (pmaUrl(sessionID).endsWith("/") ? pmaUrl(sessionID) : pmaUrl(sessionID) + "/") + "transfer/Upload/" + uploadID + "?sessionID=" + sessionID;
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestMethod("GET");
+			con.setRequestProperty("Accept", "application/json");
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
+			if (PMA.isJSONObject(jsonString)) {
+				JSONObject jsonResponse = PMA.getJSONObjectResponse(jsonString);
+				JSONArray jsonArray = jsonResponse.optJSONArray("Files");
+				for (int i = 0; i < jsonArray.length(); i++) {
+					if (jsonArray.getJSONObject(i).optString("Path").equals(relativePath)) {
+						return jsonArray.getJSONObject(i).optBoolean("Complete");
+					}
+				}
+				return false;
+			} else {
+				return false;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
+
+	private static String _pma_generateUploadID(String sessionID, JSONObject jsonResponse) {
+		String json = String.valueOf(jsonResponse);
+		try {
+			String url = (pmaUrl(sessionID).endsWith("/") ? pmaUrl(sessionID) : pmaUrl(sessionID) + "/") + "transfer/Upload?sessionID=" + sessionID;
+			URL urlResource = new URL(url);
+			HttpURLConnection con;
+			if (url.startsWith("https")) {
+				con = (HttpsURLConnection) urlResource.openConnection();
+			} else {
+				con = (HttpURLConnection) urlResource.openConnection();
+			}
+			con.setRequestProperty("Content-Length", String.valueOf(json.getBytes("UTF-8")));
+			con.setRequestMethod("POST");
+			con.setRequestProperty("Accept", "application/json");
+			con.setRequestProperty("Content-Type", "application/json");
+			con.setUseCaches(false);
+			con.setDoOutput(true);
+			// we set the json string as the request body
+			OutputStream os = con.getOutputStream();
+			os.write(json.getBytes("UTF-8"));
+			os.close();
+			return PMA.getJSONAsStringBuffer(con).toString();
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 
 	/**
