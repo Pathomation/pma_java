@@ -1,10 +1,7 @@
 package com.pathomation;
 
-import com.pathomation.Core;
-import com.pathomation.PMA;
 import org.json.JSONArray;
 import org.json.JSONObject;
-
 import javax.net.ssl.HttpsURLConnection;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -15,7 +12,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import static com.pathomation.Core.pmaUrl;
 import static java.lang.System.out;
 

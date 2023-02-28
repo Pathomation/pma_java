@@ -16,12 +16,10 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
 import javax.imageio.ImageIO;
 import javax.net.ssl.HttpsURLConnection;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.*;
@@ -40,15 +38,12 @@ import org.apache.http.protocol.HttpContext;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
-
-import static com.pathomation.PMA.getJSONArrayResponse;
 import static java.lang.System.out;
 
 /**
@@ -59,7 +54,7 @@ import static java.lang.System.out;
  * </p>
  * 
  * @author Yassine Iddaoui
- * @version 2.0.0.96
+ * @version 2.0.0.118
  */
 public class Core {
 	/**
@@ -1687,7 +1682,6 @@ public class Core {
 	 *                 </p>
 	 * @return Nested maps forming a raw image
 	 */
-	@SuppressWarnings("unchecked")
 	public static Map<String, Object> getSlideInfo(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
@@ -1776,7 +1770,6 @@ public class Core {
 	 *                  </p>
 	 * @return Nested maps forming raw images
 	 */
-	@SuppressWarnings("unchecked")
 	public static Map<String, Map<String, Object>> getSlidesInfo(List<String> slideRefs, String... varargs) {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
@@ -2266,7 +2259,6 @@ public class Core {
 	 *                 </p>
 	 * @return Number of channels for a slide (1 when slide is brightfield)
 	 */
-	@SuppressWarnings("unchecked")
 	public static int getNumberOfChannels(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
@@ -2288,7 +2280,6 @@ public class Core {
 	 *                 </p>
 	 * @return Number of layers for a slide
 	 */
-	@SuppressWarnings("unchecked")
 	public static int getNumberOfLayers(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
@@ -2472,7 +2463,6 @@ public class Core {
 	 *                 </p>
 	 * @return List of associated image types
 	 */
-	@SuppressWarnings("unchecked")
 	public static List<String> getAssociatedImageTypes(String slideRef, String... varargs) {
 		// setting the default value when arguments' value is omitted
 		String sessionID = varargs.length > 0 ? varargs[0] : null;
@@ -4148,15 +4138,8 @@ public class Core {
 	 * @param geometry annotation's geometry
 	 * @param color annotation's color
 	 */
-	public static JSONArray add_Annotations (
-			String sessionID,
-			String pathOrUid,
-			String classification,
-			int layerID,
-			String notes,
-			String geometry,
-			String color)
-			throws Exception {
+	public static JSONArray add_Annotations (String sessionID, String pathOrUid, String classification,
+			int layerID, String notes, String geometry, String color) throws Exception {
 		JSONObject data = new JSONObject();
 		String urlS;
 		sessionID = sessionId(sessionID);
@@ -4698,33 +4681,33 @@ public class Core {
 	}
 
 	/**
-	 * * This method downloads single slides and multi-assembled slides.
-	 *
-	 * Downloads a slide from a PMA.core server. Requires a PMA.start installation
-	 * @param varargs 0:  mainSlideFile is full path of the slide. Is a required income parameter!
-	 * @param varargs 1: saveDirectory  is a directory where slide will be saved. Is a required income parameter!
-	 * @param varargs 2: sessionID Is a required income parameter!
-	 * @param varargs 3: is the callback to return readable bytes.
-	 *                   Is NOT a required income parameter if there is no fourth relativePath parameter after it.
-	 *                   If relativePath is present then the callback is required or null.
-	 * @param varargs 4: is relativePath used when downloading files that include a folder and subfolders with compound files one by one.
-	 *                In this case, the folders and subfolders must be prepared in advance before the download method,
-	 *                and the saveDirectory parameter must be the full path including the folders, subfolders, file, and extension.
-	 *                Is NOT a required income parameter!
+	 * * This method downloads single slide and multipart slide.<br>
+	 * <br>
+	 * 		param varargs: <p>
+	 * 					0: mainSlideFile is full path of the slide. Is a required income parameter!<br>
+	 * 					1: saveDirectory  is a directory where slide will be saved. Is a required income parameter!<br>
+	 * 					2: sessionID Is a required income parameter!<br>
+	 * 					3: callback to return readable bytes. Optional parameter.<br>
+	 *                        	The parameter is used to read the bytes to be downloaded,<br>
+	 *                         	callback must be null if not needed.<br>
+	 * 				  	4: relativePath optional parameter, used when downloading files that include a folder and subfolders with compound files one by one.<br>
+	 *                In this case, the folders and subfolders must be prepared in advance before the download method,<br>
+	 *                and the saveDirectory parameter must be the full path including the folders, subfolders, file, and extension.<br>
+	 *               </p>
 	 * @throws Exception if incoming parameters are not valid
-	 * @return true if download is done.
+	 * @return true if download is done.<br>
+	 *<br>
+	 * Callback usage model:<br>
 	 *
-	 * Callback usage model:
-	 * ProgressHttpEntityWrapper.ProgressCallback progressCallback = new ProgressHttpEntityWrapper.ProgressCallback() {
-	 *             @Override
-	 *             public void progress(long bytesRead, long transferred, long totalBytes, String filename) {
-	 *                 /* bytesRead - readable bytes
-	 *                 /* transferred - total in %
-	 *                 /* totalBytes - += bytesRead
-	 *                 /* filename - name of downloaded file
-	 *             }
-	 *         };
-	 *		Core.download(***);
+	 * ProgressHttpEntityWrapper.ProgressCallback progressCallback = new ProgressHttpEntityWrapper.ProgressCallback() {<br>
+	 *             public void progress(long bytesRead, long transferred, long totalBytes, String filename) {<br>
+	 *                  bytesRead - readable bytes<br>
+	 *                  transferred - total in %<br>
+	 *                  totalBytes - += bytesRead<br>
+	 *                  filename - name of downloaded file<br>
+	 *             }<br>
+	 *         };<br>
+	 *		Core.download(***);<br>
 	 */
 	public static boolean download(Object... varargs) throws Exception {
 		String mainSlideFile = varargs.length > 0 ? (String) varargs[0] : null;
@@ -4860,20 +4843,6 @@ public class Core {
 		return true;
 	}
 
-	/**
-	 * This method returns a boolean result based on the input parameters.
-	 * @param sessionId
-	 * @param url
-	 * @param length
-	 * @return
-	 */
-	public static Boolean addServer(String sessionId, String url, int length) {
-		pmaSessions.put(sessionId, url);
-		pmaSlideInfos.put(sessionId, new HashMap<String, Object>());
-		pmaAmountOfDataDownloaded.put(sessionId, length);
-
-		return true;
-	}
 
 	/**
 	 * Uploads a slide to a PMA.core server. Requires a PMA.start installation
@@ -4886,12 +4855,34 @@ public class Core {
 	 * The function has the following signature:
 	 * `callback(float progress)`
 	 *
-	 *
-	 * @param localSourceSlide
-	 * @param targetFolder
-	 * @param sessionID
-	 * @param progressCallback
-	 * @return true if upload is done
+	 * @param localSourceSlide this is the full path of the slide including the extension.
+	 * @param targetFolder this is the full path to the remote folder to a PMA.core server.
+	 * @param sessionID is a required income parameter!
+	 * @param progressCallback optional parameter.
+	 *                         The parameter is used to read the bytes to be uploaded,
+	 *                         it must be null if not needed.
+	 * @param varargs optional parameter.
+	 *                <p>
+	 * if varargs is null this method uploads all files from multipart slide like .vsi and .mrxs.<br>
+	 * To load multipart slides file by file, you need to fill in the following varargs parameters:<br>
+	 * 					0 - relativePath is full path of file<br>
+	 * 			        1 - URL is upload url<br>
+	 * 			      	2 - uploadID is generated ID for upload<br>
+	 * 			      	3 - uploadType is generated type for upload<br>
+	 * 			      	4 - uploadFile is file which one will be uploaded<br>
+	 * @return true if upload is done<br>
+	 * 				  </p>
+	 *<br>
+	 * Callback usage model:<br>
+	 * ProgressHttpEntityWrapper.ProgressCallback progressCallback = new ProgressHttpEntityWrapper.ProgressCallback() {<br>
+	 * 				public void progress(long bytesRead, long transferred, long totalBytes, String filename) {<br>
+	 * 					bytesRead - readable bytes<br>
+	 * 					transferred - total in %<br>
+	 * 					totalBytes - += bytesRead<br>
+	 * 					filename - name of downloaded file<br>
+	 * 				}<br>
+	 * 			};<br>
+	 * 		Core.upload(***);<br>
 	 */
 	public static boolean upload(String localSourceSlide, String targetFolder, String sessionID,
 								 ProgressHttpEntityWrapper.ProgressCallback progressCallback, Object... varargs)
@@ -5275,6 +5266,15 @@ public class Core {
 		return true;
 	}
 
+	/**
+	 *
+	 * This method will check the remote folder for a slide with the same name
+	 * and search in the local folder for files that are related to the slide entered in the input parameters.
+	 * @param localSourceSlide
+	 * @param targetFolder
+	 * @param sessionID
+	 * @return uploadFiles
+	 */
 	public static List<HashMap<String, String>> _pma_filesToUpload(String localSourceSlide, String targetFolder, String sessionID) {
 		if (localSourceSlide == null) {
 			throw new RuntimeException("Slide name is empty");
@@ -5339,6 +5339,13 @@ public class Core {
 		return uploadFiles;
 	}
 
+	/**
+	 * This method is for getting JSON data: uploadID, upload type and upload URLs.
+	 * @param localSourceSlide
+	 * @param targetFolder
+	 * @param sessionID
+	 * @return jsonResponse
+	 */
 	public static JSONObject _pma_get_DataIdTypeConString_forUpload(String localSourceSlide, String targetFolder, String sessionID) {
 		JSONObject data = new JSONObject();
 		data.put("Path", targetFolder);
@@ -5347,68 +5354,13 @@ public class Core {
 		return jsonResponse;
 	}
 
-	public static boolean _pma_uploadTransfer(String uploadID, String uploadType, File uploadFile, String relativePath,
-											  String URL, String sessionID,
-											  ProgressHttpEntityWrapper.ProgressCallback progressCallback) throws Exception {
-		out.println(uploadID);
-		out.println(uploadFile.getName());
-		out.println(relativePath);
-		out.println(URL);
-		OutputStream outputStreamToRequestBody = null;
-		FileInputStream inputStreamToLogFile = null;
-		HttpURLConnection con = null;
-		try {
-			URL urlResource = new URL(URL);
-			if (URL.startsWith("https")) {
-				con = (HttpsURLConnection) urlResource.openConnection();
-			} else {
-				con = (HttpURLConnection) urlResource.openConnection();
-			}
-			con.setRequestMethod("PUT");
-			con.setConnectTimeout(0); // infinite timeout
-			con.setReadTimeout(0); // infinite timeout
-			con.setRequestProperty("Connection", "Keep-Alive");
-			con.setRequestProperty("Cache-Control", "no-cache");
-			con.setRequestProperty("Content-Length", String.valueOf(uploadFile.length()));
-			con.setDoOutput(true);
-			con.setUseCaches(false);
-			con.setFixedLengthStreamingMode(uploadFile.length());
-			con.connect();
-			outputStreamToRequestBody = new DataOutputStream(con.getOutputStream());
-			outputStreamToRequestBody = progressCallback != null
-					? new ProgressHttpEntityWrapper.ProgressFilterOutputStream(
-					outputStreamToRequestBody, progressCallback, uploadFile.length(), relativePath)
-					: outputStreamToRequestBody;
-			inputStreamToLogFile = new FileInputStream(uploadFile);
-			byte[] buffer = new byte[4 * 1024];
-			int bytesRead = -1;
-			long totalBytesRead = 0;
-			while ((bytesRead = inputStreamToLogFile.read(buffer)) != -1) {
-				bytes.put((long) bytesRead);
-				outputStreamToRequestBody.write(buffer, 0, bytesRead);
-				totalBytesRead += bytesRead;
-				System.out.println(relativePath + " " + totalBytesRead);
-			}
-			outputStreamToRequestBody.flush();
-			outputStreamToRequestBody.close();
-			inputStreamToLogFile.close();
-			con.getResponseMessage();
-			con.disconnect();
-			return _pma_checkUploadedFile(sessionID, uploadID, relativePath);
-		} catch (Exception e) {
-			e.printStackTrace();
-			if (outputStreamToRequestBody != null) {
-				outputStreamToRequestBody.flush();
-				outputStreamToRequestBody.close();
-			}
-			if (inputStreamToLogFile != null) {
-				inputStreamToLogFile.close();
-			}
-			con.getResponseCode();
-			return false;
-		}
-	}
-
+	/**
+	 * This method checks if the file has been correctly uploaded to the server and returns a boolean value.
+	 * @param sessionID
+	 * @param uploadID
+	 * @param relativePath
+	 * @return
+	 */
 	private static boolean _pma_checkUploadedFile(String sessionID, String uploadID, String relativePath) {
 		try {
 			String url = (pmaUrl(sessionID).endsWith("/") ? pmaUrl(sessionID) : pmaUrl(sessionID) + "/") + "transfer/Upload/" + uploadID + "?sessionID=" + sessionID;
@@ -5440,6 +5392,12 @@ public class Core {
 		}
 	}
 
+	/**
+	 * This method is made to generate an upload id.
+	 * @param sessionID
+	 * @param jsonResponse
+	 * @return
+	 */
 	private static String _pma_generateUploadID(String sessionID, JSONObject jsonResponse) {
 		String json = String.valueOf(jsonResponse);
 		try {
@@ -5468,9 +5426,25 @@ public class Core {
 		}
 	}
 
+
+	/**
+	 * This method returns a boolean result based on the input parameters.
+	 * @param sessionId
+	 * @param url
+	 * @param length
+	 * @return boolean
+	 */
+	public static Boolean addServer(String sessionId, String url, int length) {
+		pmaSessions.put(sessionId, url);
+		pmaSlideInfos.put(sessionId, new HashMap<String, Object>());
+		pmaAmountOfDataDownloaded.put(sessionId, length);
+
+		return true;
+	}
+
 	/**
 	 * This method returns pmaSessions.
-	 * @return
+	 * @return pmaSessions
 	 */
 	public static Map<String, Object> sessions() {
 		return pmaSessions;
@@ -5480,7 +5454,7 @@ public class Core {
 	 * This method connect to cloud with json data.
 	 * @param username
 	 * @param password
-	 * @return
+	 * @return cloudServerData
 	 */
 	public static CloudServerData connectToCloud(String username, String password) {
 		String url = "https://myapi.pathomation.com/oauth/token";
@@ -5521,7 +5495,7 @@ public class Core {
 	 * This method makes DataOutputStream connection to send data to cloud.
 	 * @param url
 	 * @param payload
-	 * @return
+	 * @return response String
 	 */
 	public static String postItem(String url, String payload) {
 		try {
@@ -5544,7 +5518,7 @@ public class Core {
 	/**
 	 * This method make authorization with token to connect cloud
 	 * @param accessToken
-	 * @return
+	 * @return response String
 	 */
 	public static String getCloudAuth(String accessToken) {
 		try {
@@ -5575,7 +5549,7 @@ public class Core {
 	/**
 	 * This method reads and returns the input json data
 	 * @param value
-	 * @return
+	 * @return jsonResponse
 	 */
 	public static JSONObject getJSONResponse(String value) {
 		JSONObject jsonResponse;
