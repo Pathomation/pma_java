@@ -74,6 +74,12 @@ public class Core {
 	private static final String pmaCoreLiteURL = "http://localhost:54001/";
 	private static final String pmaCoreLiteSessionID = "SDK.Java";
 	private static Boolean pmaUseCacheWhenRetrievingTiles = true;
+
+	/**
+	 * Readable bytes for upload and download methods. To integrate into the progress bar.
+	 */
+	private static BlockingQueue<Long> bytes = new LinkedBlockingQueue<>();
+
 	/**
 	 * Keep track of how much data was downloaded
 	 */
@@ -132,9 +138,11 @@ public class Core {
 	}
 
 	/**
-	 * Readable bytes for upload and download methods. To integrate into the progress bar.
+	 * @return the bytes
 	 */
-	public static BlockingQueue<Long> bytes = new LinkedBlockingQueue<>();
+	public static BlockingQueue<Long> getBytes() {
+		return bytes;
+	}
 
 	/**
 	 * This method is used to determine whether the Java SDK runs in debugging mode

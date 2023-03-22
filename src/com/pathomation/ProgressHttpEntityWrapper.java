@@ -63,7 +63,7 @@ public class ProgressHttpEntityWrapper extends HttpEntityWrapper {
             out.write(b);
             Core core = new Core();
             try {
-                core.bytes.put((long) b);
+                Core.getBytes().put((long) b);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
