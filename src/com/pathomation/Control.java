@@ -26,7 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class Control {
 
-	public enum PmaTrainingSessionRole {
+	private enum PmaTrainingSessionRole {
 		SUPERVISOR, TRAINEE, OBSERVER
 	}
 
