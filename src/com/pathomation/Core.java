@@ -90,6 +90,11 @@ public class Core {
 	private static ObjectMapper objectMapper = new ObjectMapper();
 
 	/**
+	 * Readable bytes for upload and download methods. To integrate into the progress bar.
+	 */
+	private static BlockingQueue<Long> bytes = new LinkedBlockingQueue<>();
+
+	/**
 	 * @return the pmaSessions
 	 */
 	public static Map<String, Object> getPmaSessions() {
@@ -132,9 +137,12 @@ public class Core {
 	}
 
 	/**
-	 * Readable bytes for upload and download methods. To integrate into the progress bar.
+	 *
+	 * @return blockingQueue bytes
 	 */
-	public static BlockingQueue<Long> bytes = new LinkedBlockingQueue<>();
+	public static BlockingQueue<Long> getBytes() {
+		return bytes;
+	}
 
 	/**
 	 * This method is used to determine whether the Java SDK runs in debugging mode
@@ -158,17 +166,12 @@ public class Core {
 	/**
 	 * This method is used to get the session's ID
 	 * 
-	 * @param varargs Array of optional arguments
-	 *                <p>
-	 *                sessionID : First optional argument(String), default
-	 *                value(null), session's ID
-	 *                </p>
+	 * @param sessionID
 	 * @return The same sessionID if explicited, otherwise it recovers a session's
 	 *         ID
 	 */
-	private static String sessionId(String... varargs) {
+	private static String sessionId(String sessionID) {
 		// setting the default value when argument's value is omitted
-		String sessionID = varargs.length > 0 ? varargs[0] : null;
 		if (sessionID == null) {
 			// if the sessionID isn't specified, maybe we can still recover it somehow
 			return firstSessionId();
@@ -315,7 +318,7 @@ public class Core {
 	 * @return JSONArray containing the list of sessions
 	 */
 	public static JSONArray getSessions(String pmaControlURL, String pmaCoreSessionID) {
-		String url = join(pmaControlURL, "api/Sessions?sessionID=" + pmaQ(pmaCoreSessionID));
+		String url = PMA.join(pmaControlURL, "api/Sessions?sessionID=" + pmaQ(pmaCoreSessionID));
 		System.out.println(url);
 		try {
 			URL urlResource = new URL(url);
@@ -375,7 +378,7 @@ public class Core {
 	 * @return JSONArray containing the list of case sessions
 	 */
 	public static JSONArray getCaseCollections(String pmaControlURL, String pmaCoreSessionID) {
-		String url = join(pmaControlURL, "api/CaseCollections?sessionID=" + pmaQ(pmaCoreSessionID));
+		String url = PMA.join(pmaControlURL, "api/CaseCollections?sessionID=" + pmaQ(pmaCoreSessionID));
 		System.out.println(url);
 		try {
 			URL urlResource = new URL(url);
@@ -406,7 +409,7 @@ public class Core {
 	 * @return JSONArray containing the list of projects
 	 */
 	public static JSONArray getProjects(String pmaControlURL, String pmaCoreSessionID) {
-		String url = join(pmaControlURL, "api/Projects?sessionID=" + pmaQ(pmaCoreSessionID));
+		String url = PMA.join(pmaControlURL, "api/Projects?sessionID=" + pmaQ(pmaCoreSessionID));
 		System.out.println(url);
 		try {
 			URL urlResource = new URL(url);
@@ -468,41 +471,12 @@ public class Core {
 	 * This method is used to define which content will be received "XML" or "Json"
 	 * for "API" Web service calls
 	 * 
-	 * @param varargs Array of optional arguments
-	 *                <p>
-	 *                sessionID : First optional argument(String), default
-	 *                value(null), session's ID
-	 *                </p>
-	 *                <p>
-	 *                xml : Second optional argument(Boolean), default value(true),
-	 *                define if method will return XML or Json content
-	 *                </p>
+	 * @param sessionID
+	 * @param xmlOrJson
 	 * @return Add a sequence to the url to specify which content to be received
 	 *         (XML or Json)
 	 */
-	private static String apiUrl(Object... varargs) {
-		// setting the default values when arguments' values are omitted
-		String sessionID = null;
-		Boolean xml = false;
-		if (varargs.length > 0) {
-			if (!(varargs[0] instanceof String) && varargs[0] != null) {
-				if (PMA.logger != null) {
-					PMA.logger.severe("apiUrl() : Invalid argument");
-				}
-				throw new IllegalArgumentException("...");
-			}
-			sessionID = (String) varargs[0];
-		}
-		if (varargs.length > 1) {
-			if (!(varargs[1] instanceof Boolean) && varargs[1] != null) {
-				if (PMA.logger != null) {
-					PMA.logger.severe("apiUrl() : Invalid argument");
-				}
-				throw new IllegalArgumentException("...");
-			}
-			xml = (Boolean) varargs[1];
-		}
-		// let's get the base URL first for the specified session
+	private static String apiUrl(String sessionID, boolean xmlOrJson) {
 		String url;
 		try {
 			url = pmaUrl(sessionID);
@@ -520,29 +494,11 @@ public class Core {
 			return null;
 		}
 		// remember, _pma_url is guaranteed to return a URL that ends with "/"
-		if (xml) {
+		if (xmlOrJson) {
 			return PMA.join(url, "api/xml/");
 		} else {
 			return PMA.join(url, "api/json/");
 		}
-	}
-
-	/**
-	 * This method concatenates strings with "/"
-	 * @param s
-	 * @return
-	 */
-	private static String join(String... s) {
-		String joinString = "";
-		for (String ss : s) {
-			if (!joinString.endsWith("/") && (!joinString.equals(""))) {
-				joinString = joinString.concat("/");
-			}
-			if (ss != null) {
-				joinString = joinString.concat(ss);
-			}
-		}
-		return joinString;
 	}
 
 	/**
@@ -634,21 +590,13 @@ public class Core {
 	/**
 	 * This method is used to get the version number
 	 * 
-	 * @param varargs Array of optional arguments
-	 *                <p>
-	 *                pmaCoreURL : First optional argument(String), default
-	 *                value(Class field pmaCoreLiteURL), url of PMA.core instance
-	 *                </p>
+	 * @param pmaCoreURL
 	 * @return Version number
 	 */
-	public static String getVersionInfo(String... varargs) {
-		// setting the default value when argument's value is omitted
-		String pmaCoreURL = varargs.length > 0 ? varargs[0] : pmaCoreLiteURL;
-		// Get version info from PMA.core instance running at pmacoreURL.
-		// Return null if PMA.core not found running at pmacoreURL endpoint
-		// purposefully DON'T use helper function apiUrl() here:
-		// why? because GetVersionInfo can be invoked WITHOUT a valid SessionID;
-		// apiUrl() takes session information into account
+	public static String getVersionInfo(String pmaCoreURL) {
+		if (pmaCoreURL == null) {
+			pmaCoreURL = pmaCoreLiteURL;
+		}
 		String url = PMA.join(pmaCoreURL, "api/json/GetVersionInfo");
 		String version = null;
 		if (PMA.debug) {
@@ -686,7 +634,6 @@ public class Core {
 					version += "." + revision;
 				}
 			}
-
 			return version;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -711,7 +658,7 @@ public class Core {
 		// Get version info from PMA.control instance running at pmacontrolURL
 		// why? because GetVersionInfo can be invoked WITHOUT a valid SessionID;
 		// _pma_api_url() takes session information into account
-		String url = join(pmaControlURL, "api/version");
+		String url = PMA.join(pmaControlURL, "api/version");
 		try {
 			URL urlResource = new URL(url);
 			HttpURLConnection con;
