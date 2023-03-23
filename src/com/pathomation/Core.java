@@ -61,19 +61,23 @@ public class Core {
 	 * So afterwards we can look up what username actually belongs to a sessions
 	 */
 	private static Map<String, Object> pmaSessions = new HashMap<String, Object>();
+
 	/**
 	 * So afterwards we can determine the PMA.core URL to connect to for a given
 	 * SessionID
 	 */
+
 	private static Map<String, String> pmaUsernames = new HashMap<>();
 	/**
 	 * A caching mechanism for slide information; obsolete and should be improved
 	 * through httpGet()
 	 */
+
 	private static Map<String, Object> pmaSlideInfos = new HashMap<String, Object>();
 	private static final String pmaCoreLiteURL = "http://localhost:54001/";
 	private static final String pmaCoreLiteSessionID = "SDK.Java";
 	private static Boolean pmaUseCacheWhenRetrievingTiles = true;
+
 	/**
 	 * Keep track of how much data was downloaded
 	 */
@@ -330,8 +334,8 @@ public class Core {
 			}
 			con.setRequestMethod("GET");
 			con.setRequestProperty("Accept", "application/json");
-			String jsonString = getJSONAsStringBuffer(con).toString();
-			JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
+			JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
 			return jsonResponse;
 		} catch (Exception e) {
 			System.out.print(e.getMessage());
@@ -390,8 +394,8 @@ public class Core {
 			}
 			con.setRequestMethod("GET");
 			con.setRequestProperty("Accept", "application/json");
-			String jsonString = getJSONAsStringBuffer(con).toString();
-			JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
+			JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
 			return jsonResponse;
 		} catch (Exception e) {
 			System.out.print(e.getMessage());
@@ -421,8 +425,8 @@ public class Core {
 			}
 			con.setRequestMethod("GET");
 			con.setRequestProperty("Accept", "application/json");
-			String jsonString = getJSONAsStringBuffer(con).toString();
-			JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
+			JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
 			return jsonResponse;
 		} catch (Exception e) {
 			System.out.print(e.getMessage());
@@ -669,8 +673,8 @@ public class Core {
 			}
 			con.setRequestMethod("GET");
 			con.setRequestProperty("Accept", "application/json");
-			String jsonString = getJSONAsStringBuffer(con).toString();
-			JSONObject jsonResponse = getJSONResponse(jsonString);
+			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
+			JSONObject jsonResponse = PMA.getJSONResponse(jsonString);
 			return jsonResponse;
 		} catch (Exception e) {
 			System.out.print(e.getMessage());
@@ -884,7 +888,7 @@ public class Core {
 					return null;
 				}
 			} else {
-				JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+				JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
 				version = new ArrayList<>();
 				for (int i = 0; i < jsonResponse.length(); i++) {
 					version.add(jsonResponse.optInt(i));
@@ -1099,7 +1103,7 @@ public class Core {
 			String jsonString = PMA.httpGet(url, "application/json");
 			List<String> rootDirs;
 			if (PMA.isJSONArray(jsonString)) {
-				JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+				JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				rootDirs = new ArrayList<>();
@@ -1230,7 +1234,7 @@ public class Core {
 					return null;
 				}
 			} else {
-				JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+				JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				dirs = new ArrayList<>();
@@ -1432,7 +1436,7 @@ public class Core {
 					return null;
 				}
 			} else {
-				JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+				JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				slides = new ArrayList<>();
@@ -1851,7 +1855,7 @@ public class Core {
 						return null;
 					}
 				} else {
-					JSONArray jsonArrayResponse = getJSONArrayResponse(jsonString);
+					JSONArray jsonArrayResponse = PMA.getJSONArrayResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonArrayResponse.length());
 					for (int i = 0; i < jsonArrayResponse.length(); i++) {
@@ -3861,7 +3865,7 @@ public class Core {
 						forms = null;
 					}
 				} else {
-					JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+					JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					for (int i = 0; i < jsonResponse.length(); i++) {
@@ -3938,7 +3942,7 @@ public class Core {
 						data = null;
 					}
 				} else {
-					JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+					JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					data = jsonResponse;
@@ -4008,7 +4012,7 @@ public class Core {
 						formDef = null;
 					}
 				} else {
-					JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+					JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					for (int i = 0; i < jsonResponse.length(); i++) {
@@ -4099,7 +4103,7 @@ public class Core {
 						forms = null;
 					}
 				} else {
-					JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+					JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					for (int i = 0; i < jsonResponse.length(); i++) {
@@ -4246,7 +4250,7 @@ public class Core {
 						data = null;
 					}
 				} else {
-					JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+					JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
 					pmaAmountOfDataDownloaded.put(sessionID,
 							pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 					data = jsonResponse;
@@ -4429,7 +4433,7 @@ public class Core {
 					return null;
 				}
 			} else {
-				resultsArray = getJSONArrayResponse(jsonString);
+				resultsArray = PMA.getJSONArrayResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + resultsArray.length());
 			}
@@ -4520,7 +4524,7 @@ public class Core {
 					return null;
 				}
 			} else {
-				JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+				JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				List<String> files = new ArrayList<>();
@@ -4576,7 +4580,7 @@ public class Core {
 			con.setRequestMethod("GET");
 			String jsonString = PMA.getJSONAsStringBuffer(con).toString();
 			if (PMA.isJSONArray(jsonString)) {
-				JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+				JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				List<Map<String, String>> result = new ArrayList<>();
@@ -4675,7 +4679,7 @@ public class Core {
 					files = null;
 				}
 			} else {
-				JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+				JSONArray jsonResponse = PMA.getJSONArrayResponse(jsonString);
 				pmaAmountOfDataDownloaded.put(sessionID,
 						pmaAmountOfDataDownloaded.get(sessionID) + jsonResponse.length());
 				files = new ArrayList<>();
@@ -5458,14 +5462,6 @@ public class Core {
 	}
 
 	/**
-	 * This method returns pmaSessions.
-	 * @return pmaSessions
-	 */
-	public static Map<String, Object> sessions() {
-		return pmaSessions;
-	}
-
-	/**
 	 * This method connect to cloud with json data.
 	 * @param username
 	 * @param password
@@ -5512,7 +5508,7 @@ public class Core {
 	 * @param payload
 	 * @return response String
 	 */
-	public static String postItem(String url, String payload) {
+	private static String postItem(String url, String payload) {
 		try {
 			URL urlResource = new URL(url);
 			URLConnection conn = urlResource.openConnection();
@@ -5535,7 +5531,7 @@ public class Core {
 	 * @param accessToken
 	 * @return response String
 	 */
-	public static String getCloudAuth(String accessToken) {
+	private static String getCloudAuth(String accessToken) {
 		try {
 			URL urlResource = new URL("https://myapi.pathomation.com/api/v1/authenticate");
 			URLConnection conn = urlResource.openConnection();
@@ -5559,67 +5555,5 @@ public class Core {
 		for (int c; (c = in.read()) >= 0; )
 			sb.append((char) c);
 		return sb.toString();
-	}
-
-	/**
-	 * This method reads and returns the input json data
-	 * @param value
-	 * @return jsonResponse
-	 */
-	public static JSONObject getJSONResponse(String value) {
-		JSONObject jsonResponse;
-		try {
-			jsonResponse = new JSONObject(value.toString());
-		} catch (JSONException e) {
-			return null;
-		}
-
-		return jsonResponse;
-	}
-
-	/**
-	 *
-	 *
-	 * @param con
-	 *            url to retrieve JSON from
-	 * @return StringBuffer Json result
-	 */
-	public static StringBuffer getJSONAsStringBuffer(HttpURLConnection con) {
-		try {
-			BufferedReader in;
-			if (Integer.toString(con.getResponseCode()).startsWith("2")) {
-				in = new BufferedReader(new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8));
-			} else {
-				in = new BufferedReader(new InputStreamReader(con.getErrorStream(), StandardCharsets.UTF_8));
-			}
-			String inputline;
-			StringBuffer response = new StringBuffer();
-			while ((inputline = in.readLine()) != null) {
-				response.append(inputline);
-			}
-			in.close();
-			return response;
-
-		} catch (Exception e) {
-			return null;
-		}
-	}
-
-	/**
-	 * This method is used to get a JSONArray from a String argument
-	 *
-	 * @param value
-	 *            String argument
-	 * @return JSONArray converts String argument to JSONArray
-	 */
-	public static JSONArray getJSONArrayResponse(String value) {
-
-		JSONArray jsonResponse;
-		try {
-			jsonResponse = new JSONArray(value);
-		} catch (JSONException e) {
-			return null;
-		}
-		return jsonResponse;
 	}
 }
