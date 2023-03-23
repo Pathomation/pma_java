@@ -769,6 +769,74 @@ public class Core {
 	 * @return API version in a list fashion
 	 * @throws Exception If GetAPIVersion isn't available on the API
 	 */
+//	public static List<Integer> getAPIVersion(String... varargs) throws Exception {
+//		// setting the default values when arguments' values are omitted
+//		String pmaCoreURL = varargs.length > 0 ? varargs[0] : pmaCoreLiteURL;
+//		String url = PMA.join(pmaCoreURL, "api/json/GetAPIVersion");
+//		if (PMA.debug) {
+//			System.out.println(url);
+//		}
+//
+//		String jsonString = null;
+//		try {
+//			URL urlResource = new URL(url);
+//			HttpURLConnection con;
+//			if (url.startsWith("https")) {
+//				con = (HttpsURLConnection) urlResource.openConnection();
+//			} else {
+//				con = (HttpURLConnection) urlResource.openConnection();
+//			}
+//			con.setRequestMethod("GET");
+//			jsonString = PMA.getJSONAsStringBuffer(con).toString();
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//			if (PMA.logger != null) {
+//				StringWriter sw = new StringWriter();
+//				e.printStackTrace(new PrintWriter(sw));
+//				PMA.logger.severe(sw.toString());
+//			}
+//			return null;
+//		}
+//		List<Integer> version = null;
+//		try {
+//			if (PMA.isJSONObject(jsonString)) {
+//				JSONObject jsonResponse = PMA.getJSONObjectResponse(jsonString);
+//				if (jsonResponse.has("Code")) {
+//					if (PMA.logger != null) {
+//						PMA.logger.severe("get_api_version resulted in: " + jsonResponse.get("Message"));
+//					}
+//					throw new Exception("get_api_version resulted in: " + jsonResponse.get("Message"));
+//				} else if (jsonResponse.has("d")) {
+//					JSONArray array = jsonResponse.getJSONArray("d");
+//					version = new ArrayList<>();
+//					for (int i = 0; i < array.length(); i++) {
+//						version.add(array.optInt(i));
+//					}
+//				} else {
+//					return null;
+//				}
+//			} else {
+//				JSONArray jsonResponse = getJSONArrayResponse(jsonString);
+//				version = new ArrayList<>();
+//				for (int i = 0; i < jsonResponse.length(); i++) {
+//					version.add(jsonResponse.optInt(i));
+//				}
+//			}
+//			return version;
+//		} catch (JSONException e) {
+//			e.printStackTrace();
+//			out.println(e);
+//			if (PMA.logger != null) {
+//				StringWriter sw = new StringWriter();
+//				e.printStackTrace(new PrintWriter(sw));
+//				PMA.logger.severe(sw.toString());
+//				PMA.logger.severe("GetAPIVersion method not available at " + pmaCoreURL);
+//				out.println(sw);
+//			}
+//			throw new Exception("GetAPIVersion method not available at " + pmaCoreURL);
+//		}
+//	}
+
 	public static List<Integer> getAPIVersion(String... varargs) throws Exception {
 		// setting the default values when arguments' values are omitted
 		String pmaCoreURL = varargs.length > 0 ? varargs[0] : pmaCoreLiteURL;
@@ -805,7 +873,7 @@ public class Core {
 					if (PMA.logger != null) {
 						PMA.logger.severe("get_api_version resulted in: " + jsonResponse.get("Message"));
 					}
-					throw new Exception("get_api_version resulted in: " + jsonResponse.get("Message"));
+					throw new JSONException("get_api_version resulted in: " + jsonResponse.get("Message"));
 				} else if (jsonResponse.has("d")) {
 					JSONArray array = jsonResponse.getJSONArray("d");
 					version = new ArrayList<>();
@@ -823,7 +891,7 @@ public class Core {
 				}
 			}
 			return version;
-		} catch (Exception e) {
+		} catch (NullPointerException e) {
 			e.printStackTrace();
 			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
@@ -5538,20 +5606,6 @@ public class Core {
 	}
 
 	/**
-	 *
-	 * @param value
-	 * json returned as String
-	 * @return Boolean true if it's a JSONObject, false if it's an Array
-	 */
-	public static Boolean isJSONObject(String value) {
-		if (value.startsWith("{")) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-
-	/**
 	 * This method is used to get a JSONArray from a String argument
 	 *
 	 * @param value
@@ -5559,6 +5613,7 @@ public class Core {
 	 * @return JSONArray converts String argument to JSONArray
 	 */
 	public static JSONArray getJSONArrayResponse(String value) {
+
 		JSONArray jsonResponse;
 		try {
 			jsonResponse = new JSONArray(value);
