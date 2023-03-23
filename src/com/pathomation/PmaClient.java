@@ -5,6 +5,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Map;
 import java.util.Properties;
 
 public class PmaClient {
@@ -335,7 +336,7 @@ public class PmaClient {
 //    }
 
     private static CloudServerData connectToCloud(String username, String password) {
-        if (Core.sessions().size() > 0) {
+        if (Core.getPmaSessions().size() > 0) {
             Core.disconnect();
         }
         CloudServerData result = Core.connectToCloud(username, password);
@@ -345,37 +346,6 @@ public class PmaClient {
 
         Core.addServer(result.getSessionId(), result.getServerUrl(), result.getResponseSize());
         return result;
-    }
-
-
-    public static String postItem(String url, String payload) {
-        try {
-            URL urlResource = new URL(url);
-            URLConnection conn = urlResource.openConnection();
-            conn.setDoOutput(true);
-            conn.setRequestProperty( "Content-Type", "application/json");
-            conn.setRequestProperty( "charset", "utf-8");
-            conn.setUseCaches( false );
-            try(DataOutputStream wr = new DataOutputStream( conn.getOutputStream())) {
-                wr.write(payload.getBytes());
-            }
-
-            return getResponseString(conn);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    public static String getCloudAuth(String accessToken) {
-        try {
-            URL urlResource = new URL("https://myapi.pathomation.com/api/v1/authenticate");
-            URLConnection conn = urlResource.openConnection();
-            conn.setRequestProperty( "Authorization", "Bearer " + accessToken);
-            conn.setUseCaches( false );
-            return getResponseString(conn);
-        } catch (Exception e) {
-            return null;
-        }
     }
 
     private static String getResponseString(URLConnection conn) throws IOException {
