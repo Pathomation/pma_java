@@ -317,7 +317,7 @@ public class PMA {
 	 * This method is used to check if a json returned is an array
 	 * 
 	 * @param value json in String format
-	 * @return True if it's a JSONObject, false otherwise
+	 * @return True if it's a JSONArray, false otherwise
 	 */
 	public static Boolean isJSONArray(String value) {
 		if (value.startsWith("[")) {
