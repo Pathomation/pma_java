@@ -24,6 +24,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.apache.commons.io.IOUtils;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -340,12 +341,34 @@ public class PMA {
 
 	/**
 	 * This method is used to creates a json Array out of a string
-	 * 
+	 *
 	 * @param value json in String format
 	 * @return Creates a Json array from a string
 	 */
 	public static JSONArray getJSONArrayResponse(String value) {
-		JSONArray jsonResponse = new JSONArray(value);
+
+		JSONArray jsonResponse;
+		try {
+			jsonResponse = new JSONArray(value);
+		} catch (JSONException e) {
+			return null;
+		}
+		return jsonResponse;
+	}
+
+	/**
+	 * This method reads and returns the input json data
+	 * @param value
+	 * @return jsonResponse
+	 */
+	public static JSONObject getJSONResponse(String value) {
+		JSONObject jsonResponse;
+		try {
+			jsonResponse = new JSONObject(value.toString());
+		} catch (JSONException e) {
+			return null;
+		}
+
 		return jsonResponse;
 	}
 
