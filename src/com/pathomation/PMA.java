@@ -1,16 +1,7 @@
 package com.pathomation;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.URLEncoder;
+import java.io.*;
+import java.net.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -121,7 +112,7 @@ public class PMA {
 				con.setRequestMethod("GET");
 				con.setRequestProperty("Accept", property);
 				urlContent.put(url, getJSONAsStringBuffer(con).toString());
-			} catch (Exception e) {
+			} catch (IOException e) {
 				e.printStackTrace();
 				if (PMA.logger != null) {
 					StringWriter sw = new StringWriter();
@@ -175,7 +166,7 @@ public class PMA {
 			String encoding = con.getContentEncoding();
 			encoding = encoding == null ? "UTF-8" : encoding;
 			return IOUtils.toString(in, encoding);
-		} catch (Exception e) {
+		} catch (IOException e) {
 			e.printStackTrace();
 			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
@@ -208,35 +199,6 @@ public class PMA {
 			}
 			return null;
 		}
-	}
-
-	/**
-	 * This method is used to get a list of the values of "String" tags of a XML
-	 * document
-	 * 
-	 * @param root    XML document
-	 * @param varargs Array of optional arguments
-	 *                <p>
-	 *                limit : First optional argument(int), default value(0),
-	 *                defines a limit
-	 *                </p>
-	 * @return Values' list of tags named "string" in a XML document
-	 */
-	public static List<String> xmlToStringArray(Document root, Integer... varargs) {
-		// setting the default value when argument's value is omitted
-		int limit = varargs.length > 0 ? varargs[0] : 0;
-		NodeList eLs = root.getElementsByTagName("string");
-		List<String> l = new ArrayList<>();
-		if (limit > 0) {
-			for (int i = 0; i < limit; i++) {
-				l.add(eLs.item(i).getFirstChild().getNodeValue());
-			}
-		} else {
-			for (int i = 0; i < eLs.getLength(); i++) {
-				l.add(eLs.item(i).getFirstChild().getNodeValue());
-			}
-		}
-		return l;
 	}
 
 	/**
@@ -289,7 +251,7 @@ public class PMA {
 			}
 			in.close();
 			return response;
-		} catch (Exception e) {
+		} catch (IOException e) {
 			e.printStackTrace();
 			if (PMA.logger != null) {
 				StringWriter sw = new StringWriter();
